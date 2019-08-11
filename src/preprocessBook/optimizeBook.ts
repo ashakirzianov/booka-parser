@@ -2,12 +2,12 @@ import {
     VolumeNode, ContentNode,
     Span, AttributeName, ParagraphNode, CompoundSpan,
 } from '../common/bookFormat';
-import { logger } from '../log';
 import {
     isChapter, isParagraph, paragraphNode, isSimple,
     isAttributed, isFootnote, compoundSpan, isCompound,
     assertNever,
 } from '../utils';
+import { logger } from '../log';
 
 export function optimizeVolume(book: VolumeNode): VolumeNode {
     const optimized = {
