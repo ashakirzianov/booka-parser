@@ -2,7 +2,7 @@ import {
     BookNode, HasSubnodes, ChapterNode, ParagraphNode, Span,
     SimpleSpan, FootnoteSpan, AttributedSpan, CompoundSpan,
     AttributeName, VolumeNode,
-} from '../common/bookFormat';
+} from '../bookFormat';
 
 export function hasSubnodes(bn: BookNode): bn is HasSubnodes {
     return bn.node === 'chapter' || bn.node === 'volume';

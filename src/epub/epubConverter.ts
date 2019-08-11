@@ -2,7 +2,7 @@ import { WithDiagnostics, ParserDiagnoser } from '../log';
 import { XmlNode, XmlNodeElement, isElement, XmlParser } from '../xml';
 import { EpubBook, EpubSource } from './epubParser';
 import { Block } from '../bookBlocks';
-import { VolumeNode } from '../common/bookFormat';
+import { VolumeNode } from '../bookFormat';
 
 export type EpubConverter = {
     convertEpub: (epub: EpubBook) => Promise<WithDiagnostics<VolumeNode>>,

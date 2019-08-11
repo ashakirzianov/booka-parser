@@ -1,5 +1,5 @@
 import { EpubBook, EpubSection } from './epubParser';
-import { VolumeNode, ChapterTitle } from '../common/bookFormat';
+import { VolumeNode, ChapterTitle } from '../bookFormat';
 import {
     isElement, XmlNodeElement, XmlNode,
     isTextNode, childForPath,

@@ -1,7 +1,7 @@
 import {
     VolumeNode, ContentNode,
     Span, AttributeName, ParagraphNode, CompoundSpan,
-} from '../common/bookFormat';
+} from '../bookFormat';
 import {
     isChapter, isParagraph, paragraphNode, isSimple,
     isAttributed, isFootnote, compoundSpan, isCompound,

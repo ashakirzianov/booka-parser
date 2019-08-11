@@ -1,5 +1,5 @@
 import { path2book } from './epub';
-import { VolumeNode } from './common/bookFormat';
+import { VolumeNode } from './bookFormat';
 import { preprocessBook } from './preprocessBook';
 
 export async function loadEpubPath(path: string): Promise<VolumeNode> {

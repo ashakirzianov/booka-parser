@@ -1,5 +1,5 @@
 import { WithDiagnostics } from '../log';
-import { VolumeNode } from '../common/bookFormat';
+import { VolumeNode } from '../bookFormat';
 import { string2tree } from '../xml';
 import { createEpubParser } from './epub2';
 import { createConverter } from './converter';
