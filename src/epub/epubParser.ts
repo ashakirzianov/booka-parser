@@ -1,6 +1,9 @@
 import { XmlNode } from '../xml';
 
-type Image = any; // TODO: actual image type
+export type Image = {
+    buffer: Buffer,
+    mimeType: string,
+};
 export type EpubCollection<T> = AsyncIterableIterator<T>;
 
 export type EpubSection = {
@@ -31,7 +34,7 @@ export function resolveEpubSource<EpubType>(epub: EpubType, resolver: EpubSource
 export type EpubBook = {
     source: EpubSource,
     metadata: EpubMetadata,
-    imageResolver(id: string): Image | undefined,
+    imageResolver(id: string): Promise<Image | undefined>,
     sections(): EpubCollection<EpubSection>,
 };
 

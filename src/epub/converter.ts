@@ -8,7 +8,7 @@ import {
     AsyncIter, isWhitespaces, flatten,
 } from '../utils';
 import { Block, ContainerBlock, blocks2book } from '../bookBlocks';
-import { EpubConverterParameters, EpubConverter, EpubConverterOptions, applyHooks, EpubConverterHookEnv } from './epubConverter';
+import { EpubConverterParameters, EpubConverter, EpubConverterOptions, applyHooks, EpubConverterHookEnv, EpubConverterResult } from './epubConverter';
 import { WithDiagnostics, ParserDiagnoser, diagnoser } from '../log';
 
 export function createConverter(params: EpubConverterParameters): EpubConverter {
@@ -17,7 +17,7 @@ export function createConverter(params: EpubConverterParameters): EpubConverter 
     };
 }
 
-async function convertEpub(epub: EpubBook, params: EpubConverterParameters): Promise<WithDiagnostics<VolumeNode>> {
+async function convertEpub(epub: EpubBook, params: EpubConverterParameters): Promise<WithDiagnostics<EpubConverterResult>> {
     const ds = diagnoser({ context: 'epub', title: epub.metadata.title });
     if (epub.source === 'unknown') {
         ds.add({ diag: 'unknown-source' });
@@ -33,7 +33,10 @@ async function convertEpub(epub: EpubBook, params: EpubConverterParameters): Pro
     const book = blocks2book(allBlocks, ds);
 
     return {
-        value: book,
+        value: {
+            volume: book,
+            resolveImage: async () => undefined,
+        },
         diagnostics: ds,
     };
 }
