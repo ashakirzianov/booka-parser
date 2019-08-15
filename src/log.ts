@@ -1,11 +1,6 @@
 import { XmlNode, XmlNodeElement } from './xml';
 import { Block } from './bookBlocks';
 
-export type WithDiagnostics<T> = {
-    value: T,
-    diagnostics: ParserDiagnoser,
-};
-
 export function diagnoser(context: ParserContext): ParserDiagnoser {
     return new ParserDiagnoser(context);
 }
@@ -17,6 +12,10 @@ export class ParserDiagnoser {
 
     public add(diag: ParserDiagnostic) {
         this.diags.push(diag);
+    }
+
+    public all() {
+        return this.diags;
     }
 }
 

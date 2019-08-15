@@ -1,4 +1,4 @@
-import { WithDiagnostics, ParserDiagnoser } from '../log';
+import { ParserDiagnoser, ParserDiagnostic } from '../log';
 import { XmlNode, XmlNodeElement, isElement, XmlParser } from '../xml';
 import { EpubBook, EpubSource, Image } from './epubParser';
 import { Block } from '../bookBlocks';
@@ -6,10 +6,11 @@ import { VolumeNode } from '../bookFormat';
 
 export type EpubConverterResult = {
     volume: VolumeNode,
+    diagnostics: ParserDiagnostic[],
     resolveImage(id: string): Promise<Image | undefined>,
 };
 export type EpubConverter = {
-    convertEpub: (epub: EpubBook) => Promise<WithDiagnostics<EpubConverterResult>>,
+    convertEpub: (epub: EpubBook) => Promise<EpubConverterResult>,
 };
 
 export type EpubConverterParameters = {

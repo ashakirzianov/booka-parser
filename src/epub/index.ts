@@ -3,7 +3,7 @@ import { createConverter } from './converter';
 import { converterHooks } from './hooks';
 import { string2tree } from '../xml';
 
-export { Image } from './epubParser';
+export { EpubConverterResult } from './epubConverter';
 
 export async function parsePath(path: string) {
     const parser = createEpubParser(string2tree);
