@@ -6,6 +6,7 @@ import {
     isChapter, isParagraph, paragraphNode, isSimple,
     isAttributed, isFootnote, compoundSpan, isCompound,
     assertNever,
+    isImage,
 } from '../utils';
 import { logger } from '../log';
 
@@ -36,8 +37,11 @@ function optimizeNode(node: ContentNode): ContentNode {
         };
     } else if (isParagraph(node)) {
         return optimizeParagraph(node);
+    } else if (isImage(node)) {
+        return node;
     } else {
-        return assertNever(node);
+        assertNever(node);
+        return node;
     }
 }
 

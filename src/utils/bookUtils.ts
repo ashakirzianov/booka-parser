@@ -1,7 +1,7 @@
 import {
     BookNode, HasSubnodes, ChapterNode, ParagraphNode, Span,
     SimpleSpan, FootnoteSpan, AttributedSpan, CompoundSpan,
-    AttributeName, VolumeNode,
+    AttributeName, VolumeNode, ImageNode,
 } from '../bookFormat';
 
 export function hasSubnodes(bn: BookNode): bn is HasSubnodes {
@@ -14,6 +14,10 @@ export function isChapter(bn: BookNode): bn is ChapterNode {
 
 export function isParagraph(bn: BookNode): bn is ParagraphNode {
     return bn.node === 'paragraph';
+}
+
+export function isImage(bn: BookNode): bn is ImageNode {
+    return bn.node === 'image';
 }
 
 export function isSimple(span: Span): span is SimpleSpan {
