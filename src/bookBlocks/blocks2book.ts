@@ -1,6 +1,7 @@
 import {
     Block, ContainerBlock, FootnoteCandidateBlock, BookTitleBlock,
     BookAuthorBlock,
+    BookCoverBlock,
 } from './block';
 import {
     ContentNode, Span, ChapterNode, VolumeNode, BookMeta,
@@ -41,6 +42,14 @@ function collectMeta(blocks: Block[]): Partial<BookMeta> {
     const authorBlock = blocks.find((b): b is BookAuthorBlock => b.block === 'book-author');
     if (authorBlock) {
         result.author = authorBlock.author;
+    }
+
+    const coverBlock = blocks.find((b): b is BookCoverBlock => b.block === 'book-author');
+    if (coverBlock) {
+        result.coverImageId = {
+            kind: 'image',
+            reference: coverBlock.reference,
+        };
     }
 
     return result;

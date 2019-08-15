@@ -15,6 +15,8 @@ export type EpubSection = {
 export type EpubMetadata = {
     title?: string,
     author?: string,
+    // TODO: use actual type
+    cover?: any,
 };
 
 export type EpubSource = 'fb2epub' | 'fictionBookEditor' | 'unknown';

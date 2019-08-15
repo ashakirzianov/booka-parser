@@ -14,6 +14,7 @@ export function createEpubParser(xmlParser: (text: string) => (XmlNodeDocument |
                 metadata: {
                     title: epub.metadata.title,
                     author: epub.metadata.creator,
+                    cover: epub.metadata.cover,
                 },
                 imageResolver: async id => {
                     const [buffer, mimeType] = await epub.getImageAsync(id);

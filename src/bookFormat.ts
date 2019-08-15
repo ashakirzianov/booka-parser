@@ -51,11 +51,11 @@ export type ContentNode = ChapterNode | ParagraphNode | ImageNode;
 export type BookMeta = {
     title: string,
     author?: string,
+    coverImageId?: ImageId,
 };
 
 export type VolumeNode = {
     node: 'volume',
-    coverImageId?: ImageId,
     meta: BookMeta,
     nodes: ContentNode[],
 };
