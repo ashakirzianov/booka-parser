@@ -16,12 +16,28 @@ export function createEpubParser(xmlParser: (text: string) => (XmlNodeDocument |
                     author: epub.metadata.creator,
                     cover: epub.metadata.cover,
                 },
-                imageResolver: async id => {
-                    const [buffer, mimeType] = await epub.getImageAsync(id);
-                    return {
-                        buffer,
-                        mimeType,
-                    };
+                imageResolver: async href => {
+                    const root = 'OPS/';
+                    return new Promise((res, rej) => {
+                        epub.readFile(root + href, undefined, (err: any, data: any) => {
+                            if (err) {
+                                rej(err);
+                            } else {
+                                res({
+                                    buffer: data,
+                                });
+                            }
+                        });
+                    });
+                    // const idItem = epub.listImage().find(item => item.href === root + href);
+                    // if (!idItem || !idItem.id) {
+                    //     return undefined;
+                    // }
+                    // const [buffer, mimeType] = await epub.getImageAsync(idItem.id);
+                    // return {
+                    //     buffer,
+                    //     mimeType,
+                    // };
                 },
                 sections: async function* () {
                     for (const el of epub.flow) {

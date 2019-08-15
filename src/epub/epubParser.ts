@@ -2,7 +2,7 @@ import { XmlNode } from '../xml';
 
 export type Image = {
     buffer: Buffer,
-    mimeType: string,
+    mimeType?: string,
 };
 export type EpubCollection<T> = AsyncIterableIterator<T>;
 
