@@ -1,4 +1,4 @@
-import { path2book, Image } from './epub';
+import { parsePath, Image } from './epub';
 import { VolumeNode } from './bookFormat';
 import { preprocessBook } from './preprocessBook';
 
@@ -9,7 +9,7 @@ export type ParsingResult = {
     resolveImage(imageId: string): Promise<Image | undefined>,
 };
 export async function parseEpubAtPath(path: string): Promise<ParsingResult> {
-    const book = await path2book(path);
+    const book = await parsePath(path);
     const preprocessed = preprocessBook(book.value.volume);
 
     return {
