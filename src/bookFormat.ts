@@ -50,6 +50,7 @@ export type BookMeta = {
 
 export type VolumeNode = {
     node: 'volume',
+    coverImageId?: ImageId,
     meta: BookMeta,
     nodes: ContentNode[],
 };

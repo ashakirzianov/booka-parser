@@ -150,9 +150,42 @@ function buildBlock(node: XmlNode, filePath: string, env: Env): Block[] {
                         } : container;
                     return [result];
                 case 'img':
+                    diagnoseUnexpectedAttributes(node, env.ds, [
+                        'src', 'class', 'alt',
+                        'height', 'width', 'viewBox',
+                        'xmlns', 'xlink:href', 'xmlns:xlink',
+                    ]);
+                    const src = node.attributes['src'];
+                    if (src) {
+                        return [{
+                            block: 'image',
+                            reference: src,
+                        }];
+                    } else {
+                        env.ds.add({
+                            diag: 'img-must-have-src',
+                            node,
+                        });
+                        return [];
+                    }
                 case 'image':
+                    diagnoseUnexpectedAttributes(node, env.ds, [
+                        'src', 'class', 'alt',
+                        'height', 'width', 'viewBox',
+                        'xmlns', 'xlink:href', 'xmlns:xlink',
+                    ]);
+                    const xlinkHref = node.attributes['xlink:href'];
+                    if (xlinkHref) {
+                        return [{
+                            block: 'image',
+                            reference: xlinkHref,
+                        }];
+                    } else {
+                        env.ds.add({ diag: 'image-must-have-xlinkhref', node });
+                        return [];
+                    }
                 case 'svg':
-                    // TODO: support images
+                    // TODO: support svg
                     diagnoseUnexpectedAttributes(node, env.ds, [
                         'src', 'class', 'alt',
                         'height', 'width', 'viewBox',
