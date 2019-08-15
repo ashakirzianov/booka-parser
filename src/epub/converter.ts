@@ -35,7 +35,7 @@ async function convertEpub(epub: EpubBook, params: EpubConverterParameters): Pro
     return {
         value: {
             volume: book,
-            resolveImage: async () => undefined,
+            resolveImage: epub.imageResolver,
         },
         diagnostics: ds,
     };
@@ -54,6 +54,13 @@ function buildMetaBlocks(epub: EpubBook): Block[] {
         result.push({
             block: 'book-author',
             author: epub.metadata.author,
+        });
+    }
+
+    if (epub.metadata.cover) {
+        result.push({
+            block: 'cover',
+            reference: epub.metadata.cover,
         });
     }
 

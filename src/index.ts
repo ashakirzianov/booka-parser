@@ -9,11 +9,11 @@ export type ParsingResult = {
     resolveImage(imageId: string): Promise<Image | undefined>,
 };
 export async function parseEpubAtPath(path: string): Promise<ParsingResult> {
-    const book = await parsePath(path);
-    const preprocessed = preprocessBook(book.value.volume);
+    const output = await parsePath(path);
+    const preprocessed = preprocessBook(output.value.volume);
 
     return {
         volume: preprocessed,
-        resolveImage: async () => undefined, // TODO: implement
+        resolveImage: output.value.resolveImage,
     };
 }

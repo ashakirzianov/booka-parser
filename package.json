@@ -5,9 +5,11 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
+    "pb": "dist/cli.js",
     "booka-parser": "dist/cli.js"
   },
   "scripts": {
+    "cli": "npm run build-ts && pb",
     "prepublish": "npm run build",
     "clean": "rm -rf dist/",
     "lint": "tslint -c tslint.json -p tsconfig.json",

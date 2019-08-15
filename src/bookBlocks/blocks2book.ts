@@ -26,8 +26,8 @@ export function blocks2book(blocks: Block[], ds: ParserDiagnoser): VolumeNode {
         node: 'volume',
         nodes,
         meta: {
+            ...meta,
             title: meta.title || 'no-title',
-            author: meta.author,
         },
     };
 }
@@ -44,7 +44,7 @@ function collectMeta(blocks: Block[]): Partial<BookMeta> {
         result.author = authorBlock.author;
     }
 
-    const coverBlock = blocks.find((b): b is BookCoverBlock => b.block === 'book-author');
+    const coverBlock = blocks.find((b): b is BookCoverBlock => b.block === 'cover');
     if (coverBlock) {
         result.coverImageId = {
             kind: 'image',
