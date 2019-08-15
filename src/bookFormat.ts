@@ -1,3 +1,9 @@
+export type ImageId = {
+    kind: 'image',
+    reference: string,
+};
+export type ObjectId = ImageId;
+
 export type AttributeName = 'italic' | 'bold' | 'poem' | 'line';
 export type SimpleSpan = string;
 export type AttributedSpan = {
@@ -35,7 +41,6 @@ export type ChapterNode = {
     nodes: ContentNode[],
 };
 
-export type ImageId = string;
 export type ImageNode = {
     node: 'image',
     id: ImageId,
@@ -59,7 +64,9 @@ export type BookNode = VolumeNode | ContentNode;
 export type HasSubnodes = VolumeNode | ChapterNode;
 
 export type IdDictionary = {
-    [key: string]: string | undefined;
+    [kind in ObjectId['kind']]: {
+        [key: string]: string | undefined;
+    };
 };
 export type BookObject = {
     volume: VolumeNode,

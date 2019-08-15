@@ -111,7 +111,10 @@ function preprocess(blocks: Block[]): Block[] {
                     result.push(preprocessed);
                 }
                 break;
-            case 'ignore': case 'book-title': case 'book-author':
+            case 'cover':
+            case 'book-title':
+            case 'book-author':
+            case 'ignore':
                 break;
             default:
                 result.push(block);
@@ -178,6 +181,14 @@ function buildChaptersImpl(blocks: Block[], level: number | undefined, env: Env)
 
 function nodeFromBlock(block: Block, env: Env): ContentNode | undefined {
     switch (block.block) {
+        case 'image':
+            return {
+                node: 'image',
+                id: {
+                    kind: 'image',
+                    reference: block.reference,
+                },
+            };
         case 'text':
         case 'attrs':
         case 'footnote-ref':
@@ -248,6 +259,7 @@ function spanFromBlock(block: Block, env: Env): Span | undefined {
         case 'ignore': case 'book-author':
             return undefined;
         case 'chapter-title': case 'book-title':
+        case 'cover': case 'image':
             // TODO: turn back warns
             // env.ds.warn(`Unexpected title: ${block2string(block)}`);
             return undefined;
