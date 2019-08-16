@@ -7,7 +7,7 @@ export type Image = {
 export type EpubCollection<T> = AsyncIterableIterator<T>;
 
 export type EpubSection = {
-    fileName: string,
+    filePath: string,
     id: string,
     content: XmlNode,
 };

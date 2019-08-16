@@ -1,15 +1,18 @@
 import { EpubBook, EpubSection } from './epubParser';
 import { ChapterTitle } from '../bookFormat';
 import {
-    isElement, XmlNodeElement, XmlNode,
-    isTextNode, childForPath,
+    isElement, XmlNodeElement, XmlNode, childForPath,
 } from '../xml';
 import {
     AsyncIter, isWhitespaces, flatten,
 } from '../utils';
 import { Block, ContainerBlock, blocks2book } from '../bookBlocks';
-import { EpubConverterParameters, EpubConverter, EpubConverterOptions, applyHooks, EpubConverterHookEnv, EpubConverterResult } from './epubConverter';
+import { EpubConverterParameters, EpubConverter } from './epubConverter';
 import { ParserDiagnoser, diagnoser } from '../log';
+import {
+    NodeHandlerEnv, handleNode, handleName, handleNames,
+    NodeHandler, combineHandlers, expectToHandle,
+} from './nodeHandler';
 
 export function createConverter(params: EpubConverterParameters): EpubConverter {
     return {
@@ -25,8 +28,7 @@ async function convertEpub(epub: EpubBook, params: EpubConverterParameters) {
 
     const hooks = params.options[epub.source];
     const sections = await AsyncIter.toArray(epub.sections());
-    const blocks = flatten(sections.map(s =>
-        section2blocks(s, { ds, hooks })));
+    const blocks = sections2blocks(sections, hooks.nodeHooks, ds);
     const metaBlocks = buildMetaBlocks(epub);
     const allBlocks = blocks.concat(metaBlocks);
 
@@ -72,165 +74,137 @@ function getBodyElement(node: XmlNode): XmlNodeElement | undefined {
         : undefined;
 }
 
-type Env = {
-    ds: ParserDiagnoser,
-    hooks: EpubConverterOptions,
-};
+function sections2blocks(sections: EpubSection[], hooks: NodeHandler[], ds: ParserDiagnoser) {
+    const handlers = hooks.concat(standardHandlers);
+    const handler = expectToHandle(combineHandlers(handlers));
 
-function section2blocks(section: EpubSection, env: Env): Block[] {
-    const body = getBodyElement(section.content);
-    if (!body) {
-        return [];
-    }
-
-    return flatten(body.children.map(node =>
-        buildBlock(node, section.fileName, env)));
-}
-
-function buildBlock(node: XmlNode, filePath: string, env: Env): Block[] {
-    const hookEnv: EpubConverterHookEnv = {
-        ds: env.ds,
-        node2blocks: n =>
-            buildBlock(n, filePath, env),
-        filePath,
+    const env: NodeHandlerEnv = {
+        ds: ds,
+        filePath: null as any,
+        node2blocks: null as any,
     };
-    const hooked = applyHooks(node, env.hooks.nodeHooks, hookEnv);
-    if (hooked) {
-        return hooked;
+    env.node2blocks = n => handler(n, env);
+
+    const result: Block[] = [];
+    for (const section of sections) {
+        const body = getBodyElement(section.content);
+        if (!body) {
+            continue;
+        }
+
+        env.filePath = section.filePath;
+        const blockArrays = body
+            .children
+            .map(env.node2blocks);
+        result.push(...flatten(blockArrays));
     }
 
-    if (shouldSkipNode(node)) {
-        return [];
-    }
-
-    switch (node.type) {
-        case 'text':
-            return [{
-                block: 'text',
-                text: node.text,
-            }];
-        case 'element':
-            switch (node.name) {
-                case 'em':
-                    diagnoseUnexpectedAttributes(node, env.ds);
-                    return [{
-                        block: 'attrs',
-                        attr: 'italic',
-                        content: buildContainerBlock(node.children, filePath, env),
-                    }];
-                case 'strong':
-                    diagnoseUnexpectedAttributes(node, env.ds);
-                    return [{
-                        block: 'attrs',
-                        attr: 'bold',
-                        content: buildContainerBlock(node.children, filePath, env),
-                    }];
-                case 'a':
-                    diagnoseUnexpectedAttributes(node, env.ds, [
-                        'href',
-                        'class', 'id',
-                        'title',
-                    ]);
-                    if (node.attributes.href !== undefined) {
-                        return [{
-                            block: 'footnote-ref',
-                            id: node.attributes.href,
-                            content: buildContainerBlock(node.children, filePath, env),
-                        }];
-                    } else {
-                        env.ds.add({ diag: 'link-must-have-ref', node });
-                        return [];
-                    }
-                case 'p':
-                case 'span':
-                case 'div':
-                    diagnoseUnexpectedAttributes(node, env.ds, ['class', 'id']);
-                    const container = buildContainerBlock(node.children, filePath, env);
-                    const result: Block = node.attributes.id
-                        ? {
-                            block: 'footnote-candidate',
-                            id: `${filePath}#${node.attributes.id}`,
-                            title: [],
-                            content: container,
-                        } : container;
-                    return [result];
-                case 'img':
-                    diagnoseUnexpectedAttributes(node, env.ds, [
-                        'src', 'class', 'alt',
-                        'height', 'width', 'viewBox',
-                        'xmlns', 'xlink:href', 'xmlns:xlink',
-                    ]);
-                    const src = node.attributes['src'];
-                    if (src) {
-                        return [{
-                            block: 'image',
-                            reference: src,
-                        }];
-                    } else {
-                        env.ds.add({
-                            diag: 'img-must-have-src',
-                            node,
-                        });
-                        return [];
-                    }
-                case 'image':
-                    diagnoseUnexpectedAttributes(node, env.ds, [
-                        'src', 'class', 'alt',
-                        'height', 'width', 'viewBox',
-                        'xmlns', 'xlink:href', 'xmlns:xlink',
-                    ]);
-                    const xlinkHref = node.attributes['xlink:href'];
-                    if (xlinkHref) {
-                        return [{
-                            block: 'image',
-                            reference: xlinkHref,
-                        }];
-                    } else {
-                        env.ds.add({ diag: 'image-must-have-xlinkhref', node });
-                        return [];
-                    }
-                case 'svg':
-                    // TODO: support svg
-                    diagnoseUnexpectedAttributes(node, env.ds, [
-                        'src', 'class', 'alt',
-                        'height', 'width', 'viewBox',
-                        'xmlns', 'xlink:href', 'xmlns:xlink',
-                    ]);
-                    return [];
-                case 'h1': case 'h2': case 'h3':
-                case 'h4': case 'h5': case 'h6':
-                    diagnoseUnexpectedAttributes(node, env.ds, ['class']);
-                    const level = parseInt(node.name[1], 10);
-                    const title = extractTitle(node.children, env.ds);
-                    return [{
-                        block: 'chapter-title',
-                        title: title,
-                        level: 4 - level,
-                    }];
-                case 'sup': case 'sub':
-                    // TODO: implement superscript & subscript parsing
-                    diagnoseUnexpectedAttributes(node, env.ds);
-                    return [];
-                case 'ul': case 'li':
-                    diagnoseUnexpectedAttributes(node, env.ds);
-                    // TODO: handle lists
-                    return [];
-                case 'br':
-                    diagnoseUnexpectedAttributes(node, env.ds);
-                    return [];
-                default:
-                    env.ds.add({ diag: 'unexpected-node', node });
-                    return [];
-            }
-        default:
-            env.ds.add({ diag: 'unexpected-node', node });
-            return [];
-    }
+    return result;
 }
 
-function buildContainerBlock(nodes: XmlNode[], filePath: string, env: Env): ContainerBlock {
+const text = handleNode(node => {
+    if (node.type !== 'text') {
+        return undefined;
+    }
+    // Skip whitespace nodes
+    if (node.text.startsWith('\n') && isWhitespaces(node.text)) {
+        return { block: 'ignore' };
+    } else {
+        return {
+            block: 'text',
+            text: node.text,
+        };
+    }
+});
+
+const em = handleName('em', (el, env) => ({
+    block: 'attrs',
+    attr: 'italic',
+    content: buildContainerBlock(el.children, env),
+}));
+
+const strong = handleName('strong', (el, env) => ({
+    block: 'attrs',
+    attr: 'bold',
+    content: buildContainerBlock(el.children, env),
+}));
+
+const a = handleName('a', (el, env) => {
+    if (el.attributes.href !== undefined) {
+        return {
+            block: 'footnote-ref',
+            id: el.attributes.href,
+            content: buildContainerBlock(el.children, env),
+        };
+    } else {
+        env.ds.add({ diag: 'link-must-have-ref', node: el });
+        return { block: 'ignore' };
+    }
+});
+
+const pph = handleNames(['p', 'div', 'span'], [], (el, env) => {
+    const container = buildContainerBlock(el.children, env);
+    const result: Block = el.attributes.id
+        ? {
+            block: 'footnote-candidate',
+            id: `${env.filePath}#${el.attributes.id}`,
+            title: [],
+            content: container,
+        }
+        : container;
+    return result;
+});
+
+const img = handleName('img', (el, env) => {
+    const src = el.attributes['src'];
+    if (src) {
+        return {
+            block: 'image',
+            reference: src,
+        };
+    } else {
+        env.ds.add({
+            diag: 'img-must-have-src',
+            node: el,
+        });
+        return { block: 'ignore' };
+    }
+});
+
+const image = handleName('image', (el, env) => {
+    const xlinkHref = el.attributes['xlink:href'];
+    if (xlinkHref) {
+        return {
+            block: 'image',
+            reference: xlinkHref,
+        };
+    } else {
+        env.ds.add({ diag: 'image-must-have-xlinkhref', node: el });
+        return { block: 'ignore' };
+    }
+});
+
+const header = handleNames(['h1', 'h2', 'h3', 'h4', 'h5', 'h6'], [], (el, env) => {
+    const level = parseInt(el.name[1], 10);
+    const title = extractTitle(el.children, env.ds);
+    return {
+        block: 'chapter-title',
+        title: title,
+        level: 4 - level,
+    };
+});
+
+const rest = handleNames(['svg', 'sup', 'sub', 'ul', 'li', 'br'], [], (el, env) => {
+    return { block: 'ignore' };
+});
+
+const standardHandlers = [
+    text, em, strong, a, pph, img, image, header, rest,
+];
+
+function buildContainerBlock(nodes: XmlNode[], env: NodeHandlerEnv): ContainerBlock {
     const content = flatten(nodes
-        .map(ch => buildBlock(ch, filePath, env)));
+        .map(ch => env.node2blocks(ch)));
 
     return {
         block: 'container',
@@ -268,21 +242,4 @@ function extractTitle(nodes: XmlNode[], ds: ParserDiagnoser): ChapterTitle {
         ds.add({ diag: 'no-title', nodes });
     }
     return lines;
-}
-
-function diagnoseUnexpectedAttributes(element: XmlNodeElement, ds: ParserDiagnoser, expected: string[] = []) {
-    for (const [attr, value] of Object.entries(element.attributes)) {
-        if (!expected.some(e => e === attr)) {
-            ds.add({ diag: 'unexpected-attr', name: attr, value, element });
-        }
-    }
-}
-
-function shouldSkipNode(node: XmlNode): boolean {
-    if (isTextNode(node)) {
-        if (node.text.startsWith('\n') && isWhitespaces(node.text)) {
-            return true;
-        }
-    }
-    return false;
 }

@@ -51,7 +51,7 @@ export function createEpubParser(xmlParser: (text: string) => (XmlNodeDocument |
                             if (node) {
                                 const section: EpubSection = {
                                     id: el.id,
-                                    fileName: href,
+                                    filePath: href,
                                     content: node,
                                 };
                                 yield section;

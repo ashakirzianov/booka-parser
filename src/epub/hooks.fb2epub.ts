@@ -1,14 +1,15 @@
 import {
-    EpubConverterOptions, element2block, EpubConverterNodeHook,
-    parserHook,
+    EpubConverterOptions,
 } from './epubConverter';
 import {
     nameChildren, textNode, nameAttrsChildren, some,
     translate, headNode, nameAttrs, choice,
-    seq, children, and, whitespaced, name, attrs, expected, attrsChildren, extractText, isElement, xmlNode2String, nameEq,
+    seq, children, and, whitespaced, name, attrs,
+    attrsChildren, extractText, isElement, nameEq,
 } from '../xml';
 import { Block } from '../bookBlocks';
 import { forceType, flatten } from '../utils';
+import { handleElement, NodeHandler, parserHook } from './nodeHandler';
 
 export const fb2epubHooks: EpubConverterOptions = {
     nodeHooks: [
@@ -23,14 +24,14 @@ export const fb2epubHooks: EpubConverterOptions = {
 };
 
 function ignoreClass(className: string) {
-    return element2block(el =>
+    return handleElement(el =>
         el.attributes.class === className
             ? { block: 'ignore' }
             : undefined
     );
 }
 
-function footnoteSection(): EpubConverterNodeHook {
+function footnoteSection(): NodeHandler {
     return parserHook(env => {
         const divId = translate(
             nameAttrs('div', { class: 'section2', id: id => id !== undefined }),
@@ -68,7 +69,7 @@ function footnoteSection(): EpubConverterNodeHook {
     });
 }
 
-function titlePage(): EpubConverterNodeHook {
+function titlePage(): NodeHandler {
     return parserHook(() => {
         const bookTitle = translate(
             extractText(attrs({ class: 'title1' })),
@@ -95,7 +96,7 @@ function titlePage(): EpubConverterNodeHook {
     });
 }
 
-function divTitle(): EpubConverterNodeHook {
+function divTitle(): NodeHandler {
     return parserHook(() => {
         const divLevel = headNode(n => {
             if (isElement(n) && nameEq('div', n.name)
