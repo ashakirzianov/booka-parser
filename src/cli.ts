@@ -24,6 +24,10 @@ async function exec() {
     console.log(epubs);
     for (const epubPath of epubs) {
         const result = await parseEpubAtPath(epubPath);
+        if (!result.success) {
+            console.log(`Couldn't parse epub: '${epubPath}'`);
+            continue;
+        }
         console.log(`---- ${epubPath}:`);
         console.log('Meta:');
         console.log(result.volume.meta);

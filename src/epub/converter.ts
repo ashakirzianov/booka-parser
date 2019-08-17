@@ -7,7 +7,7 @@ import {
     AsyncIter, isWhitespaces, flatten,
 } from '../utils';
 import { Block, ContainerBlock, blocks2book } from '../bookBlocks';
-import { EpubConverterParameters, EpubConverter } from './epubConverter';
+import { EpubConverterParameters, EpubConverter, EpubConverterResult } from './epubConverter';
 import { ParserDiagnoser, diagnoser } from '../log';
 import {
     NodeHandlerEnv, handleNode, constrainElement,
@@ -20,25 +20,33 @@ export function createConverter(params: EpubConverterParameters): EpubConverter 
     };
 }
 
-async function convertEpub(epub: EpubBook, params: EpubConverterParameters) {
+async function convertEpub(epub: EpubBook, params: EpubConverterParameters): Promise<EpubConverterResult> {
     const ds = diagnoser({ context: 'epub', title: epub.metadata.title });
-    if (epub.source === 'unknown') {
-        ds.add({ diag: 'unknown-source' });
+    try {
+        if (epub.source === 'unknown') {
+            ds.add({ diag: 'unknown-source' });
+        }
+
+        const hooks = params.options[epub.source];
+        const sections = await AsyncIter.toArray(epub.sections());
+        const blocks = sections2blocks(sections, hooks.nodeHooks, ds);
+        const metaBlocks = buildMetaBlocks(epub);
+        const allBlocks = blocks.concat(metaBlocks);
+
+        const book = blocks2book(allBlocks, ds);
+
+        return {
+            success: true,
+            volume: book,
+            resolveImage: epub.imageResolver,
+            diagnostics: ds.all(),
+        };
+    } catch {
+        return {
+            success: false,
+            diagnostics: ds.all(),
+        };
     }
-
-    const hooks = params.options[epub.source];
-    const sections = await AsyncIter.toArray(epub.sections());
-    const blocks = sections2blocks(sections, hooks.nodeHooks, ds);
-    const metaBlocks = buildMetaBlocks(epub);
-    const allBlocks = blocks.concat(metaBlocks);
-
-    const book = blocks2book(allBlocks, ds);
-
-    return {
-        volume: book,
-        resolveImage: epub.imageResolver,
-        diagnostics: ds.all(),
-    };
 }
 
 function buildMetaBlocks(epub: EpubBook): Block[] {
