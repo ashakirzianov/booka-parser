@@ -1,5 +1,5 @@
 import {
-    EpubConverterOptions,
+    EpubConverterHooks,
 } from './epubConverter';
 import {
     nameChildren, textNode, nameAttrsChildren, some,
@@ -11,7 +11,7 @@ import { Block } from '../bookBlocks';
 import { forceType, flatten } from '../utils';
 import { handleElement, NodeHandler, parserHook } from './nodeHandler';
 
-export const fb2epubHooks: EpubConverterOptions = {
+export const fb2epubHooks: EpubConverterHooks = {
     nodeHooks: [
         ignoreClass('about'),
         ignoreClass('annotation'),

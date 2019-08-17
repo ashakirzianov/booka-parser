@@ -1,8 +1,8 @@
-import { EpubConverterOptions } from './epubConverter';
+import { EpubConverterHooks } from './epubConverter';
 import { isTextNode, isElement, XmlNodeWithChildren } from '../xml';
 import { handleElement } from './nodeHandler';
 
-export const fictionBookEditorHooks: EpubConverterOptions = {
+export const fictionBookEditorHooks: EpubConverterHooks = {
     nodeHooks: [
         titleElement(),
     ],

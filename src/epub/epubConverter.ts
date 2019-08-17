@@ -19,9 +19,9 @@ export type EpubConverterParameters = {
 };
 
 export type EpubConverterOptionsTable = {
-    [key in EpubSource]: EpubConverterOptions;
+    [key in EpubSource]: EpubConverterHooks;
 };
 
-export type EpubConverterOptions = {
+export type EpubConverterHooks = {
     nodeHooks: NodeHandler[],
 };
