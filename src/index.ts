@@ -1,6 +1,8 @@
 import { parsePath, EpubConverterResult } from './epub';
 import { preprocessBook } from './preprocessBook';
 
+export { Image } from './epub';
+
 export const parserVersion = '1.1.2';
 
 export type ParsingResult = EpubConverterResult;
