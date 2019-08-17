@@ -5,7 +5,3 @@ declare module '@rgrove/parse-xml' {
     const parseXml: (xml: string, options?: ParsingOptions) => any;
     export = parseXml;
 }
-
-// TODO: remove?
-declare type GeneralObject = any;
-declare type HtmlNodeObject = any;
