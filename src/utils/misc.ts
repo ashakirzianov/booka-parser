@@ -40,9 +40,9 @@ export function assertNever(x: never): never {
     throw new Error(`Should be never: ${x}`);
 }
 
-export function equalsToOneOf<TX extends TO, TO>(x: TX, opts: TO[]): boolean {
+export function equalsToOneOf<TX, TO extends TX>(x: TX, opts: TO[]): boolean {
     for (const o of opts) {
-        if ((x as any) === o) {
+        if (x === o) {
             return true;
         }
     }

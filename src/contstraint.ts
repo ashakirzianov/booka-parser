@@ -1,8 +1,8 @@
 import { equalsToOneOf } from './utils';
 
-export type Constraint<TV> =
-    | TV
-    | TV[]
+export type Constraint<TV, TC extends TV = TV> =
+    | TC
+    | TC[]
     | ((x: TV) => boolean)
     ;
 export type ConstraintMap<T> = {
@@ -19,7 +19,7 @@ export type ConstrainedType<T, C extends ConstraintMap<T>> = {
     [k in keyof T]: C[k] extends Constraint<infer CV> ? CV : T[k];
 };
 
-export function checkValue<T extends C, C>(value: T, constraint: Constraint<C>): ConstraintResult {
+export function checkValue<T, C extends T>(value: T, constraint: Constraint<T, C>): ConstraintResult {
     if (Array.isArray(constraint)) {
         if (equalsToOneOf(value, constraint)) {
             return { satisfy: true };
@@ -30,7 +30,7 @@ export function checkValue<T extends C, C>(value: T, constraint: Constraint<C>):
             };
         }
     } else if (typeof constraint === 'function') {
-        const fn = constraint as (x: C) => boolean;
+        const fn = constraint as (x: T) => boolean;
         const result = fn(value);
         return result
             ? { satisfy: true }

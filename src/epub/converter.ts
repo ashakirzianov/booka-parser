@@ -10,7 +10,7 @@ import { Block, ContainerBlock, blocks2book } from '../bookBlocks';
 import { EpubConverterParameters, EpubConverter } from './epubConverter';
 import { ParserDiagnoser, diagnoser } from '../log';
 import {
-    NodeHandlerEnv, handleNode, handleName, handleNames,
+    NodeHandlerEnv, handleNode, constrainElement,
     NodeHandler, combineHandlers, expectToHandle,
 } from './nodeHandler';
 
@@ -117,19 +117,19 @@ const text = handleNode(node => {
     }
 });
 
-const em = handleName('em', (el, env) => ({
+const em = constrainElement('em', (el, env) => ({
     block: 'attrs',
     attr: 'italic',
     content: buildContainerBlock(el.children, env),
 }));
 
-const strong = handleName('strong', (el, env) => ({
+const strong = constrainElement('strong', (el, env) => ({
     block: 'attrs',
     attr: 'bold',
     content: buildContainerBlock(el.children, env),
 }));
 
-const a = handleName('a', (el, env) => {
+const a = constrainElement('a', (el, env) => {
     if (el.attributes.href !== undefined) {
         return {
             block: 'footnote-ref',
@@ -142,7 +142,7 @@ const a = handleName('a', (el, env) => {
     }
 });
 
-const pph = handleNames(['p', 'div', 'span'], [], (el, env) => {
+const pph = constrainElement(['p', 'div', 'span'], (el, env) => {
     const container = buildContainerBlock(el.children, env);
     const result: Block = el.attributes.id
         ? {
@@ -155,7 +155,7 @@ const pph = handleNames(['p', 'div', 'span'], [], (el, env) => {
     return result;
 });
 
-const img = handleName('img', (el, env) => {
+const img = constrainElement('img', (el, env) => {
     const src = el.attributes['src'];
     if (src) {
         return {
@@ -171,7 +171,7 @@ const img = handleName('img', (el, env) => {
     }
 });
 
-const image = handleName('image', (el, env) => {
+const image = constrainElement('image', (el, env) => {
     const xlinkHref = el.attributes['xlink:href'];
     if (xlinkHref) {
         return {
@@ -184,7 +184,7 @@ const image = handleName('image', (el, env) => {
     }
 });
 
-const header = handleNames(['h1', 'h2', 'h3', 'h4', 'h5', 'h6'], [], (el, env) => {
+const header = constrainElement(['h1', 'h2', 'h3', 'h4', 'h5', 'h6'], (el, env) => {
     const level = parseInt(el.name[1], 10);
     const title = extractTitle(el.children, env.ds);
     return {
@@ -194,7 +194,7 @@ const header = handleNames(['h1', 'h2', 'h3', 'h4', 'h5', 'h6'], [], (el, env) =
     };
 });
 
-const rest = handleNames(['svg', 'sup', 'sub', 'ul', 'li', 'br'], [], (el, env) => {
+const rest = constrainElement(['svg', 'sup', 'sub', 'ul', 'li', 'br'], (el, env) => {
     return { block: 'ignore' };
 });
 

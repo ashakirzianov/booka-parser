@@ -2,6 +2,7 @@ import { ParserDiagnoser } from '../log';
 import { XmlNode, XmlNodeElement, isElement, XmlParser } from '../xml';
 import { Block } from '../bookBlocks';
 import { equalsToOneOf } from '../utils';
+import { Constraint, checkValue } from '../contstraint';
 
 export type NodeHandlerEnv = {
     ds: ParserDiagnoser,
@@ -23,16 +24,18 @@ export function handleNode(handler: SimpleHandler): NodeHandler {
 }
 
 export type SimpleElementHandler = SimpleHandler<XmlNodeElement>;
-export function handleName(name: string, handler: SimpleElementHandler): NodeHandler {
-    return handleNames([name], [], handler);
-}
-export function handleNames(names: string[], expectedAttributes: string[] | undefined, handler: SimpleElementHandler): NodeHandler {
+export function constrainElement<N extends string>(
+    nameConstraint: Constraint<string, N>,
+    // expectedAttributes: string[] | undefined,
+    handler: SimpleElementHandler,
+): NodeHandler {
     return (node, env) => {
         if (!isElement(node)) {
             return undefined;
         }
 
-        if (!equalsToOneOf(node.name, names)) {
+        const check = checkValue(node.name, nameConstraint);
+        if (!check.satisfy) {
             return undefined;
         }
 
