@@ -1,8 +1,10 @@
 import { ParserDiagnoser } from '../log';
-import { XmlNode, XmlNodeElement, isElement, XmlParser } from '../xml';
+import {
+    XmlNode, XmlNodeElement, isElement, XmlParser,
+    XmlAttributes,
+} from '../xml';
 import { Block } from '../bookBlocks';
-import { equalsToOneOf } from '../utils';
-import { Constraint, checkValue } from '../constraint';
+import { Constraint, ConstraintMap, checkValue, checkObject } from '../constraint';
 
 export type NodeHandlerEnv = {
     ds: ParserDiagnoser,
@@ -26,7 +28,7 @@ export function handleNode(handler: SimpleHandler): NodeHandler {
 export type SimpleElementHandler = SimpleHandler<XmlNodeElement>;
 export function constrainElement<N extends string>(
     nameConstraint: Constraint<string, N>,
-    // expectedAttributes: string[] | undefined,
+    attrsConstraint: ConstraintMap<XmlAttributes>,
     handler: SimpleElementHandler,
 ): NodeHandler {
     return (node, env) => {
@@ -34,23 +36,19 @@ export function constrainElement<N extends string>(
             return undefined;
         }
 
-        const check = checkValue(node.name, nameConstraint);
-        if (!check.satisfy) {
+        const nameCheck = checkValue(node.name, nameConstraint);
+        if (!nameCheck.satisfy) {
             return undefined;
         }
 
-        // if (expectedAttributes) {
-        //     for (const [attr, value] of Object.entries(node.attributes)) {
-        //         if (!expectedAttributes.some(e => e === attr)) {
-        //             env.ds.add({
-        //                 diag: 'unexpected-attr',
-        //                 name: attr,
-        //                 value,
-        //                 element: node,
-        //             });
-        //         }
-        //     }
-        // }
+        const attrCheck = checkObject(node.attributes, attrsConstraint);
+        if (!attrCheck.satisfy) {
+            env.ds.add({
+                diag: 'node-other',
+                node: node,
+                message: `Attribute: ${attrCheck.reason.join(`, `)}`,
+            });
+        }
 
         const result = handler(node, env);
         return result

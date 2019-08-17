@@ -26,6 +26,7 @@ export type ParserContext =
 type Context<K extends string> = { context: K };
 
 export type ParserDiagnostic =
+    | NodeDiag<'node-other'> & { message: string }
     | NodeDiag<'img-must-have-src'>
     | NodeDiag<'image-must-have-xlinkhref'>
     | NodeDiag<'link-must-have-ref'>

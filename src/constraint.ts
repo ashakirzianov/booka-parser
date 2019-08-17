@@ -4,9 +4,10 @@ export type Constraint<TV, TC extends TV = TV> =
     | TC
     | TC[]
     | ((x: TV) => boolean)
+    | null
     ;
 export type ConstraintMap<T> = {
-    [K in keyof T]: Constraint<T[K]>;
+    [K in keyof T]: Constraint<T[K]> | undefined;
 };
 export type ConstraintResult = {
     satisfy: true,
@@ -35,6 +36,8 @@ export function checkValue<T, C extends T>(value: T, constraint: Constraint<T, C
         return result
             ? { satisfy: true }
             : { satisfy: false, reason: [`${value} does not satisfy function constraint`] };
+    } else if (constraint === null) {
+        return { satisfy: true };
     } else {
         return value === constraint
             ? { satisfy: true }
@@ -46,9 +49,13 @@ export function checkObject<T>(obj: T, constraintMap: ConstraintMap<T>): Constra
     const reasons: string[] = [];
     for (const [key, value] of Object.entries(obj)) {
         const constraint = constraintMap[key as keyof T] as Constraint<T[keyof T]>;
-        const result = checkValue(value, constraint);
-        if (!result.satisfy) {
-            reasons.push(`${key} = ${value}: ${result.reason}`);
+        if (constraint === undefined) {
+            reasons.push(`Unexpected '${key} = ${value}'`);
+        } else {
+            const result = checkValue(value, constraint);
+            if (!result.satisfy) {
+                reasons.push(`${key} = ${value}: ${result.reason}`);
+            }
         }
     }
 

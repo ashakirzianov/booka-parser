@@ -117,61 +117,70 @@ const text = handleNode(node => {
     }
 });
 
-const em = constrainElement('em', (el, env) => ({
+const em = constrainElement('em', {}, (el, env) => ({
     block: 'attrs',
     attr: 'italic',
     content: buildContainerBlock(el.children, env),
 }));
 
-const strong = constrainElement('strong', (el, env) => ({
+const strong = constrainElement('strong', {}, (el, env) => ({
     block: 'attrs',
     attr: 'bold',
     content: buildContainerBlock(el.children, env),
 }));
 
-const a = constrainElement('a', (el, env) => {
-    if (el.attributes.href !== undefined) {
-        return {
-            block: 'footnote-ref',
-            id: el.attributes.href,
-            content: buildContainerBlock(el.children, env),
-        };
-    } else {
-        env.ds.add({ diag: 'link-must-have-ref', node: el });
-        return { block: 'ignore' };
-    }
-});
-
-const pph = constrainElement(['p', 'div', 'span'], (el, env) => {
-    const container = buildContainerBlock(el.children, env);
-    const result: Block = el.attributes.id
-        ? {
-            block: 'footnote-candidate',
-            id: `${env.filePath}#${el.attributes.id}`,
-            title: [],
-            content: container,
+const a = constrainElement(
+    'a',
+    { class: null, href: null, id: null },
+    (el, env) => {
+        if (el.attributes.href !== undefined) {
+            return {
+                block: 'footnote-ref',
+                id: el.attributes.href,
+                content: buildContainerBlock(el.children, env),
+            };
+        } else {
+            env.ds.add({ diag: 'link-must-have-ref', node: el });
+            return { block: 'ignore' };
         }
-        : container;
-    return result;
-});
+    });
 
-const img = constrainElement('img', (el, env) => {
-    const src = el.attributes['src'];
-    if (src) {
-        return {
-            block: 'image',
-            reference: src,
-        };
-    } else {
-        env.ds.add({
-            diag: 'img-must-have-src',
-            node: el,
-        });
-        return { block: 'ignore' };
-    }
-});
+const pph = constrainElement(
+    ['p', 'div', 'span'],
+    { class: null, id: null },
+    (el, env) => {
+        const container = buildContainerBlock(el.children, env);
+        const result: Block = el.attributes.id
+            ? {
+                block: 'footnote-candidate',
+                id: `${env.filePath}#${el.attributes.id}`,
+                title: [],
+                content: container,
+            }
+            : container;
+        return result;
+    });
 
-const image = constrainElement('image', (el, env) => {
+const img = constrainElement(
+    'img',
+    { src: null, alt: null, class: null },
+    (el, env) => {
+        const src = el.attributes['src'];
+        if (src) {
+            return {
+                block: 'image',
+                reference: src,
+            };
+        } else {
+            env.ds.add({
+                diag: 'img-must-have-src',
+                node: el,
+            });
+            return { block: 'ignore' };
+        }
+    });
+
+const image = constrainElement('image', {}, (el, env) => {
     const xlinkHref = el.attributes['xlink:href'];
     if (xlinkHref) {
         return {
@@ -184,7 +193,7 @@ const image = constrainElement('image', (el, env) => {
     }
 });
 
-const header = constrainElement(['h1', 'h2', 'h3', 'h4', 'h5', 'h6'], (el, env) => {
+const header = constrainElement(['h1', 'h2', 'h3', 'h4', 'h5', 'h6'], {}, (el, env) => {
     const level = parseInt(el.name[1], 10);
     const title = extractTitle(el.children, env.ds);
     return {
@@ -194,12 +203,19 @@ const header = constrainElement(['h1', 'h2', 'h3', 'h4', 'h5', 'h6'], (el, env) 
     };
 });
 
-const rest = constrainElement(['svg', 'sup', 'sub', 'ul', 'li', 'br'], (el, env) => {
+const svg = constrainElement(
+    'svg',
+    { viewBox: null, xmlns: null, class: null },
+    () => ({ block: 'ignore' })
+);
+
+const rest = constrainElement(['sup', 'sub', 'ul', 'li', 'br'], {}, (el, env) => {
     return { block: 'ignore' };
 });
 
 const standardHandlers = [
-    text, em, strong, a, pph, img, image, header, rest,
+    text, em, strong, a, pph, img, image, header,
+    svg, rest,
 ];
 
 function buildContainerBlock(nodes: XmlNode[], env: NodeHandlerEnv): ContainerBlock {
