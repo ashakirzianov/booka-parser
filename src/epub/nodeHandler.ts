@@ -2,7 +2,7 @@ import { ParserDiagnoser } from '../log';
 import { XmlNode, XmlNodeElement, isElement, XmlParser } from '../xml';
 import { Block } from '../bookBlocks';
 import { equalsToOneOf } from '../utils';
-import { Constraint, checkValue } from '../contstraint';
+import { Constraint, checkValue } from '../constraint';
 
 export type NodeHandlerEnv = {
     ds: ParserDiagnoser,
