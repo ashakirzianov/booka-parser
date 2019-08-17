@@ -81,7 +81,7 @@ function attrPred(c: AttributeConstraint): ElementPredicate {
             ? predSucc(en)
             : predFail(`Unexpected attribute ${key}='${en.attributes[key]}'`);
     } else if (Array.isArray(value)) {
-        return en => equalsToOneOf(en.attributes[key], ...value)
+        return en => equalsToOneOf(en.attributes[key], value)
             ? predSucc(en)
             : predFail(`Unexpected attribute ${key}='${en.attributes[key]}', expected values: ${value}`);
     } else if (value === true) {
@@ -98,7 +98,7 @@ function attrPred(c: AttributeConstraint): ElementPredicate {
 function noAttrsExceptPred(keys: string[]): ElementPredicate {
     return en => {
         const extra = Object.keys(en.attributes)
-            .filter(k => !equalsToOneOf(k, ...keys))
+            .filter(k => !equalsToOneOf(k, keys))
             .map(ue => `${ue}=${en.attributes[ue]}`);
         return extra.length === 0
             ? predSucc(en)

@@ -32,7 +32,7 @@ export function handleNames(names: string[], expectedAttributes: string[] | unde
             return undefined;
         }
 
-        if (!equalsToOneOf(node.name, ...names)) {
+        if (!equalsToOneOf(node.name, names)) {
             return undefined;
         }
 
