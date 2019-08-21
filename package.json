@@ -10,7 +10,7 @@
   },
   "scripts": {
     "cli": "npm run build-ts && pb",
-    "prepublish": "npm run build",
+    "prepare": "npm run build",
     "clean": "rm -rf dist/",
     "lint": "tslint -c tslint.json -p tsconfig.json",
     "build-ts": "tsc",
