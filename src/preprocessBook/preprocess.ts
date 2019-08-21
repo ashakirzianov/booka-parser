@@ -1,4 +1,4 @@
-import { VolumeNode } from '../bookFormat';
+import { VolumeNode } from 'booka-common';
 import { optimizeVolume } from './optimizeBook';
 import { simplifyVolume } from './simplifyBook';
 

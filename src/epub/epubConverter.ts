@@ -1,6 +1,6 @@
 import { ParserDiagnostic } from '../log';
 import { EpubBook, EpubSource, Image } from './epubParser';
-import { VolumeNode } from '../bookFormat';
+import { VolumeNode } from 'booka-common';
 import { NodeHandler } from './nodeHandler';
 
 export type EpubConverterResult = {

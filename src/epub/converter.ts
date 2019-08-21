@@ -1,5 +1,5 @@
 import { EpubBook, EpubSection } from './epubParser';
-import { ChapterTitle } from '../bookFormat';
+import { ChapterTitle } from 'booka-common';
 import {
     isElement, XmlNodeElement, XmlNode, childForPath,
 } from '../xml';

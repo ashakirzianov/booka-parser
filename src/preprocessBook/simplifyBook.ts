@@ -1,11 +1,11 @@
 import {
     VolumeNode, ContentNode, ChapterNode, ParagraphNode,
     Span,
-} from '../bookFormat';
-import {
-    filterUndefined, assertNever, isWhitespaces,
     isChapter, isParagraph, isSimple, isAttributed,
     isFootnote, isCompound, isImage,
+} from 'booka-common';
+import {
+    filterUndefined, assertNever, isWhitespaces,
 } from '../utils';
 
 export function simplifyVolume(volume: VolumeNode): VolumeNode {

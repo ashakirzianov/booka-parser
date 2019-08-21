@@ -1,13 +1,11 @@
 import {
     VolumeNode, ContentNode,
     Span, AttributeName, ParagraphNode, CompoundSpan,
-} from '../bookFormat';
-import {
     isChapter, isParagraph, paragraphNode, isSimple,
     isAttributed, isFootnote, compoundSpan, isCompound,
-    assertNever,
     isImage,
-} from '../utils';
+} from 'booka-common';
+import { assertNever } from '../utils';
 import { logger } from '../log';
 
 export function optimizeVolume(book: VolumeNode): VolumeNode {

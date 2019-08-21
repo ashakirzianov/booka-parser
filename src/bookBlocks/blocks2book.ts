@@ -5,10 +5,10 @@ import {
 } from './block';
 import {
     ContentNode, Span, ChapterNode, VolumeNode, BookMeta,
-} from '../bookFormat';
+    compoundSpan, assign,
+} from 'booka-common';
 import {
     flatten, filterUndefined, assertNever,
-    compoundSpan, assign,
 } from '../utils';
 import { ParserDiagnoser } from '../log';
 
