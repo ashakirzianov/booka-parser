@@ -1,11 +1,19 @@
-import { WithDiagnostics, ParserDiagnoser } from '../log';
-import { XmlNode, XmlNodeElement, isElement, XmlParser } from '../xml';
-import { EpubBook, EpubSource } from './epubParser';
-import { Block } from '../bookBlocks';
-import { VolumeNode } from '../bookFormat';
+import { ParserDiagnostic } from '../log';
+import { EpubBook, EpubSource, Image } from './epubParser';
+import { VolumeNode } from 'booka-common';
+import { NodeHandler } from './nodeHandler';
 
+export type EpubConverterResult = {
+    success: true,
+    volume: VolumeNode,
+    diagnostics: ParserDiagnostic[],
+    resolveImage(id: string): Promise<Image | undefined>,
+} | {
+    success: false,
+    diagnostics: ParserDiagnostic[],
+};
 export type EpubConverter = {
-    convertEpub: (epub: EpubBook) => Promise<WithDiagnostics<VolumeNode>>,
+    convertEpub: (epub: EpubBook) => Promise<EpubConverterResult>,
 };
 
 export type EpubConverterParameters = {
@@ -13,50 +21,9 @@ export type EpubConverterParameters = {
 };
 
 export type EpubConverterOptionsTable = {
-    [key in EpubSource]: EpubConverterOptions;
+    [key in EpubSource]: EpubConverterHooks;
 };
 
-export type EpubConverterOptions = {
-    nodeHooks: EpubConverterNodeHook[],
+export type EpubConverterHooks = {
+    nodeHooks: NodeHandler[],
 };
-
-export type EpubConverterHookEnv = {
-    ds: ParserDiagnoser,
-    node2blocks: (x: XmlNode) => Block[],
-    filePath: string,
-};
-export type EpubConverterHookResult = Block[] | undefined;
-export type EpubConverterNodeHook = (x: XmlNode, env: EpubConverterHookEnv) => EpubConverterHookResult;
-
-export function element2block(hook: (el: XmlNodeElement, ds: ParserDiagnoser) => (Block | undefined)): EpubConverterNodeHook {
-    return (node, env) => {
-        if (!isElement(node)) {
-            return undefined;
-        }
-
-        const result = hook(node, env.ds);
-        return result ? [result] : undefined;
-    };
-}
-
-export function parserHook(buildParser: (env: EpubConverterHookEnv) => XmlParser<Block[]>): EpubConverterNodeHook {
-    return (node, env) => {
-        const parser = buildParser(env);
-        const result = parser([node]);
-
-        return result.success
-            ? result.value
-            : undefined;
-    };
-}
-
-export function applyHooks(x: XmlNode, hooks: EpubConverterNodeHook[], env: EpubConverterHookEnv): Block[] | undefined {
-    for (const hook of hooks) {
-        const hooked = hook(x, env);
-        if (hooked) {
-            return hooked;
-        }
-    }
-
-    return undefined;
-}

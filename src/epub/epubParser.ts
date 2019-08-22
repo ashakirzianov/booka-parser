@@ -1,10 +1,13 @@
 import { XmlNode } from '../xml';
 
-type Image = any; // TODO: actual image type
+export type Image = {
+    buffer: Buffer,
+    mimeType?: string,
+};
 export type EpubCollection<T> = AsyncIterableIterator<T>;
 
 export type EpubSection = {
-    fileName: string,
+    filePath: string,
     id: string,
     content: XmlNode,
 };
@@ -12,6 +15,7 @@ export type EpubSection = {
 export type EpubMetadata = {
     title?: string,
     author?: string,
+    cover?: string,
 };
 
 export type EpubSource = 'fb2epub' | 'fictionBookEditor' | 'unknown';
@@ -31,7 +35,7 @@ export function resolveEpubSource<EpubType>(epub: EpubType, resolver: EpubSource
 export type EpubBook = {
     source: EpubSource,
     metadata: EpubMetadata,
-    imageResolver(id: string): Image | undefined,
+    imageResolver(id: string): Promise<Image | undefined>,
     sections(): EpubCollection<EpubSection>,
 };
 

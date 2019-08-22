@@ -66,5 +66,9 @@ dist/**/*
 # ignore public cache
 public/cache/**/*
 
+# Keys
 server.key
 server.crt
+
+# epub examples
+epub/*

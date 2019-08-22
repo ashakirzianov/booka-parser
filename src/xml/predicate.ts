@@ -37,7 +37,7 @@ export function keyValuePred<T>() {
             const arr = c.value;
             return (input: any) => {
                 const inspected: any = input !== undefined ? input[c.key] : undefined;
-                return equalsToOneOf(inspected, ...arr)
+                return equalsToOneOf(inspected, arr)
                     ? predSucc(input)
                     : predFail(`'${input}.${c.key}=${inspected}', expected to be one of [${c.value}]`);
             };

@@ -17,6 +17,7 @@
         "Combinators",
         "Cond",
         "Diagnoser",
+        "Epubs",
         "Metas",
         "Shakirzianov",
         "Subnodes",
@@ -47,6 +48,7 @@
         "upsert",
         "whitespaced",
         "xlink",
+        "xlinkhref",
         "xmlns",
         "zipfile"
     ],

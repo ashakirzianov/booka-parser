@@ -1,7 +1,8 @@
-import { EpubConverterOptions, element2block } from './epubConverter';
+import { EpubConverterHooks } from './epubConverter';
 import { isTextNode, isElement, XmlNodeWithChildren } from '../xml';
+import { handleElement } from './nodeHandler';
 
-export const fictionBookEditorHooks: EpubConverterOptions = {
+export const fictionBookEditorHooks: EpubConverterHooks = {
     nodeHooks: [
         titleElement(),
     ],
@@ -23,7 +24,7 @@ function titleElement() {
         return result;
     }
 
-    return element2block(el => {
+    return handleElement(el => {
         if (el.name !== 'div') {
             return undefined;
         }

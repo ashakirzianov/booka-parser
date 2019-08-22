@@ -1,11 +1,6 @@
 import { XmlNode, XmlNodeElement } from './xml';
 import { Block } from './bookBlocks';
 
-export type WithDiagnostics<T> = {
-    value: T,
-    diagnostics: ParserDiagnoser,
-};
-
 export function diagnoser(context: ParserContext): ParserDiagnoser {
     return new ParserDiagnoser(context);
 }
@@ -18,6 +13,10 @@ export class ParserDiagnoser {
     public add(diag: ParserDiagnostic) {
         this.diags.push(diag);
     }
+
+    public all() {
+        return this.diags;
+    }
 }
 
 export type ParserContext =
@@ -27,6 +26,9 @@ export type ParserContext =
 type Context<K extends string> = { context: K };
 
 export type ParserDiagnostic =
+    | NodeDiag<'node-other'> & { message: string }
+    | NodeDiag<'img-must-have-src'>
+    | NodeDiag<'image-must-have-xlinkhref'>
     | NodeDiag<'link-must-have-ref'>
     | NodeDiag<'unexpected-node'> & { context?: 'title' }
     | Diag<'no-title'> & { nodes: XmlNode[] }

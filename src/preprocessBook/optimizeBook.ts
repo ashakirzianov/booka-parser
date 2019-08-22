@@ -1,12 +1,11 @@
 import {
     VolumeNode, ContentNode,
     Span, AttributeName, ParagraphNode, CompoundSpan,
-} from '../bookFormat';
-import {
     isChapter, isParagraph, paragraphNode, isSimple,
     isAttributed, isFootnote, compoundSpan, isCompound,
-    assertNever,
-} from '../utils';
+    isImage,
+} from 'booka-common';
+import { assertNever } from '../utils';
 import { logger } from '../log';
 
 export function optimizeVolume(book: VolumeNode): VolumeNode {
@@ -36,8 +35,11 @@ function optimizeNode(node: ContentNode): ContentNode {
         };
     } else if (isParagraph(node)) {
         return optimizeParagraph(node);
+    } else if (isImage(node)) {
+        return node;
     } else {
-        return assertNever(node);
+        assertNever(node);
+        return node;
     }
 }
 

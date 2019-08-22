@@ -14,8 +14,33 @@ export function createEpubParser(xmlParser: (text: string) => (XmlNodeDocument |
                 metadata: {
                     title: epub.metadata.title,
                     author: epub.metadata.creator,
+                    cover: getCoverRef(epub),
                 },
-                imageResolver: () => undefined,
+                imageResolver: async href => {
+                    // const root = 'OPS/';
+                    // const path = root + href;
+                    // return new Promise((res, rej) => {
+                    //     epub.readFile(path, undefined, (err: any, data: any) => {
+                    //         if (err) {
+                    //             rej(err);
+                    //         } else {
+                    //             res({
+                    //                 buffer: data,
+                    //             });
+                    //         }
+                    //     });
+                    // });
+
+                    const idItem = epub.listImage().find(item => item.href && item.href.endsWith(href));
+                    if (!idItem || !idItem.id) {
+                        return undefined;
+                    }
+                    const [buffer, mimeType] = await epub.getImageAsync(idItem.id);
+                    return {
+                        buffer,
+                        mimeType,
+                    };
+                },
                 sections: async function* () {
                     for (const el of epub.flow) {
                         if (el.id && el.href) {
@@ -28,7 +53,7 @@ export function createEpubParser(xmlParser: (text: string) => (XmlNodeDocument |
                             if (node) {
                                 const section: EpubSection = {
                                     id: el.id,
-                                    fileName: href,
+                                    filePath: href,
                                     content: node,
                                 };
                                 yield section;
@@ -59,6 +84,18 @@ class FixedEpub extends EPub {
     chapterForId(id: string): Promise<string> {
         return this.getChapterRawAsync(id);
     }
+}
+
+function getCoverRef(epub: EPub): string | undefined {
+    const coverId = epub.metadata.cover;
+    if (coverId) {
+        const coverItem = epub.listImage().find(item => item.id === coverId);
+        if (coverItem) {
+            return coverItem.href;
+        }
+    }
+
+    return undefined;
 }
 
 function identifySource(epub: EPub): EpubSource {

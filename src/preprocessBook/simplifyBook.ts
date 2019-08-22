@@ -1,11 +1,11 @@
 import {
     VolumeNode, ContentNode, ChapterNode, ParagraphNode,
     Span,
-} from '../bookFormat';
+    isChapter, isParagraph, isSimple, isAttributed,
+    isFootnote, isCompound, isImage,
+} from 'booka-common';
 import {
     filterUndefined, assertNever, isWhitespaces,
-    isChapter, isParagraph, isSimple, isAttributed,
-    isFootnote, isCompound,
 } from '../utils';
 
 export function simplifyVolume(volume: VolumeNode): VolumeNode {
@@ -25,8 +25,11 @@ function simplifyNode(node: ContentNode): ContentNode | undefined {
         return simplifyChapter(node);
     } else if (isParagraph(node)) {
         return simplifyParagraph(node);
+    } else if (isImage(node)) {
+        return node;
     } else {
-        return assertNever(node);
+        assertNever(node);
+        return node;
     }
 }
 
