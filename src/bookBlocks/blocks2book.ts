@@ -4,8 +4,8 @@ import {
     BookCoverBlock,
 } from './block';
 import {
-    ContentNode, Span, ChapterNode, VolumeNode, BookMeta,
-    compoundSpan, assign,
+    BookContentNode, Span, ChapterNode, VolumeNode, BookMeta,
+    assign,
 } from 'booka-common';
 import {
     flatten, filterUndefined, assertNever,
@@ -47,8 +47,8 @@ function collectMeta(blocks: Block[]): Partial<BookMeta> {
     const coverBlock = blocks.find((b): b is BookCoverBlock => b.block === 'cover');
     if (coverBlock) {
         result.coverImageId = {
-            kind: 'image',
-            reference: coverBlock.reference,
+            ref: 'image',
+            id: coverBlock.reference,
         };
     }
 
@@ -153,7 +153,7 @@ function buildChapters(blocks: Block[], env: Env) {
     return nodes;
 }
 
-function buildChaptersImpl(blocks: Block[], level: number | undefined, env: Env): { nodes: ContentNode[], next: Block[] } {
+function buildChaptersImpl(blocks: Block[], level: number | undefined, env: Env): { nodes: BookContentNode[], next: Block[] } {
     if (blocks.length === 0) {
         return { nodes: [], next: [] };
     }
@@ -169,7 +169,7 @@ function buildChaptersImpl(blocks: Block[], level: number | undefined, env: Env)
             };
             const after = buildChaptersImpl(content.next, level, env);
             return {
-                nodes: [chapter as ContentNode].concat(after.nodes),
+                nodes: [chapter as BookContentNode].concat(after.nodes),
                 next: after.next,
             };
         } else {
@@ -188,14 +188,14 @@ function buildChaptersImpl(blocks: Block[], level: number | undefined, env: Env)
     }
 }
 
-function nodeFromBlock(block: Block, env: Env): ContentNode | undefined {
+function nodeFromBlock(block: Block, env: Env): BookContentNode | undefined {
     switch (block.block) {
         case 'image':
             return {
                 node: 'image',
-                id: {
-                    kind: 'image',
-                    reference: block.reference,
+                ref: {
+                    ref: 'image',
+                    id: block.reference,
                 },
             };
         case 'text':
@@ -215,7 +215,10 @@ function nodeFromBlock(block: Block, env: Env): ContentNode | undefined {
                 .map(c => spanFromBlock(c, env)));
             return {
                 node: 'paragraph',
-                span: compoundSpan(spans),
+                span: {
+                    span: 'compound',
+                    spans: spans,
+                },
             };
         default:
             env.ds.add({ diag: 'unexpected-block', block });
@@ -262,7 +265,10 @@ function spanFromBlock(block: Block, env: Env): Span | undefined {
             }
         case 'container':
             const spans = filterUndefined(block.content.map(c => spanFromBlock(c, env)));
-            return compoundSpan(spans);
+            return {
+                span: 'compound',
+                spans: spans,
+            };
         case 'footnote-candidate':
             return spanFromBlock(block.content, env);
         case 'ignore': case 'book-author':
