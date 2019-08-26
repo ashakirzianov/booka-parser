@@ -1,8 +1,8 @@
 import {
-    VolumeNode, ContentNode, ChapterNode, ParagraphNode,
+    VolumeNode, BookContentNode, ChapterNode, ParagraphNode,
     Span,
-    isChapter, isParagraph, isSimple, isAttributed,
-    isFootnote, isCompound, isImage,
+    isChapter, isParagraph, isImage,
+    isSimpleSpan, isAttributedSpan, isFootnoteSpan, isCompoundSpan,
 } from 'booka-common';
 import {
     filterUndefined, assertNever, isWhitespaces,
@@ -16,11 +16,11 @@ export function simplifyVolume(volume: VolumeNode): VolumeNode {
     };
 }
 
-function simplifyNodes(nodes: ContentNode[]): ContentNode[] {
+function simplifyNodes(nodes: BookContentNode[]): BookContentNode[] {
     return filterUndefined(nodes.map(simplifyNode));
 }
 
-function simplifyNode(node: ContentNode): ContentNode | undefined {
+function simplifyNode(node: BookContentNode): BookContentNode | undefined {
     if (isChapter(node)) {
         return simplifyChapter(node);
     } else if (isParagraph(node)) {
@@ -33,7 +33,7 @@ function simplifyNode(node: ContentNode): ContentNode | undefined {
     }
 }
 
-function simplifyChapter(chapter: ChapterNode): ContentNode | undefined {
+function simplifyChapter(chapter: ChapterNode): BookContentNode | undefined {
     const nodes = simplifyNodes(chapter.nodes);
     return nodes.length === 0
         ? undefined
@@ -43,7 +43,7 @@ function simplifyChapter(chapter: ChapterNode): ContentNode | undefined {
         };
 }
 
-function simplifyParagraph(paragraph: ParagraphNode): ContentNode | undefined {
+function simplifyParagraph(paragraph: ParagraphNode): BookContentNode | undefined {
     const span = simplifySpan(paragraph.span);
     return span === undefined
         ? undefined
@@ -54,11 +54,11 @@ function simplifyParagraph(paragraph: ParagraphNode): ContentNode | undefined {
 }
 
 function simplifySpan(span: Span): Span | undefined {
-    if (isSimple(span)) {
+    if (isSimpleSpan(span)) {
         return isWhitespaces(span)
             ? undefined
             : span;
-    } else if (isAttributed(span)) {
+    } else if (isAttributedSpan(span)) {
         const content = simplifySpan(span.content);
         return content === undefined
             ? undefined
@@ -66,9 +66,9 @@ function simplifySpan(span: Span): Span | undefined {
                 ...span,
                 content,
             };
-    } else if (isFootnote(span)) {
+    } else if (isFootnoteSpan(span)) {
         return span;
-    } else if (isCompound(span)) {
+    } else if (isCompoundSpan(span)) {
         const spans = filterUndefined(span.spans.map(simplifySpan));
         return spans.length === 0
             ? undefined

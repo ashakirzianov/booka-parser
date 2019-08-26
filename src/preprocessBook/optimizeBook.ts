@@ -1,9 +1,8 @@
 import {
-    VolumeNode, ContentNode,
+    VolumeNode, BookContentNode,
     Span, AttributeName, ParagraphNode, CompoundSpan,
-    isChapter, isParagraph, paragraphNode, isSimple,
-    isAttributed, isFootnote, compoundSpan, isCompound,
-    isImage,
+    isChapter, isParagraph, isImage,
+    isSimpleSpan, isAttributedSpan, isFootnoteSpan, isCompoundSpan,
 } from 'booka-common';
 import { assertNever } from '../utils';
 import { logger } from '../log';
@@ -23,11 +22,11 @@ export function optimizeVolume(book: VolumeNode): VolumeNode {
     return optimized;
 }
 
-function optimizeNodes(nodes: ContentNode[]) {
+function optimizeNodes(nodes: BookContentNode[]) {
     return nodes.map(optimizeNode);
 }
 
-function optimizeNode(node: ContentNode): ContentNode {
+function optimizeNode(node: BookContentNode): BookContentNode {
     if (isChapter(node)) {
         return {
             ...node,
@@ -43,7 +42,7 @@ function optimizeNode(node: ContentNode): ContentNode {
     }
 }
 
-function optimizeParagraph(p: ParagraphNode): ContentNode {
+function optimizeParagraph(p: ParagraphNode): BookContentNode {
     const optimized = optimizeSpan(p.span);
 
     // Handle case of single string attributed with 'line'
@@ -55,19 +54,22 @@ function optimizeParagraph(p: ParagraphNode): ContentNode {
     //         }
     //     }
     // }
-    return paragraphNode(optimized);
+    return {
+        node: 'paragraph',
+        span: optimized,
+    };
 }
 
 function optimizeSpan(span: Span): Span {
-    if (isSimple(span)) {
+    if (isSimpleSpan(span)) {
         return span;
-    } else if (isAttributed(span)) {
+    } else if (isAttributedSpan(span)) {
         const optimizedContent = optimizeSpan(span.content);
         return {
             ...span,
             content: optimizedContent,
         };
-    } else if (isFootnote(span)) {
+    } else if (isFootnoteSpan(span)) {
         const content = optimizeSpan(span.content);
         const footnote = optimizeSpan(span.footnote);
         return {
@@ -75,7 +77,7 @@ function optimizeSpan(span: Span): Span {
             content,
             footnote,
         };
-    } else if (isCompound(span)) {
+    } else if (isCompoundSpan(span)) {
         return optimizeCompound(span);
     } else {
         return assertNever(span);
@@ -88,16 +90,22 @@ function optimizeCompound(compound: CompoundSpan): Span {
         if (res.length > 0) {
             const prev = res[res.length - 1];
             let toReplace: Span | undefined;
-            if (isSimple(prev)) {
-                if (isSimple(optimized)) {
+            if (isSimpleSpan(prev)) {
+                if (isSimpleSpan(optimized)) {
                     toReplace = prev + optimized;
                 }
-            } else if (isAttributed(prev)) {
-                if (isAttributed(optimized) && sameAttrs(prev.attrs, optimized.attrs)) {
-                    toReplace = compoundSpan([prev.content, optimized.content]);
+            } else if (isAttributedSpan(prev)) {
+                if (isAttributedSpan(optimized) && sameAttrs(prev.attrs, optimized.attrs)) {
+                    toReplace = {
+                        span: 'compound',
+                        spans: [prev.content, optimized.content],
+                    };
                 }
-            } else if (isCompound(prev) && isCompound(optimized)) {
-                toReplace = compoundSpan([prev, optimized]);
+            } else if (isCompoundSpan(prev) && isCompoundSpan(optimized)) {
+                toReplace = {
+                    span: 'compound',
+                    spans: [prev, optimized],
+                };
             }
 
             if (toReplace === undefined) {
@@ -114,7 +122,10 @@ function optimizeCompound(compound: CompoundSpan): Span {
     if (spans.length === 1) {
         return spans[0];
     } else {
-        return compoundSpan(spans);
+        return {
+            span: 'compound',
+            spans: spans,
+        };
     }
 }
 
