@@ -24,7 +24,11 @@ export type EpubConverterOptionsTable = {
     [key in EpubKind]: EpubConverterHooks;
 };
 
-export type MetadataHook = (meta: EpubMetadata, ds: ParserDiagnoser) => KnownTag[];
+export type MetadataRecord = {
+    key: string,
+    value: any,
+};
+export type MetadataHook = (meta: MetadataRecord, ds: ParserDiagnoser) => KnownTag[] | undefined;
 export type EpubConverterHooks = {
     nodeHooks: NodeHandler[],
     metadataHooks: MetadataHook[],

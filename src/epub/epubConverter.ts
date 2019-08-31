@@ -7,7 +7,7 @@ import {
     AsyncIter, isWhitespaces, flatten,
 } from '../utils';
 import { Block, ContainerBlock, blocks2book } from '../bookBlocks';
-import { EpubConverterParameters, EpubConverter, EpubConverterResult, MetadataHook } from './epubConverter.types';
+import { EpubConverterParameters, EpubConverter, EpubConverterResult, MetadataHook, MetadataRecord } from './epubConverter.types';
 import { ParserDiagnoser, diagnoser } from '../log';
 import {
     NodeHandlerEnv, handleNode, constrainElement,
@@ -280,11 +280,25 @@ function extractTitle(nodes: XmlNode[], ds: ParserDiagnoser): ChapterTitle {
     return lines;
 }
 
+function defaultMetadataHook(meta: MetadataRecord): KnownTag[] | undefined {
+    return undefined;
+}
+
 function buildTags(epub: EpubBook, metadataHooks: MetadataHook[], ds: ParserDiagnoser): KnownTag[] {
-    const result = metadataHooks.reduce(
-        (tags, hook) => tags.concat(hook(epub.metadata, ds)),
-        [] as KnownTag[],
-    );
+    const allHooks = metadataHooks.concat(defaultMetadataHook);
+    const result: KnownTag[] = [];
+    for (const [key, value] of Object.entries(epub.metadata)) {
+        const record = { key, value };
+        const tags = allHooks.reduce<KnownTag[] | undefined>(
+            (res, hook) => res || hook(record, ds),
+            undefined,
+        );
+        if (!tags) {
+            ds.add({ diag: 'unknown-meta', key, value });
+        } else {
+            result.push(...tags);
+        }
+    }
 
     return result;
 }
