@@ -101,6 +101,16 @@ function identifyKind(epub: EPub): EpubKind {
 }
 
 const kindResolver: EpubKindResolver<EPub> = {
+    gutenberg: epub => {
+        const rawMetadata = getRawData(epub.metadata) as any;
+        if (!rawMetadata) {
+            return false;
+        }
+
+        const source = rawMetadata['dc:source'];
+        return typeof source === 'string'
+            && source.startsWith('http://www.gutenberg.org');
+    },
     fb2epub: epub => {
         const rawMetadata = getRawData(epub.metadata) as any;
         if (!rawMetadata) {

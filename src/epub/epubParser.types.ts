@@ -21,7 +21,10 @@ export type EpubMetadata = {
     },
 };
 
-export type EpubKind = 'fb2epub' | 'fictionBookEditor' | 'unknown';
+export type EpubKind =
+    | 'fb2epub' | 'fictionBookEditor' | 'gutenberg'
+    | 'unknown'
+    ;
 export type EpubKindResolver<EpubType> = {
     [key in Exclude<EpubKind, 'unknown'>]: (epub: EpubType) => boolean;
 };
