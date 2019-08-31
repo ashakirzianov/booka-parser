@@ -1,5 +1,5 @@
 import { EPub } from 'epub2';
-import { EpubParser, EpubBook, EpubSection, EpubSource, EpubSourceResolver, resolveEpubSource } from './epubParser.types';
+import { EpubParser, EpubBook, EpubSection, EpubKind, EpubKindResolver, resolveEpubKind } from './epubParser.types';
 import { XmlNodeDocument } from '../xml';
 import { last } from '../utils';
 
@@ -8,9 +8,9 @@ export function createEpubParser(xmlParser: (text: string) => (XmlNodeDocument |
         async parseFile(filePath): Promise<EpubBook> {
             const epub = await FixedEpub.createAsync(filePath) as FixedEpub;
 
-            const source = identifySource(epub);
+            const kind = identifyKind(epub);
             return {
-                source,
+                kind: kind,
                 metadata: {
                     title: epub.metadata.title,
                     author: epub.metadata.creator,
@@ -95,11 +95,11 @@ function getCoverRef(epub: EPub): string | undefined {
     return undefined;
 }
 
-function identifySource(epub: EPub): EpubSource {
-    return resolveEpubSource(epub, sourceResolver);
+function identifyKind(epub: EPub): EpubKind {
+    return resolveEpubKind(epub, kindResolver);
 }
 
-const sourceResolver: EpubSourceResolver<EPub> = {
+const kindResolver: EpubKindResolver<EPub> = {
     fb2epub: epub => {
         const rawMetadata = getRawData(epub.metadata) as any;
         if (!rawMetadata) {

@@ -23,11 +23,11 @@ export function createConverter(params: EpubConverterParameters): EpubConverter 
 async function convertEpub(epub: EpubBook, params: EpubConverterParameters): Promise<EpubConverterResult> {
     const ds = diagnoser({ context: 'epub', title: epub.metadata.title });
     try {
-        if (epub.source === 'unknown') {
-            ds.add({ diag: 'unknown-source' });
+        if (epub.kind === 'unknown') {
+            ds.add({ diag: 'unknown-kind' });
         }
 
-        const hooks = params.options[epub.source];
+        const hooks = params.options[epub.kind];
         const sections = await AsyncIter.toArray(epub.sections());
         const blocks = sections2blocks(sections, hooks.nodeHooks, ds);
         const metaBlocks = buildMetaBlocks(epub);
@@ -41,7 +41,7 @@ async function convertEpub(epub: EpubBook, params: EpubConverterParameters): Pro
         return {
             success: true,
             volume: book,
-            source: epub.source,
+            kind: epub.kind,
             diagnostics: ds.all(),
         };
     } catch {

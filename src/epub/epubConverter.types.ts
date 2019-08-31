@@ -1,12 +1,12 @@
 import { ParserDiagnostic } from '../log';
-import { EpubBook, EpubSource } from './epubParser.types';
+import { EpubBook, EpubKind } from './epubParser.types';
 import { VolumeNode } from 'booka-common';
 import { NodeHandler } from './nodeHandler';
 
 export type EpubConverterResult = {
     success: true,
     volume: VolumeNode,
-    source: EpubSource,
+    kind: EpubKind,
     diagnostics: ParserDiagnostic[],
 } | {
     success: false,
@@ -21,7 +21,7 @@ export type EpubConverterParameters = {
 };
 
 export type EpubConverterOptionsTable = {
-    [key in EpubSource]: EpubConverterHooks;
+    [key in EpubKind]: EpubConverterHooks;
 };
 
 export type EpubConverterHooks = {

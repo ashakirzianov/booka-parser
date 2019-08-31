@@ -18,14 +18,14 @@ export type EpubMetadata = {
     cover?: string,
 };
 
-export type EpubSource = 'fb2epub' | 'fictionBookEditor' | 'unknown';
-export type EpubSourceResolver<EpubType> = {
-    [key in Exclude<EpubSource, 'unknown'>]: (epub: EpubType) => boolean;
+export type EpubKind = 'fb2epub' | 'fictionBookEditor' | 'unknown';
+export type EpubKindResolver<EpubType> = {
+    [key in Exclude<EpubKind, 'unknown'>]: (epub: EpubType) => boolean;
 };
-export function resolveEpubSource<EpubType>(epub: EpubType, resolver: EpubSourceResolver<EpubType>): EpubSource {
-    for (const [source, predicate] of Object.entries(resolver)) {
+export function resolveEpubKind<EpubType>(epub: EpubType, resolver: EpubKindResolver<EpubType>): EpubKind {
+    for (const [kind, predicate] of Object.entries(resolver)) {
         if (predicate(epub)) {
-            return source as EpubSource;
+            return kind as EpubKind;
         }
     }
 
@@ -33,7 +33,7 @@ export function resolveEpubSource<EpubType>(epub: EpubType, resolver: EpubSource
 }
 
 export type EpubBook = {
-    source: EpubSource,
+    kind: EpubKind,
     metadata: EpubMetadata,
     imageResolver(id: string): Promise<Buffer | undefined>,
     sections(): EpubCollection<EpubSection>,

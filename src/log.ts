@@ -38,7 +38,7 @@ export type ParserDiagnostic =
     | BlockDiag<'unexpected-block'>
     | BlockDiag<'couldnt-build-span'> & { context: 'attr' | 'footnote' }
     | Diag<'couldnt-resolve-ref'> & { id: string }
-    | Diag<'unknown-source'>
+    | Diag<'unknown-kind'>
     ;
 
 type Diag<K extends string> = {
