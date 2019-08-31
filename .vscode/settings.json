@@ -53,5 +53,5 @@
         "zipfile"
     ],
     "typescript.preferences.importModuleSpecifier": "relative",
-    "editor.wordWrap": "wordWrapColumn",
+    "editor.wordWrap": "bounded",
 }
