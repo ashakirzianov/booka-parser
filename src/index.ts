@@ -11,20 +11,13 @@ export type ParsingOptions = {
 export async function parseEpubAtPath(path: string, options?: ParsingOptions): Promise<ParsingResult> {
     const converterResult = await parsePath(path);
     if (converterResult.success) {
-        const book: Book = {
-            volume: converterResult.volume,
-            source: {
-                source: 'epub',
-                kind: converterResult.kind,
-            },
-        };
-        const preprocessed = await preprocessBook(book, {
+        const preprocessed = await preprocessBook(converterResult.book, {
             storeBuffer: options && options.storeImages,
         });
 
         return {
             ...converterResult,
-            volume: preprocessed.volume,
+            book: preprocessed,
         };
     } else {
         return converterResult;

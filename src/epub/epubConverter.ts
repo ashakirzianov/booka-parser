@@ -1,5 +1,5 @@
+import { ChapterTitle, Book } from 'booka-common';
 import { EpubBook, EpubSection } from './epubParser.types';
-import { ChapterTitle } from 'booka-common';
 import {
     isElement, XmlNodeElement, XmlNode, childForPath,
 } from '../xml';
@@ -33,14 +33,21 @@ async function convertEpub(epub: EpubBook, params: EpubConverterParameters): Pro
         const metaBlocks = buildMetaBlocks(epub);
         const allBlocks = blocks.concat(metaBlocks);
 
-        const book = await blocks2book(allBlocks, {
+        const volume = await blocks2book(allBlocks, {
             ds,
             resolveImageRef: epub.imageResolver,
         });
+        const book: Book = {
+            volume,
+            source: {
+                source: 'epub',
+                kind: epub.kind,
+            },
+        };
 
         return {
             success: true,
-            volume: book,
+            book: book,
             kind: epub.kind,
             diagnostics: ds.all(),
         };

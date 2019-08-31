@@ -30,7 +30,7 @@ async function exec() {
         }
         console.log(`---- ${epubPath}:`);
         console.log('Meta:');
-        console.log(result.volume.meta);
+        console.log(result.book.volume.meta);
         if (result.diagnostics.length > 0) {
             console.log('Diagnostics:');
             console.log(result.diagnostics);

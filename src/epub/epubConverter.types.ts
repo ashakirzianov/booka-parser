@@ -1,11 +1,11 @@
+import { Book } from 'booka-common';
 import { ParserDiagnostic } from '../log';
 import { EpubBook, EpubKind } from './epubParser.types';
-import { VolumeNode } from 'booka-common';
 import { NodeHandler } from './nodeHandler';
 
 export type EpubConverterResult = {
     success: true,
-    volume: VolumeNode,
+    book: Book,
     kind: EpubKind,
     diagnostics: ParserDiagnostic[],
 } | {
