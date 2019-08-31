@@ -41,7 +41,7 @@ async function convertEpub(epub: EpubBook, params: EpubConverterParameters): Pro
         return {
             success: true,
             volume: book,
-            resolveImage: epub.imageResolver,
+            source: epub.source,
             diagnostics: ds.all(),
         };
     } catch {

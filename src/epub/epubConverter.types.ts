@@ -1,13 +1,13 @@
 import { ParserDiagnostic } from '../log';
-import { EpubBook, EpubSource, Image } from './epubParser.types';
+import { EpubBook, EpubSource } from './epubParser.types';
 import { VolumeNode } from 'booka-common';
 import { NodeHandler } from './nodeHandler';
 
 export type EpubConverterResult = {
     success: true,
     volume: VolumeNode,
+    source: EpubSource,
     diagnostics: ParserDiagnostic[],
-    resolveImage(id: string): Promise<Buffer | undefined>,
 } | {
     success: false,
     diagnostics: ParserDiagnostic[],
