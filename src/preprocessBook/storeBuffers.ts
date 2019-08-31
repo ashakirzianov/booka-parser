@@ -1,10 +1,12 @@
 import { VolumeNode, BookContentNode, ImageDataNode, ImageUrlNode, ImageNode } from 'booka-common';
 import { filterUndefined } from '../utils';
 
-export type StoreBufferFn = (buffer: Buffer, id: string) => Promise<string | undefined>;
+export type StoreBufferFn = (buffer: Buffer, id: string, title: string) => Promise<string | undefined>;
 export async function storeBuffers(volume: VolumeNode, fn: StoreBufferFn): Promise<VolumeNode> {
     const env: StoreBufferEnv = {
-        fn, resolved: {},
+        title: volume.meta.title,
+        fn,
+        resolved: {},
     };
     const processed = await processNodes(volume.nodes, env);
     const coverImageNode = volume.meta.coverImageNode && await resolveImageData(volume.meta.coverImageNode, env);
@@ -19,6 +21,7 @@ export async function storeBuffers(volume: VolumeNode, fn: StoreBufferFn): Promi
 }
 
 type StoreBufferEnv = {
+    title: string,
     fn: StoreBufferFn,
     resolved: {
         [key: string]: string | undefined,
@@ -50,7 +53,7 @@ async function resolveImageData(node: ImageNode, env: StoreBufferEnv): Promise<I
     }
 
     const stored = env.resolved[node.id];
-    const url = stored || await env.fn(node.data, node.id);
+    const url = stored || await env.fn(node.data, node.id, env.title);
     if (url) {
         env.resolved[node.id] = url;
         return {
