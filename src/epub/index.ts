@@ -3,8 +3,8 @@ import { createConverter } from './converter';
 import { converterHooks } from './hooks';
 import { string2tree } from '../xml';
 
-export { EpubConverterResult } from './epubConverter';
-export { Image } from './epubParser';
+export { EpubConverterResult } from './epubConverter.types';
+export { Image } from './epubParser.types';
 
 export async function parsePath(path: string) {
     const parser = createEpubParser(string2tree);

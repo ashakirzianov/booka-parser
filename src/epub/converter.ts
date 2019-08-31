@@ -1,4 +1,4 @@
-import { EpubBook, EpubSection } from './epubParser';
+import { EpubBook, EpubSection } from './epubParser.types';
 import { ChapterTitle } from 'booka-common';
 import {
     isElement, XmlNodeElement, XmlNode, childForPath,
@@ -7,7 +7,7 @@ import {
     AsyncIter, isWhitespaces, flatten,
 } from '../utils';
 import { Block, ContainerBlock, blocks2book } from '../bookBlocks';
-import { EpubConverterParameters, EpubConverter, EpubConverterResult } from './epubConverter';
+import { EpubConverterParameters, EpubConverter, EpubConverterResult } from './epubConverter.types';
 import { ParserDiagnoser, diagnoser } from '../log';
 import {
     NodeHandlerEnv, handleNode, constrainElement,

@@ -1,6 +1,6 @@
 import {
     EpubConverterHooks,
-} from './epubConverter';
+} from './epubConverter.types';
 import {
     nameChildren, textNode, nameAttrsChildren, some,
     translate, headNode, nameAttrs, choice,

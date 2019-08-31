@@ -1,4 +1,4 @@
-import { EpubConverterHooks } from './epubConverter';
+import { EpubConverterHooks } from './epubConverter.types';
 import { isTextNode, isElement, XmlNodeWithChildren } from '../xml';
 import { handleElement } from './nodeHandler';
 

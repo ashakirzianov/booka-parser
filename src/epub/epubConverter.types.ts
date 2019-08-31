@@ -1,5 +1,5 @@
 import { ParserDiagnostic } from '../log';
-import { EpubBook, EpubSource, Image } from './epubParser';
+import { EpubBook, EpubSource, Image } from './epubParser.types';
 import { VolumeNode } from 'booka-common';
 import { NodeHandler } from './nodeHandler';
 

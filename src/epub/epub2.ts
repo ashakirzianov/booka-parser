@@ -1,5 +1,5 @@
 import { EPub } from 'epub2';
-import { EpubParser, EpubBook, EpubSection, EpubSource, EpubSourceResolver, resolveEpubSource } from './epubParser';
+import { EpubParser, EpubBook, EpubSection, EpubSource, EpubSourceResolver, resolveEpubSource } from './epubParser.types';
 import { XmlNodeDocument } from '../xml';
 import { last } from '../utils';
 
