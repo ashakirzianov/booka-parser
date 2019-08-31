@@ -16,6 +16,9 @@ export type EpubMetadata = {
     title?: string,
     author?: string,
     cover?: string,
+    raw: {
+        [key: string]: string | undefined;
+    },
 };
 
 export type EpubKind = 'fb2epub' | 'fictionBookEditor' | 'unknown';

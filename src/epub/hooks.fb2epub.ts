@@ -21,6 +21,7 @@ export const fb2epubHooks: EpubConverterHooks = {
         footnoteSection(),
         titlePage(),
     ],
+    metadataHooks: [],
 };
 
 function ignoreClass(className: string) {

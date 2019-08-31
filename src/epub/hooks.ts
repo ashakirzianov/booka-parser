@@ -7,5 +7,6 @@ export const converterHooks: EpubConverterOptionsTable = {
     fictionBookEditor: fictionBookEditorHooks,
     unknown: {
         nodeHooks: [],
+        metadataHooks: [],
     },
 };

@@ -6,6 +6,7 @@ export const fictionBookEditorHooks: EpubConverterHooks = {
     nodeHooks: [
         titleElement(),
     ],
+    metadataHooks: [],
 };
 
 function titleElement() {

@@ -1,4 +1,4 @@
-import { EPub } from 'epub2';
+import { EPub, SYMBOL_RAW_DATA } from 'epub2';
 import { EpubParser, EpubBook, EpubSection, EpubKind, EpubKindResolver, resolveEpubKind } from './epubParser.types';
 import { XmlNodeDocument } from '../xml';
 import { last } from '../utils';
@@ -15,6 +15,7 @@ export function createEpubParser(xmlParser: (text: string) => (XmlNodeDocument |
                     title: epub.metadata.title,
                     author: epub.metadata.creator,
                     cover: getCoverRef(epub),
+                    raw: epub.metadata,
                 },
                 imageResolver: async href => {
                     // const root = 'OPS/';

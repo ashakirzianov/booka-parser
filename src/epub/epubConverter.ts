@@ -1,4 +1,4 @@
-import { ChapterTitle, Book } from 'booka-common';
+import { ChapterTitle, Book, KnownTag } from 'booka-common';
 import { EpubBook, EpubSection } from './epubParser.types';
 import {
     isElement, XmlNodeElement, XmlNode, childForPath,
@@ -7,7 +7,7 @@ import {
     AsyncIter, isWhitespaces, flatten,
 } from '../utils';
 import { Block, ContainerBlock, blocks2book } from '../bookBlocks';
-import { EpubConverterParameters, EpubConverter, EpubConverterResult } from './epubConverter.types';
+import { EpubConverterParameters, EpubConverter, EpubConverterResult, MetadataHook } from './epubConverter.types';
 import { ParserDiagnoser, diagnoser } from '../log';
 import {
     NodeHandlerEnv, handleNode, constrainElement,
@@ -32,6 +32,7 @@ async function convertEpub(epub: EpubBook, params: EpubConverterParameters): Pro
         const blocks = sections2blocks(sections, hooks.nodeHooks, ds);
         const metaBlocks = buildMetaBlocks(epub);
         const allBlocks = blocks.concat(metaBlocks);
+        const tags = buildTags(epub, hooks.metadataHooks, ds);
 
         const volume = await blocks2book(allBlocks, {
             ds,
@@ -43,6 +44,7 @@ async function convertEpub(epub: EpubBook, params: EpubConverterParameters): Pro
                 source: 'epub',
                 kind: epub.kind,
             },
+            tags: tags,
         };
 
         return {
@@ -276,4 +278,13 @@ function extractTitle(nodes: XmlNode[], ds: ParserDiagnoser): ChapterTitle {
         ds.add({ diag: 'no-title', nodes });
     }
     return lines;
+}
+
+function buildTags(epub: EpubBook, metadataHooks: MetadataHook[], ds: ParserDiagnoser): KnownTag[] {
+    const result = metadataHooks.reduce(
+        (tags, hook) => tags.concat(hook(epub.metadata, ds)),
+        [] as KnownTag[],
+    );
+
+    return result;
 }
