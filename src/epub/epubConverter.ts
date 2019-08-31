@@ -7,7 +7,7 @@ export type EpubConverterResult = {
     success: true,
     volume: VolumeNode,
     diagnostics: ParserDiagnostic[],
-    resolveImage(id: string): Promise<Image | undefined>,
+    resolveImage(id: string): Promise<Buffer | undefined>,
 } | {
     success: false,
     diagnostics: ParserDiagnostic[],

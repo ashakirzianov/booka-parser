@@ -33,7 +33,10 @@ async function convertEpub(epub: EpubBook, params: EpubConverterParameters): Pro
         const metaBlocks = buildMetaBlocks(epub);
         const allBlocks = blocks.concat(metaBlocks);
 
-        const book = blocks2book(allBlocks, ds);
+        const book = await blocks2book(allBlocks, {
+            ds,
+            resolveImageRef: epub.imageResolver,
+        });
 
         return {
             success: true,

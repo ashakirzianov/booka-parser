@@ -12,14 +12,18 @@ import {
 } from '../utils';
 import { ParserDiagnoser } from '../log';
 
-export function blocks2book(blocks: Block[], ds: ParserDiagnoser): VolumeNode {
+export type Block2BookEnv = {
+    ds: ParserDiagnoser,
+    resolveImageRef: (ref: string) => Promise<Buffer | undefined>,
+};
+export async function blocks2book(blocks: Block[], env: Block2BookEnv): Promise<VolumeNode> {
     const { rest, footnotes } = separateFootnoteContainers(blocks);
-    const meta = collectMeta(rest);
+    const meta = await collectMeta(rest, env);
     const preprocessed = preprocess(rest);
-    const nodes = buildChapters(preprocessed, { ds, footnotes });
+    const nodes = await buildChapters(preprocessed, { ...env, footnotes });
 
     if (meta.title === undefined) {
-        ds.add({ diag: 'empty-book-title' });
+        env.ds.add({ diag: 'empty-book-title' });
     }
 
     return {
@@ -32,7 +36,7 @@ export function blocks2book(blocks: Block[], ds: ParserDiagnoser): VolumeNode {
     };
 }
 
-function collectMeta(blocks: Block[]): Partial<BookMeta> {
+async function collectMeta(blocks: Block[], env: Block2BookEnv): Promise<Partial<BookMeta>> {
     const result: Partial<BookMeta> = {};
     const titleBlock = blocks.find((b): b is BookTitleBlock => b.block === 'book-title');
     if (titleBlock) {
@@ -46,10 +50,16 @@ function collectMeta(blocks: Block[]): Partial<BookMeta> {
 
     const coverBlock = blocks.find((b): b is BookCoverBlock => b.block === 'cover');
     if (coverBlock) {
-        result.coverImageId = {
-            ref: 'image',
-            id: coverBlock.reference,
-        };
+        const imageBuffer = await env.resolveImageRef(coverBlock.reference);
+        if (imageBuffer) {
+            result.coverImageNode = {
+                node: 'image-data',
+                id: coverBlock.reference,
+                data: imageBuffer,
+            };
+        } else {
+            env.ds.add({ diag: 'couldnt-resolve-ref', id: coverBlock.reference });
+        }
     }
 
     return result;
@@ -138,13 +148,12 @@ function shouldBeFlatten(container: ContainerBlock): boolean {
     return !container.content.some(b => (b.block === 'text') || b.block === 'attrs');
 }
 
-type Env = {
-    ds: ParserDiagnoser,
+type Env = Block2BookEnv & {
     footnotes: FootnoteCandidateBlock[],
 };
 
-function buildChapters(blocks: Block[], env: Env) {
-    const { nodes, next } = buildChaptersImpl(blocks, undefined, env);
+async function buildChapters(blocks: Block[], env: Env) {
+    const { nodes, next } = await buildChaptersImpl(blocks, undefined, env);
 
     if (next.length !== 0) {
         env.ds.add({ diag: 'extra-blocks-tail', blocks });
@@ -153,21 +162,25 @@ function buildChapters(blocks: Block[], env: Env) {
     return nodes;
 }
 
-function buildChaptersImpl(blocks: Block[], level: number | undefined, env: Env): { nodes: BookContentNode[], next: Block[] } {
+type BuildChaptersResult = {
+    nodes: BookContentNode[],
+    next: Block[],
+};
+async function buildChaptersImpl(blocks: Block[], level: number | undefined, env: Env): Promise<BuildChaptersResult> {
     if (blocks.length === 0) {
         return { nodes: [], next: [] };
     }
     const block = blocks[0];
     if (block.block === 'chapter-title') {
         if (level === undefined || level > block.level) {
-            const content = buildChaptersImpl(blocks.slice(1), block.level, env);
+            const content = await buildChaptersImpl(blocks.slice(1), block.level, env);
             const chapter: ChapterNode = {
                 node: 'chapter',
                 nodes: content.nodes,
                 title: block.title,
                 level: block.level,
             };
-            const after = buildChaptersImpl(content.next, level, env);
+            const after = await buildChaptersImpl(content.next, level, env);
             return {
                 nodes: [chapter as BookContentNode].concat(after.nodes),
                 next: after.next,
@@ -179,8 +192,8 @@ function buildChaptersImpl(blocks: Block[], level: number | undefined, env: Env)
             };
         }
     } else {
-        const node = nodeFromBlock(block, env);
-        const after = buildChaptersImpl(blocks.slice(1), level, env);
+        const node = await nodeFromBlock(block, env);
+        const after = await buildChaptersImpl(blocks.slice(1), level, env);
         return {
             nodes: node ? [node].concat(after.nodes) : after.nodes,
             next: after.next,
@@ -188,16 +201,20 @@ function buildChaptersImpl(blocks: Block[], level: number | undefined, env: Env)
     }
 }
 
-function nodeFromBlock(block: Block, env: Env): BookContentNode | undefined {
+async function nodeFromBlock(block: Block, env: Env): Promise<BookContentNode | undefined> {
     switch (block.block) {
         case 'image':
-            return {
-                node: 'image',
-                ref: {
-                    ref: 'image',
+            const imageBuffer = await env.resolveImageRef(block.reference);
+            if (imageBuffer) {
+                return {
+                    node: 'image-data',
                     id: block.reference,
-                },
-            };
+                    data: imageBuffer,
+                };
+            } else {
+                env.ds.add({ diag: 'couldnt-resolve-ref', id: block.reference });
+                return undefined;
+            }
         case 'text':
         case 'attrs':
         case 'footnote-ref':

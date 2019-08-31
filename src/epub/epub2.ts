@@ -36,10 +36,7 @@ export function createEpubParser(xmlParser: (text: string) => (XmlNodeDocument |
                         return undefined;
                     }
                     const [buffer, mimeType] = await epub.getImageAsync(idItem.id);
-                    return {
-                        buffer,
-                        mimeType,
-                    };
+                    return buffer;
                 },
                 sections: async function* () {
                     for (const el of epub.flow) {

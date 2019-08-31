@@ -35,7 +35,7 @@ export function resolveEpubSource<EpubType>(epub: EpubType, resolver: EpubSource
 export type EpubBook = {
     source: EpubSource,
     metadata: EpubMetadata,
-    imageResolver(id: string): Promise<Image | undefined>,
+    imageResolver(id: string): Promise<Buffer | undefined>,
     sections(): EpubCollection<EpubSection>,
 };
 
