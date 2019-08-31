@@ -1,25 +1,26 @@
-import { parsePath, EpubConverterResult } from './epub';
-import { preprocessBook } from './preprocessBook';
 import { Book } from 'booka-common';
-
-export { Image } from './epub';
+import { parsePath, EpubConverterResult } from './epub';
+import { preprocessBook, StoreBufferFn } from './preprocessBook';
 
 export const parserVersion = '1.1.2';
 
 export type ParsingResult = EpubConverterResult;
-export async function parseEpubAtPath(path: string): Promise<ParsingResult> {
+export type ParsingOptions = {
+    storeImages?: StoreBufferFn,
+};
+export async function parseEpubAtPath(path: string, options?: ParsingOptions): Promise<ParsingResult> {
     const converterResult = await parsePath(path);
     if (converterResult.success) {
         const book: Book = {
             volume: converterResult.volume,
         };
-        const preprocessed = preprocessBook(book);
+        const preprocessed = await preprocessBook(book, {
+            storeBuffer: options && options.storeImages,
+        });
 
         return {
-            success: true,
+            ...converterResult,
             volume: preprocessed.volume,
-            resolveImage: converterResult.resolveImage,
-            diagnostics: converterResult.diagnostics,
         };
     } else {
         return converterResult;
