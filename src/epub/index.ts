@@ -1,5 +1,5 @@
-import { createEpubParser } from './epub2';
-import { createConverter } from './converter';
+import { createEpubParser } from './epubParser';
+import { createConverter } from './epubConverter';
 import { converterHooks } from './hooks';
 import { string2tree } from '../xml';
 
