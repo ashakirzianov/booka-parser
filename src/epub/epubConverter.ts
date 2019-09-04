@@ -1,4 +1,4 @@
-import { ChapterTitle, Book, KnownTag } from 'booka-common';
+import { ChapterTitle, Book, KnownTag, tagValue } from 'booka-common';
 import { EpubBook, EpubSection } from './epubParser.types';
 import {
     isElement, XmlNodeElement, XmlNode, childForPath,
@@ -30,9 +30,9 @@ async function convertEpub(epub: EpubBook, params: EpubConverterParameters): Pro
         const hooks = params.options[epub.kind];
         const sections = await AsyncIter.toArray(epub.sections());
         const blocks = sections2blocks(sections, hooks.nodeHooks, ds);
-        const metaBlocks = buildMetaBlocks(epub);
+        const tags = buildMetaTags(epub, hooks.metadataHooks, ds);
+        const metaBlocks = buildMetaBlocks(tags);
         const allBlocks = blocks.concat(metaBlocks);
-        const tags = buildTags(epub, hooks.metadataHooks, ds);
 
         const volume = await blocks2book(allBlocks, {
             ds,
@@ -61,26 +61,30 @@ async function convertEpub(epub: EpubBook, params: EpubConverterParameters): Pro
     }
 }
 
-function buildMetaBlocks(epub: EpubBook): Block[] {
+function buildMetaBlocks(tags: KnownTag[]): Block[] {
     const result: Block[] = [];
-    if (epub.metadata.title) {
+
+    const titleTag = tagValue(tags, 'title');
+    if (titleTag) {
         result.push({
             block: 'book-title',
-            title: epub.metadata.title,
+            title: titleTag,
         });
     }
 
-    if (epub.metadata.author) {
+    const authorTag = tagValue(tags, 'author');
+    if (authorTag) {
         result.push({
             block: 'book-author',
-            author: epub.metadata.author,
+            author: authorTag,
         });
     }
 
-    if (epub.metadata.cover) {
+    const coverRefTag = tagValue(tags, 'cover-ref');
+    if (coverRefTag) {
         result.push({
             block: 'cover',
-            reference: epub.metadata.cover,
+            reference: coverRefTag,
         });
     }
 
@@ -299,10 +303,21 @@ function extractTitle(nodes: XmlNode[], ds: ParserDiagnoser): ChapterTitle {
 }
 
 function defaultMetadataHook(meta: MetadataRecord): KnownTag[] | undefined {
-    return undefined;
+    switch (meta.key) {
+        case 'title':
+            return [{ tag: 'title', value: meta.value }];
+        case 'author':
+            return [{ tag: 'author', value: meta.value }];
+        case 'cover':
+            return [{ tag: 'cover-ref', value: meta.value }];
+        case 'raw':
+            return [];
+        default:
+            return undefined;
+    }
 }
 
-function buildTags(epub: EpubBook, metadataHooks: MetadataHook[], ds: ParserDiagnoser): KnownTag[] {
+function buildMetaTags(epub: EpubBook, metadataHooks: MetadataHook[], ds: ParserDiagnoser): KnownTag[] {
     const allHooks = metadataHooks.concat(defaultMetadataHook);
     const result: KnownTag[] = [];
     for (const [key, value] of Object.entries(epub.metadata)) {
