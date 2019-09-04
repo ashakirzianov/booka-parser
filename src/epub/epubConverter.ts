@@ -170,7 +170,7 @@ const a = constrainElement(
             return {
                 block: 'footnote-candidate',
                 title: [],
-                id: el.attributes.id,
+                id: `${env.filePath}#${el.attributes.id}`,
                 content: buildContainerBlock(el.children, env),
             };
         } else {
