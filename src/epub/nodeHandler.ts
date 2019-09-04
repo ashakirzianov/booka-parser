@@ -37,16 +37,18 @@ export function constrainElement<N extends string>(
         }
 
         const nameCheck = checkValue(node.name, nameConstraint);
-        if (!nameCheck.satisfy) {
+        if (!nameCheck) {
             return undefined;
         }
 
         const attrCheck = checkObject(node.attributes, attrsConstraint);
-        if (!attrCheck.satisfy) {
+        for (const fail of attrCheck) {
             env.ds.add({
-                diag: 'node-other',
-                node: node,
-                message: `Attribute: ${attrCheck.reason.join(`, `)}`,
+                diag: 'unexpected-attr',
+                element: node,
+                name: fail.key,
+                value: fail.value,
+                constraint: fail.constraint,
             });
         }
 

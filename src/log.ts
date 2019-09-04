@@ -26,13 +26,12 @@ export type ParserContext =
 type Context<K extends string> = { context: K };
 
 export type ParserDiagnostic =
-    | NodeDiag<'node-other'> & { message: string }
     | NodeDiag<'img-must-have-src'>
     | NodeDiag<'image-must-have-xlinkhref'>
     | NodeDiag<'link-must-have-ref'>
     | NodeDiag<'unexpected-node'> & { context?: 'title' }
     | Diag<'no-title'> & { nodes: XmlNode[] }
-    | Diag<'unexpected-attr'> & { name: string, value: string | undefined, element: XmlNodeElement }
+    | Diag<'unexpected-attr'> & { name: string, value: string | undefined, element: XmlNodeElement, constraint: string }
     | Diag<'empty-book-title'>
     | Diag<'extra-blocks-tail'> & { blocks: Block[] }
     | BlockDiag<'unexpected-block'>
