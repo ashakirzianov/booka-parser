@@ -5,7 +5,7 @@ export type TextBlock = {
 export type AttrsBlock = {
     block: 'attrs',
     content: Block,
-    attr: 'italic' | 'bold',
+    attr: 'italic' | 'bold' | 'quote',
 };
 export type FootnoteRefBlock = {
     block: 'footnote-ref',

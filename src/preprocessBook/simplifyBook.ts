@@ -2,7 +2,7 @@ import {
     VolumeNode, BookContentNode, ChapterNode, ParagraphNode,
     Span,
     isChapter, isParagraph, isImage,
-    isSimpleSpan, isAttributedSpan, isFootnoteSpan, isCompoundSpan,
+    isSimpleSpan, isAttributedSpan, isFootnoteSpan, isCompoundSpan, isSemanticSpan,
 } from 'booka-common';
 import {
     filterUndefined, assertNever, isWhitespaces,
@@ -58,7 +58,7 @@ function simplifySpan(span: Span): Span | undefined {
         return isWhitespaces(span)
             ? undefined
             : span;
-    } else if (isAttributedSpan(span)) {
+    } else if (isAttributedSpan(span) || isSemanticSpan(span)) {
         const content = simplifySpan(span.content);
         return content === undefined
             ? undefined
