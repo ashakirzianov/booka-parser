@@ -220,15 +220,18 @@ const image = constrainElement('image', {}, (el, env) => {
     }
 });
 
-const header = constrainElement(['h1', 'h2', 'h3', 'h4', 'h5', 'h6'], {}, (el, env) => {
-    const level = parseInt(el.name[1], 10);
-    const title = extractTitle(el.children, env.ds);
-    return {
-        block: 'chapter-title',
-        title: title,
-        level: 4 - level,
-    };
-});
+const header = constrainElement(
+    ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'],
+    { id: null },
+    (el, env) => {
+        const level = parseInt(el.name[1], 10);
+        const title = extractTitle(el.children, env.ds);
+        return {
+            block: 'chapter-title',
+            title: title,
+            level: 4 - level,
+        };
+    });
 
 const svg = constrainElement(
     'svg',
