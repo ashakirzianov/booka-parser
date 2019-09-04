@@ -310,8 +310,10 @@ function defaultMetadataHook(meta: MetadataRecord): KnownTag[] | undefined {
             return [{ tag: 'author', value: meta.value }];
         case 'cover':
             return [{ tag: 'cover-ref', value: meta.value }];
-        case 'raw':
-            return [];
+        case 'subject':
+            return [{ tag: 'subject', value: meta.value }];
+        case 'language':
+            return [{ tag: 'language', value: meta.value }];
         default:
             return undefined;
     }
