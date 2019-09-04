@@ -89,7 +89,7 @@ function separateFootnoteContainersImpl(blocks: Block[], footnoteIds: string[]) 
     const rest: Block[] = [];
     const footnotes: FootnoteCandidateBlock[] = [];
     for (const block of blocks) {
-        if (block.block === 'footnote-candidate') {
+        if (block.block === 'footnote-candidate' && !isEmptyBlock(block)) {
             if (footnoteIds.some(fid => fid === block.id)) {
                 footnotes.push(block);
             } else {
@@ -299,5 +299,27 @@ function spanFromBlock(block: Block, env: Env): Span | undefined {
             env.ds.add({ diag: 'unexpected-block', block });
             assertNever(block);
             return undefined;
+    }
+}
+
+function isEmptyBlock(block: Block): boolean {
+    switch (block.block) {
+        case 'text':
+            return block.text ? false : true;
+        case 'attrs':
+        case 'footnote-candidate':
+            return isEmptyBlock(block.content);
+        case 'container':
+            return block.content.length === 0 || block.content.every(isEmptyBlock);
+        case 'footnote-ref':
+        case 'book-author':
+        case 'book-title':
+        case 'chapter-title':
+        case 'cover':
+        case 'image':
+            return false;
+        case 'ignore':
+        default:
+            return true;
     }
 }
