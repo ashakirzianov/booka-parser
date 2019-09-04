@@ -137,7 +137,7 @@ const text = handleNode(node => {
     }
 });
 
-const em = constrainElement('em', {}, (el, env) => ({
+const italic = constrainElement(['em', 'i'], {}, (el, env) => ({
     block: 'attrs',
     attr: 'italic',
     content: buildContainerBlock(el.children, env),
@@ -241,7 +241,7 @@ const rest = constrainElement(['sup', 'sub', 'ul', 'li', 'br'], {}, (el, env) =>
 });
 
 const standardHandlers = [
-    text, em, strong, a, pph, img, image, header,
+    text, italic, strong, a, pph, img, image, header,
     svg, rest,
 ];
 
