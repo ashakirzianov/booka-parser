@@ -13,12 +13,7 @@ export type EpubSection = {
 };
 
 export type EpubMetadata = {
-    title?: string,
-    author?: string,
-    cover?: string,
-    raw: {
-        [key: string]: string | undefined;
-    },
+    [key: string]: string | string[] | undefined;
 };
 
 export type EpubKind =

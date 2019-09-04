@@ -21,7 +21,7 @@ export function createConverter(params: EpubConverterParameters): EpubConverter 
 }
 
 async function convertEpub(epub: EpubBook, params: EpubConverterParameters): Promise<EpubConverterResult> {
-    const ds = diagnoser({ context: 'epub', title: epub.metadata.title });
+    const ds = diagnoser({ context: 'epub' });
     try {
         if (epub.kind === 'unknown') {
             ds.add({ diag: 'unknown-kind' });
@@ -306,7 +306,7 @@ function defaultMetadataHook(meta: MetadataRecord): KnownTag[] | undefined {
     switch (meta.key) {
         case 'title':
             return [{ tag: 'title', value: meta.value }];
-        case 'author':
+        case 'creator':
             return [{ tag: 'author', value: meta.value }];
         case 'cover':
             return [{ tag: 'cover-ref', value: meta.value }];
@@ -321,17 +321,33 @@ function buildMetaTags(epub: EpubBook, metadataHooks: MetadataHook[], ds: Parser
     const allHooks = metadataHooks.concat(defaultMetadataHook);
     const result: KnownTag[] = [];
     for (const [key, value] of Object.entries(epub.metadata)) {
-        const record = { key, value };
-        const tags = allHooks.reduce<KnownTag[] | undefined>(
-            (res, hook) => res || hook(record, ds),
-            undefined,
-        );
-        if (!tags) {
-            ds.add({ diag: 'unknown-meta', key, value });
-        } else {
+        if (Array.isArray(value)) {
+            const tags = flatten(
+                value.map(v => buildMetaTagsForRecord(key, v, allHooks, ds))
+            );
             result.push(...tags);
+        } else if (value) {
+            const tags = buildMetaTagsForRecord(key, value, allHooks, ds);
+            result.push(...tags);
+        } else {
+            ds.add({ diag: 'unknown-meta', key, value });
         }
     }
 
     return result;
+}
+
+function buildMetaTagsForRecord(key: string, value: string, allHooks: MetadataHook[], ds: ParserDiagnoser): KnownTag[] {
+    const result: KnownTag[] = [];
+    const record = { key, value };
+    const tags = allHooks.reduce<KnownTag[] | undefined>(
+        (res, hook) => res || hook(record, ds),
+        undefined,
+    );
+    if (!tags) {
+        ds.add({ diag: 'unknown-meta', key, value });
+        return [];
+    } else {
+        return tags;
+    }
 }

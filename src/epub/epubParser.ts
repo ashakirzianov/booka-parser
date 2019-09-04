@@ -11,12 +11,7 @@ export function createEpubParser(xmlParser: (text: string) => (XmlNodeDocument |
             const kind = identifyKind(epub);
             return {
                 kind: kind,
-                metadata: {
-                    title: epub.metadata.title,
-                    author: epub.metadata.creator,
-                    cover: getCoverRef(epub),
-                    raw: epub.metadata,
-                },
+                metadata: epub.metadata,
                 imageResolver: async href => {
                     // const root = 'OPS/';
                     // const path = root + href;
