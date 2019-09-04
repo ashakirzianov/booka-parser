@@ -247,7 +247,7 @@ const svg = constrainElement(
 );
 
 const rest = constrainElement(
-    ['sup', 'sub', 'ul', 'li'],
+    ['sup', 'sub', 'ul', 'li', 'br'], // TODO: do not ignore 'br'
     {},
     (el, env) => {
         return { block: 'ignore' };
