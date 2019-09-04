@@ -318,6 +318,10 @@ function defaultMetadataHook({ key, value }: MetadataRecord): KnownTag[] | undef
             return [{ tag: 'publisher', value }];
         case 'description':
             return [{ tag: 'description', value }];
+        case 'series':
+            return [{ tag: 'series', value }];
+        case 'ISBN':
+            return [{ tag: 'ISBN', value }];
         case 'creatorFileAs':
         case 'date':
             return [];

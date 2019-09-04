@@ -1,5 +1,6 @@
+import { KnownTag } from 'booka-common';
 import {
-    EpubConverterHooks,
+    EpubConverterHooks, MetadataRecord,
 } from './epubConverter.types';
 import {
     nameChildren, textNode, nameAttrsChildren, some,
@@ -10,6 +11,7 @@ import {
 import { Block } from '../bookBlocks';
 import { forceType, flatten } from '../utils';
 import { NodeHandler, parserHook, ignoreClass } from './nodeHandler';
+import { ParserDiagnoser } from '../log';
 
 export const fb2epubHooks: EpubConverterHooks = {
     nodeHooks: [
@@ -21,8 +23,20 @@ export const fb2epubHooks: EpubConverterHooks = {
         footnoteSection(),
         titlePage(),
     ],
-    metadataHooks: [],
+    metadataHooks: [metaHook],
 };
+
+function metaHook({ key, value }: MetadataRecord, ds: ParserDiagnoser): KnownTag[] | undefined {
+    switch (key) {
+        case 'calibre:timestamp':
+        case 'calibre:title_sort':
+        case 'calibre:series':
+        case 'calibre:series_index':
+            return [];
+        default:
+            return undefined;
+    }
+}
 
 function footnoteSection(): NodeHandler {
     return parserHook(env => {
