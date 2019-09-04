@@ -153,6 +153,12 @@ const bold = constrainElement(['strong', 'b'], {}, (el, env) => ({
     content: buildContainerBlock(el.children, env),
 }));
 
+const quote = constrainElement('q', {}, (el, env) => ({
+    block: 'attrs',
+    attr: 'quote',
+    content: buildContainerBlock(el.children, env),
+}));
+
 const a = constrainElement(
     'a',
     {
@@ -256,7 +262,8 @@ const rest = constrainElement(
     });
 
 const standardHandlers = [
-    text, italic, bold, a, pph, img, image, header,
+    text, italic, bold, quote,
+    a, pph, img, image, header,
     svg, rest,
 ];
 
