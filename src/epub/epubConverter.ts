@@ -280,6 +280,7 @@ function extractTitle(nodes: XmlNode[], ds: ParserDiagnoser): ChapterTitle {
             case 'element':
                 switch (node.name) {
                     case 'em': case 'strong':
+                    case 'a':
                         const fromElement = extractTitle(node.children, ds);
                         lines.push(fromElement.join(''));
                         break;
