@@ -1,5 +1,7 @@
 import { XmlNode, XmlNodeElement } from './xml';
 import { Block } from './bookBlocks';
+import { MetadataRecord } from './epub/epubConverter.types';
+import { EpubKind } from './epub/epubParser.types';
 
 export function diagnoser(context: ParserContext): ParserDiagnoser {
     return new ParserDiagnoser(context);
@@ -23,7 +25,7 @@ export type ParserContext =
     | Context<'epub'> & { title?: string }
     ;
 
-type Context<K extends string> = { context: K };
+type Context<K extends string> = { context: K, kind?: EpubKind };
 
 export type ParserDiagnostic =
     | NodeDiag<'img-must-have-src'>
@@ -39,6 +41,7 @@ export type ParserDiagnostic =
     | Diag<'couldnt-resolve-ref'> & { id: string }
     | Diag<'unknown-kind'>
     | Diag<'unknown-meta'> & { key: string, value: any }
+    | Diag<'bad-meta'> & { meta: MetadataRecord }
     ;
 
 type Diag<K extends string> = {

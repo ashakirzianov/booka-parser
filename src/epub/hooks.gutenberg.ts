@@ -7,15 +7,5 @@ export const gutenbergHooks: EpubConverterHooks = {
         // TODO: do not ignore?
         ignoreTags(['hr', 'blockquote', 'table', 'br']),
     ],
-    metadataHooks: [metaHook],
+    metadataHooks: [],
 };
-
-function metaHook(record: MetadataRecord, ds: ParserDiagnoser) {
-    switch (record.key) {
-        case 'creatorFileAs':
-        case 'date':
-            return [];
-        default:
-            return undefined;
-    }
-}

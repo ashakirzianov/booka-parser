@@ -21,7 +21,7 @@ export function createConverter(params: EpubConverterParameters): EpubConverter 
 }
 
 async function convertEpub(epub: EpubBook, params: EpubConverterParameters): Promise<EpubConverterResult> {
-    const ds = diagnoser({ context: 'epub' });
+    const ds = diagnoser({ context: 'epub', kind: epub.kind });
     try {
         if (epub.kind === 'unknown') {
             ds.add({ diag: 'unknown-kind' });
@@ -302,18 +302,25 @@ function extractTitle(nodes: XmlNode[], ds: ParserDiagnoser): ChapterTitle {
     return lines;
 }
 
-function defaultMetadataHook(meta: MetadataRecord): KnownTag[] | undefined {
-    switch (meta.key) {
+function defaultMetadataHook({ key, value }: MetadataRecord): KnownTag[] | undefined {
+    switch (key) {
         case 'title':
-            return [{ tag: 'title', value: meta.value }];
+            return [{ tag: 'title', value }];
         case 'creator':
-            return [{ tag: 'author', value: meta.value }];
+            return [{ tag: 'author', value }];
         case 'cover':
-            return [{ tag: 'cover-ref', value: meta.value }];
+            return [{ tag: 'cover-ref', value }];
         case 'subject':
-            return [{ tag: 'subject', value: meta.value }];
+            return [{ tag: 'subject', value }];
         case 'language':
-            return [{ tag: 'language', value: meta.value }];
+            return [{ tag: 'language', value }];
+        case 'publisher':
+            return [{ tag: 'publisher', value }];
+        case 'description':
+            return [{ tag: 'description', value }];
+        case 'creatorFileAs':
+        case 'date':
+            return [];
         default:
             return undefined;
     }
