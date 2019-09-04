@@ -9,7 +9,7 @@ import {
 } from '../xml';
 import { Block } from '../bookBlocks';
 import { forceType, flatten } from '../utils';
-import { handleElement, NodeHandler, parserHook } from './nodeHandler';
+import { NodeHandler, parserHook, ignoreClass } from './nodeHandler';
 
 export const fb2epubHooks: EpubConverterHooks = {
     nodeHooks: [
@@ -23,14 +23,6 @@ export const fb2epubHooks: EpubConverterHooks = {
     ],
     metadataHooks: [],
 };
-
-function ignoreClass(className: string) {
-    return handleElement(el =>
-        el.attributes.class === className
-            ? { block: 'ignore' }
-            : undefined
-    );
-}
 
 function footnoteSection(): NodeHandler {
     return parserHook(env => {

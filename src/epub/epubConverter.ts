@@ -242,9 +242,12 @@ const svg = constrainElement(
     () => ({ block: 'ignore' })
 );
 
-const rest = constrainElement(['sup', 'sub', 'ul', 'li', 'br'], {}, (el, env) => {
-    return { block: 'ignore' };
-});
+const rest = constrainElement(
+    ['sup', 'sub', 'ul', 'li'],
+    {},
+    (el, env) => {
+        return { block: 'ignore' };
+    });
 
 const standardHandlers = [
     text, italic, strong, a, pph, img, image, header,

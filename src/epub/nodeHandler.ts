@@ -5,6 +5,7 @@ import {
 } from '../xml';
 import { Block } from '../bookBlocks';
 import { Constraint, ConstraintMap, checkValue, checkObject } from '../constraint';
+import { equalsToOneOf } from '../utils';
 
 export type NodeHandlerEnv = {
     ds: ParserDiagnoser,
@@ -107,4 +108,20 @@ export function expectToHandle(handler: NodeHandler) {
             return [{ block: 'ignore' }];
         }
     };
+}
+
+export function ignoreClass(className: string) {
+    return handleElement(el =>
+        el.attributes.class === className
+            ? { block: 'ignore' }
+            : undefined
+    );
+}
+
+export function ignoreTags(tags: string[]) {
+    return handleElement(el =>
+        equalsToOneOf(el.name, tags)
+            ? { block: 'ignore' }
+            : undefined
+    );
 }
