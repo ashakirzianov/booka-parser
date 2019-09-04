@@ -174,7 +174,10 @@ const a = constrainElement(
 
 const pph = constrainElement(
     ['p', 'div', 'span'],
-    { class: null, id: null },
+    {
+        class: null, id: null,
+        'xml:space': null, // TODO: handle ?
+    },
     (el, env) => {
         const container = buildContainerBlock(el.children, env);
         const result: Block = el.attributes.id
@@ -272,6 +275,8 @@ function extractTitle(nodes: XmlNode[], ds: ParserDiagnoser): ChapterTitle {
                     case 'em': case 'strong':
                         const fromElement = extractTitle(node.children, ds);
                         lines.push(fromElement.join(''));
+                        break;
+                    case 'br':
                         break;
                     default:
                         ds.add({ diag: 'unexpected-node', node, context: 'title' });
