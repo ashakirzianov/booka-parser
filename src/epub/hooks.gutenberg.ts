@@ -6,7 +6,7 @@ import { ParserDiagnoser } from '../log';
 export const gutenbergHooks: EpubConverterHooks = {
     nodeHooks: [
         // TODO: do not ignore?
-        ignoreTags(['hr', 'blockquote', 'table', 'br', 'big']),
+        ignoreTags(['hr', 'blockquote', 'table', 'br', 'big', 'q']),
     ],
     metadataHooks: [metaHook],
 };
