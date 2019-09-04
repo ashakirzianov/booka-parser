@@ -58,7 +58,7 @@ async function collectMeta(blocks: Block[], env: Block2BookEnv): Promise<Partial
                 data: imageBuffer,
             };
         } else {
-            env.ds.add({ diag: 'couldnt-resolve-ref', id: coverBlock.reference });
+            env.ds.add({ diag: 'couldnt-resolve-ref', id: coverBlock.reference, context: 'cover' });
         }
     }
 
@@ -212,7 +212,7 @@ async function nodeFromBlock(block: Block, env: Env): Promise<BookContentNode | 
                     data: imageBuffer,
                 };
             } else {
-                env.ds.add({ diag: 'couldnt-resolve-ref', id: block.reference });
+                env.ds.add({ diag: 'couldnt-resolve-ref', id: block.reference, context: 'image-node' });
                 return undefined;
             }
         case 'text':
@@ -277,7 +277,7 @@ function spanFromBlock(block: Block, env: Env): Span | undefined {
                     title: footnoteContainer.title,
                 };
             } else {
-                env.ds.add({ diag: 'couldnt-resolve-ref', id: block.id });
+                env.ds.add({ diag: 'couldnt-resolve-ref', id: block.id, context: 'footnote' });
                 return undefined;
             }
         case 'container':

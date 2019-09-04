@@ -1,5 +1,5 @@
 import { EPub, SYMBOL_RAW_DATA } from 'epub2';
-import { EpubParser, EpubBook, EpubSection, EpubKind, EpubKindResolver, resolveEpubKind } from './epubParser.types';
+import { EpubParser, EpubBook, EpubSection, EpubKind, EpubKindResolver, resolveEpubKind, EpubMetadata } from './epubParser.types';
 import { XmlNodeDocument } from '../xml';
 import { last } from '../utils';
 
@@ -11,7 +11,7 @@ export function createEpubParser(xmlParser: (text: string) => (XmlNodeDocument |
             const kind = identifyKind(epub);
             return {
                 kind: kind,
-                metadata: epub.metadata,
+                metadata: extractMetadata(epub),
                 imageResolver: async href => {
                     // const root = 'OPS/';
                     // const path = root + href;
@@ -79,16 +79,17 @@ class FixedEpub extends EPub {
     }
 }
 
-function getCoverRef(epub: EPub): string | undefined {
-    const coverId = epub.metadata.cover;
+function extractMetadata(epub: EPub): EpubMetadata {
+    const metadata = { ...epub.metadata };
+    const coverId = metadata.cover;
     if (coverId) {
         const coverItem = epub.listImage().find(item => item.id === coverId);
         if (coverItem) {
-            return coverItem.href;
+            metadata.cover = coverItem.href;
         }
     }
 
-    return undefined;
+    return metadata;
 }
 
 function identifyKind(epub: EPub): EpubKind {
