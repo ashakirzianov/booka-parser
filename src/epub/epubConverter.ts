@@ -155,7 +155,10 @@ const strong = constrainElement('strong', {}, (el, env) => ({
 
 const a = constrainElement(
     'a',
-    { class: null, href: null, id: null, title: null },
+    {
+        class: null, href: null,
+        id: null, title: null, tag: null,
+    },
     (el, env) => {
         if (el.attributes.href !== undefined) {
             return {
@@ -171,7 +174,6 @@ const a = constrainElement(
                 content: buildContainerBlock(el.children, env),
             };
         } else {
-            env.ds.add({ diag: 'link-must-have-ref', node: el });
             return { block: 'ignore' };
         }
     });
@@ -279,7 +281,7 @@ function extractTitle(nodes: XmlNode[], ds: ParserDiagnoser): ChapterTitle {
                 break;
             case 'element':
                 switch (node.name) {
-                    case 'em': case 'strong':
+                    case 'em': case 'strong': case 'big':
                     case 'a':
                         const fromElement = extractTitle(node.children, ds);
                         lines.push(fromElement.join(''));
