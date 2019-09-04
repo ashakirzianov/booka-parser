@@ -155,7 +155,7 @@ const strong = constrainElement('strong', {}, (el, env) => ({
 
 const a = constrainElement(
     'a',
-    { class: null, href: null, id: null },
+    { class: null, href: null, id: null, title: null },
     (el, env) => {
         if (el.attributes.href !== undefined) {
             return {
