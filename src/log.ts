@@ -31,14 +31,14 @@ export type ParserDiagnostic =
     | NodeDiag<'img-must-have-src'>
     | NodeDiag<'image-must-have-xlinkhref'>
     | NodeDiag<'link-must-have-ref'>
-    | NodeDiag<'unexpected-node'> & { context?: 'title' }
+    | NodeDiag<'unexpected-node'>
     | Diag<'no-title'> & { nodes: XmlNode[] }
     | Diag<'unexpected-attr'> & { name: string, value: string | undefined, element: XmlNodeElement, constraint: string }
     | Diag<'empty-book-title'>
     | Diag<'extra-blocks-tail'> & { blocks: Block[] }
     | BlockDiag<'unexpected-block'>
     | BlockDiag<'couldnt-build-span'> & { context: 'attr' | 'footnote' }
-    | Diag<'couldnt-resolve-ref'> & { id: string, context: string }
+    | Diag<'couldnt-resolve-ref'> & { id: string }
     | Diag<'unknown-kind'>
     | Diag<'unknown-meta'> & { key: string, value: any }
     | Diag<'bad-meta'> & { meta: MetadataRecord }
@@ -46,6 +46,7 @@ export type ParserDiagnostic =
 
 type Diag<K extends string> = {
     diag: K,
+    context?: string,
 };
 type NodeDiag<K extends string> = Diag<K> & { node: XmlNode };
 type BlockDiag<K extends string> = Diag<K> & { block: Block };

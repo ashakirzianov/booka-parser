@@ -8,7 +8,7 @@ export const gutenbergHooks: EpubConverterHooks = {
         // TODO: do not ignore?
         ignoreTags([
             'hr', 'blockquote', 'table',
-            'br', 'big', 'q', 'ins',
+            'br', 'big', 'ins',
             'ol',
         ]),
     ],

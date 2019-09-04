@@ -153,11 +153,13 @@ const bold = constrainElement(['strong', 'b'], {}, (el, env) => ({
     content: buildContainerBlock(el.children, env),
 }));
 
-const quote = constrainElement('q', {}, (el, env) => ({
-    block: 'attrs',
-    attr: 'quote',
-    content: buildContainerBlock(el.children, env),
-}));
+const quote = constrainElement('q', {}, (el, env) => {
+    return {
+        block: 'attrs',
+        attr: 'quote',
+        content: buildContainerBlock(el.children, env),
+    };
+});
 
 const a = constrainElement(
     'a',

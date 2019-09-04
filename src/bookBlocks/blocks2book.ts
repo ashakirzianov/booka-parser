@@ -89,7 +89,7 @@ function separateFootnoteContainersImpl(blocks: Block[], footnoteIds: string[]) 
     const rest: Block[] = [];
     const footnotes: FootnoteCandidateBlock[] = [];
     for (const block of blocks) {
-        if (block.block === 'footnote-candidate' && !isEmptyBlock(block)) {
+        if (block.block === 'footnote-candidate') {
             if (footnoteIds.some(fid => fid === block.id)) {
                 footnotes.push(block);
             } else {
@@ -104,6 +104,13 @@ function separateFootnoteContainersImpl(blocks: Block[], footnoteIds: string[]) 
             const inside = separateFootnoteContainersImpl(block.content, footnoteIds);
             rest.push({
                 ...block,
+                content: inside.rest,
+            });
+            footnotes.push(...inside.footnotes);
+        } else if (block.block === 'attrs') {
+            const inside = separateFootnoteContainersImpl([block.content], footnoteIds);
+            rest.push({
+                block: 'container',
                 content: inside.rest,
             });
             footnotes.push(...inside.footnotes);
@@ -237,8 +244,16 @@ async function nodeFromBlock(block: Block, env: Env): Promise<BookContentNode | 
                     spans: spans,
                 },
             };
+        case 'footnote-candidate':
+            const footnoteSpan = spanFromBlock(block.content, env);
+            return footnoteSpan
+                ? {
+                    node: 'paragraph',
+                    span: footnoteSpan,
+                }
+                : undefined;
         default:
-            env.ds.add({ diag: 'unexpected-block', block });
+            env.ds.add({ diag: 'unexpected-block', block, context: 'node' });
             return undefined;
     }
 }
@@ -296,7 +311,7 @@ function spanFromBlock(block: Block, env: Env): Span | undefined {
             // env.ds.warn(`Unexpected title: ${block2string(block)}`);
             return undefined;
         default:
-            env.ds.add({ diag: 'unexpected-block', block });
+            env.ds.add({ diag: 'unexpected-block', block, context: 'span' });
             assertNever(block);
             return undefined;
     }
