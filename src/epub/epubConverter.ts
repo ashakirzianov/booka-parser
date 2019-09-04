@@ -159,6 +159,13 @@ const a = constrainElement(
                 id: el.attributes.href,
                 content: buildContainerBlock(el.children, env),
             };
+        } else if (el.attributes.id !== undefined) {
+            return {
+                block: 'footnote-candidate',
+                title: [],
+                id: el.attributes.id,
+                content: buildContainerBlock(el.children, env),
+            };
         } else {
             env.ds.add({ diag: 'link-must-have-ref', node: el });
             return { block: 'ignore' };
