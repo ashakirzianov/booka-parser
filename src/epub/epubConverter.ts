@@ -147,7 +147,7 @@ const italic = constrainElement(['em', 'i'], {}, (el, env) => ({
     content: buildContainerBlock(el.children, env),
 }));
 
-const strong = constrainElement('strong', {}, (el, env) => ({
+const bold = constrainElement(['strong', 'b'], {}, (el, env) => ({
     block: 'attrs',
     attr: 'bold',
     content: buildContainerBlock(el.children, env),
@@ -256,7 +256,7 @@ const rest = constrainElement(
     });
 
 const standardHandlers = [
-    text, italic, strong, a, pph, img, image, header,
+    text, italic, bold, a, pph, img, image, header,
     svg, rest,
 ];
 
@@ -282,7 +282,7 @@ function extractTitle(nodes: XmlNode[], ds: ParserDiagnoser): ChapterTitle {
             case 'element':
                 switch (node.name) {
                     case 'em': case 'strong': case 'big':
-                    case 'a':
+                    case 'a': case 'b':
                         const fromElement = extractTitle(node.children, ds);
                         lines.push(fromElement.join(''));
                         break;
