@@ -29,8 +29,8 @@ async function exec() {
             continue;
         }
         console.log(`---- ${epubPath}:`);
-        console.log('Meta:');
-        console.log(result.book.volume.meta);
+        console.log('Tags:');
+        console.log(result.book.tags);
         if (result.diagnostics.length > 0) {
             console.log('Diagnostics:');
             console.log(result.diagnostics);

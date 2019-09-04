@@ -80,7 +80,7 @@ class FixedEpub extends EPub {
 }
 
 function extractMetadata(epub: EPub): EpubMetadata {
-    const metadata = { ...epub.metadata };
+    const metadata = { ...epub.metadata } as any;
     const coverId = metadata.cover;
     if (coverId) {
         const coverItem = epub.listImage().find(item => item.id === coverId);
@@ -88,6 +88,9 @@ function extractMetadata(epub: EPub): EpubMetadata {
             metadata.cover = coverItem.href;
         }
     }
+    const raw = getRawData(epub.metadata);
+    metadata['dc:rights'] = raw['dc:rights'];
+    metadata['dc:identifier'] = raw['dc:identifier'];
 
     return metadata;
 }
@@ -130,7 +133,7 @@ const kindResolver: EpubKindResolver<EPub> = {
     },
 };
 
-function getRawData(object: any): object | undefined {
+function getRawData(object: any): any {
     const symbol = EPub.SYMBOL_RAW_DATA;
     return object[symbol];
 }

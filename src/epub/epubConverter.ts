@@ -322,8 +322,11 @@ function defaultMetadataHook({ key, value }: MetadataRecord): KnownTag[] | undef
             return [{ tag: 'series', value }];
         case 'ISBN':
             return [{ tag: 'ISBN', value }];
+        case 'dc:rights':
+            return [{ tag: 'rights', value }];
         case 'creatorFileAs':
         case 'date':
+        case 'dc:identifier':
             return [];
         default:
             return undefined;
@@ -342,8 +345,6 @@ function buildMetaTags(epub: EpubBook, metadataHooks: MetadataHook[], ds: Parser
         } else if (value) {
             const tags = buildMetaTagsForRecord(key, value, allHooks, ds);
             result.push(...tags);
-        } else {
-            ds.add({ diag: 'unknown-meta', key, value });
         }
     }
 
