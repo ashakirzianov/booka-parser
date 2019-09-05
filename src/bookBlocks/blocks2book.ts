@@ -5,7 +5,7 @@ import {
 } from './block';
 import {
     BookContentNode, Span, ChapterNode, VolumeNode, BookMeta,
-    assign,
+    assignAttributes,
 } from 'booka-common';
 import {
     flatten, filterUndefined, assertNever,
@@ -265,7 +265,7 @@ function spanFromBlock(block: Block, env: Env): Span | undefined {
         case 'attrs':
             const attrSpan = spanFromBlock(block.content, env);
             if (attrSpan !== undefined) {
-                return assign(block.attr)(attrSpan);
+                return assignAttributes(block.attr)(attrSpan);
             } else {
                 env.ds.add({ diag: 'couldnt-build-span', block, context: 'attr' });
                 return undefined;
