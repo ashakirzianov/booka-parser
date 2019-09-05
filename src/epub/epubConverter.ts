@@ -6,7 +6,7 @@ import {
 import {
     AsyncIter, isWhitespaces, flatten, equalsToOneOf,
 } from '../utils';
-import { buildVolume } from '../bookBlocks';
+import { buildVolume } from '../buildVolume';
 import { EpubConverterParameters, EpubConverter, EpubConverterResult, MetadataHook, MetadataRecord } from './epubConverter.types';
 import { ParserDiagnoser, diagnoser } from '../log';
 import {
