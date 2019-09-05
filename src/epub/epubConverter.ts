@@ -243,6 +243,9 @@ const header = constrainElement(
     (el, env) => {
         const level = parseInt(el.name[1], 10);
         const title = extractTitle(el.children, env.ds);
+        if (title.length === 0) {
+            env.ds.add({ diag: 'no-title', node: el });
+        }
         return {
             block: 'chapter-title',
             title: title,
@@ -309,9 +312,6 @@ function extractTitle(nodes: XmlNode[], ds: ParserDiagnoser): ChapterTitle {
         }
     }
 
-    if (lines.length === 0) {
-        ds.add({ diag: 'no-title', nodes });
-    }
     return lines;
 }
 

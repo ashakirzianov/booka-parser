@@ -32,7 +32,7 @@ export type ParserDiagnostic =
     | NodeDiag<'image-must-have-xlinkhref'>
     | NodeDiag<'link-must-have-ref'>
     | NodeDiag<'unexpected-node'>
-    | Diag<'no-title'> & { nodes: XmlNode[] }
+    | NodeDiag<'no-title'>
     | Diag<'unexpected-attr'> & { name: string, value: string | undefined, element: XmlNodeElement, constraint: string }
     | Diag<'empty-book-title'>
     | Diag<'extra-blocks-tail'> & { blocks: Block[] }
