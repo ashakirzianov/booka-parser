@@ -7,17 +7,17 @@ import { Block } from '../bookBlocks';
 import { Constraint, ConstraintMap, checkValue, checkObject } from '../constraint';
 import { equalsToOneOf } from '../utils';
 
-export type NodeHandlerEnv = {
+export type XmlHandlerEnv = {
     ds: ParserDiagnoser,
-    node2blocks: (x: XmlNode) => Block[],
+    xml2blocks: (x: XmlNode) => Block[],
     filePath: string,
 };
-export type NodeHandlerResult = Block[] | undefined;
-export type NodeHandler = (x: XmlNode, env: NodeHandlerEnv) => NodeHandlerResult;
+export type XmlHandlerResult = Block[] | undefined;
+export type XmlHandler = (x: XmlNode, env: XmlHandlerEnv) => XmlHandlerResult;
 
-export type SimpleHandler<T extends XmlNode = XmlNode> = (el: T, env: NodeHandlerEnv) => (Block | undefined);
+export type SimpleHandler<T extends XmlNode = XmlNode> = (el: T, env: XmlHandlerEnv) => (Block | undefined);
 
-export function handleNode(handler: SimpleHandler): NodeHandler {
+export function handleXml(handler: SimpleHandler): XmlHandler {
     return (node, env) => {
         const result = handler(node, env);
         return result
@@ -31,7 +31,7 @@ export function constrainElement<N extends string>(
     nameConstraint: Constraint<string, N>,
     attrsConstraint: ConstraintMap<XmlAttributes>,
     handler: SimpleElementHandler,
-): NodeHandler {
+): XmlHandler {
     return (node, env) => {
         if (!isElement(node)) {
             return undefined;
@@ -60,7 +60,7 @@ export function constrainElement<N extends string>(
     };
 }
 
-export function handleElement(handler: SimpleElementHandler): NodeHandler {
+export function handleElement(handler: SimpleElementHandler): XmlHandler {
     return (node, env) => {
         if (!isElement(node)) {
             return undefined;
@@ -71,7 +71,7 @@ export function handleElement(handler: SimpleElementHandler): NodeHandler {
     };
 }
 
-export function parserHook(buildParser: (env: NodeHandlerEnv) => XmlParser<Block[]>): NodeHandler {
+export function parserHook(buildParser: (env: XmlHandlerEnv) => XmlParser<Block[]>): XmlHandler {
     return (node, env) => {
         const parser = buildParser(env);
         const result = parser([node]);
@@ -82,7 +82,7 @@ export function parserHook(buildParser: (env: NodeHandlerEnv) => XmlParser<Block
     };
 }
 
-export function combineHandlers(handlers: NodeHandler[]): NodeHandler {
+export function combineHandlers(handlers: XmlHandler[]): XmlHandler {
     return (node, env) => {
         for (const handler of handlers) {
             const result = handler(node, env);
@@ -95,8 +95,8 @@ export function combineHandlers(handlers: NodeHandler[]): NodeHandler {
     };
 }
 
-export function expectToHandle(handler: NodeHandler) {
-    return (node: XmlNode, env: NodeHandlerEnv): Block[] => {
+export function expectToHandle(handler: XmlHandler) {
+    return (node: XmlNode, env: XmlHandlerEnv): Block[] => {
         const result = handler(node, env);
         if (result) {
             return result;

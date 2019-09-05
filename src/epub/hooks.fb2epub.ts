@@ -10,7 +10,7 @@ import {
 } from '../xml';
 import { Block } from '../bookBlocks';
 import { forceType, flatten } from '../utils';
-import { NodeHandler, parserHook, ignoreClass } from './nodeHandler';
+import { XmlHandler, parserHook, ignoreClass } from './nodeHandler';
 import { ParserDiagnoser } from '../log';
 
 export const fb2epubHooks: EpubConverterHooks = {
@@ -38,7 +38,7 @@ function metaHook({ key, value }: MetadataRecord, ds: ParserDiagnoser): KnownTag
     }
 }
 
-function footnoteSection(): NodeHandler {
+function footnoteSection(): XmlHandler {
     return parserHook(env => {
         const divId = translate(
             nameAttrs('div', { class: 'section2', id: id => id !== undefined }),
@@ -54,7 +54,7 @@ function footnoteSection(): NodeHandler {
             name('a'),
             () => [{ block: 'ignore' as const }]
         );
-        const rec = headNode(env.node2blocks);
+        const rec = headNode(env.xml2blocks);
 
         const parser = translate(
             and(
@@ -76,7 +76,7 @@ function footnoteSection(): NodeHandler {
     });
 }
 
-function titlePage(): NodeHandler {
+function titlePage(): XmlHandler {
     return parserHook(() => {
         const bookTitle = translate(
             extractText(attrs({ class: 'title1' })),
@@ -103,7 +103,7 @@ function titlePage(): NodeHandler {
     });
 }
 
-function divTitle(): NodeHandler {
+function divTitle(): XmlHandler {
     return parserHook(() => {
         const divLevel = headNode(n => {
             if (isElement(n) && nameEq('div', n.name)

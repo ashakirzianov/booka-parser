@@ -28,11 +28,11 @@ export type ParserContext =
 type Context<K extends string> = { context: K, kind?: EpubKind };
 
 export type ParserDiagnostic =
-    | NodeDiag<'img-must-have-src'>
-    | NodeDiag<'image-must-have-xlinkhref'>
-    | NodeDiag<'link-must-have-ref'>
-    | NodeDiag<'unexpected-node'>
-    | NodeDiag<'no-title'>
+    | XmlDiag<'img-must-have-src'>
+    | XmlDiag<'image-must-have-xlinkhref'>
+    | XmlDiag<'link-must-have-ref'>
+    | XmlDiag<'unexpected-node'>
+    | XmlDiag<'no-title'>
     | Diag<'unexpected-attr'> & { name: string, value: string | undefined, element: XmlNodeElement, constraint: string }
     | Diag<'empty-book-title'>
     | Diag<'extra-blocks-tail'> & { blocks: Block[] }
@@ -48,7 +48,7 @@ type Diag<K extends string> = {
     diag: K,
     context?: string,
 };
-type NodeDiag<K extends string> = Diag<K> & { node: XmlNode };
+type XmlDiag<K extends string> = Diag<K> & { node: XmlNode };
 type BlockDiag<K extends string> = Diag<K> & { block: Block };
 
 export type LogLevel = 'info' | 'important' | 'warn';

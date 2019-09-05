@@ -10,8 +10,8 @@ import { Block, ContainerBlock, blocks2book } from '../bookBlocks';
 import { EpubConverterParameters, EpubConverter, EpubConverterResult, MetadataHook, MetadataRecord } from './epubConverter.types';
 import { ParserDiagnoser, diagnoser } from '../log';
 import {
-    NodeHandlerEnv, handleNode, constrainElement,
-    NodeHandler, combineHandlers, expectToHandle,
+    XmlHandlerEnv, handleXml, constrainElement,
+    XmlHandler, combineHandlers, expectToHandle,
 } from './nodeHandler';
 
 export function createConverter(params: EpubConverterParameters): EpubConverter {
@@ -98,16 +98,16 @@ function getBodyElement(node: XmlNode): XmlNodeElement | undefined {
         : undefined;
 }
 
-function sections2blocks(sections: EpubSection[], hooks: NodeHandler[], ds: ParserDiagnoser) {
+function sections2blocks(sections: EpubSection[], hooks: XmlHandler[], ds: ParserDiagnoser) {
     const handlers = hooks.concat(standardHandlers);
     const handler = expectToHandle(combineHandlers(handlers));
 
-    const env: NodeHandlerEnv = {
+    const env: XmlHandlerEnv = {
         ds: ds,
         filePath: null as any,
-        node2blocks: null as any,
+        xml2blocks: null as any,
     };
-    env.node2blocks = n => handler(n, env);
+    env.xml2blocks = n => handler(n, env);
 
     const result: Block[] = [];
     for (const section of sections) {
@@ -119,14 +119,14 @@ function sections2blocks(sections: EpubSection[], hooks: NodeHandler[], ds: Pars
         env.filePath = section.filePath;
         const blockArrays = body
             .children
-            .map(env.node2blocks);
+            .map(env.xml2blocks);
         result.push(...flatten(blockArrays));
     }
 
     return result;
 }
 
-const text = handleNode(node => {
+const text = handleXml(node => {
     if (node.type !== 'text') {
         return undefined;
     }
@@ -272,9 +272,9 @@ const standardHandlers = [
     svg, rest,
 ];
 
-function buildContainerBlock(nodes: XmlNode[], env: NodeHandlerEnv): ContainerBlock {
+function buildContainerBlock(nodes: XmlNode[], env: XmlHandlerEnv): ContainerBlock {
     const content = flatten(nodes
-        .map(ch => env.node2blocks(ch)));
+        .map(ch => env.xml2blocks(ch)));
 
     return {
         block: 'container',
