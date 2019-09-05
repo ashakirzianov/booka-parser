@@ -9,7 +9,7 @@ import { equalsToOneOf } from '../utils';
 
 export type XmlHandlerEnv = {
     ds: ParserDiagnoser,
-    xml2blocks: (x: XmlNode) => RawBookNode[],
+    xml2raw: (x: XmlNode) => RawBookNode[],
     filePath: string,
 };
 export type XmlHandlerResult = RawBookNode[] | undefined;

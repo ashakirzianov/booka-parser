@@ -35,7 +35,7 @@ export type ParserDiagnostic =
     | XmlDiag<'no-title'>
     | Diag<'unexpected-attr'> & { name: string, value: string | undefined, element: XmlNodeElement, constraint: string }
     | Diag<'empty-book-title'>
-    | Diag<'extra-blocks-tail'> & { nodes: Node[] }
+    | Diag<'extra-nodes-tail'> & { nodes: Node[] }
     | Diag<'unexpected-raw-node'> & { node: Node }
     | Diag<'couldnt-build-span'> & { node: Node, context: 'attr' | 'footnote' }
     | Diag<'couldnt-resolve-ref'> & { id: string }

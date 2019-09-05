@@ -53,7 +53,7 @@ function footnoteSection(): XmlHandler {
             name('a'),
             () => [{ node: 'ignore' } as IgnoreNode]
         );
-        const rec = headNode(env.xml2blocks);
+        const rec = headNode(env.xml2raw);
 
         const parser = translate(
             and(

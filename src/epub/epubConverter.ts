@@ -1,4 +1,4 @@
-import { ChapterTitle, Book, KnownTag, tagValue, RawBookNode } from 'booka-common';
+import { ChapterTitle, Book, KnownTag, RawBookNode } from 'booka-common';
 import { EpubBook, EpubSection } from './epubParser.types';
 import {
     isElement, XmlNodeElement, XmlNode, childForPath,
@@ -6,7 +6,7 @@ import {
 import {
     AsyncIter, isWhitespaces, flatten, equalsToOneOf,
 } from '../utils';
-import { blocks2book } from '../bookBlocks';
+import { buildVolume } from '../bookBlocks';
 import { EpubConverterParameters, EpubConverter, EpubConverterResult, MetadataHook, MetadataRecord } from './epubConverter.types';
 import { ParserDiagnoser, diagnoser } from '../log';
 import {
@@ -29,12 +29,12 @@ async function convertEpub(epub: EpubBook, params: EpubConverterParameters): Pro
 
         const hooks = params.options[epub.kind];
         const sections = await AsyncIter.toArray(epub.sections());
-        const blocks = sections2blocks(sections, hooks.nodeHooks, ds);
+        const rawNodes = parseRawNodes(sections, hooks.nodeHooks, ds);
         const tags = buildMetaTags(epub, hooks.metadataHooks, ds);
-        const metaBlocks = buildMetaBlocks(tags);
-        const allBlocks = blocks.concat(metaBlocks);
+        const metaNodes = buildMetaNodes(tags);
+        const allNodes = rawNodes.concat(metaNodes);
 
-        const volume = await blocks2book(allBlocks, {
+        const volume = await buildVolume(allNodes, {
             ds,
             resolveImageRef: epub.imageResolver,
         });
@@ -61,7 +61,7 @@ async function convertEpub(epub: EpubBook, params: EpubConverterParameters): Pro
     }
 }
 
-function buildMetaBlocks(tags: KnownTag[]): RawBookNode[] {
+function buildMetaNodes(tags: KnownTag[]): RawBookNode[] {
     const filtered = tags.filter(t => equalsToOneOf(t.tag, ['author', 'title', 'cover-ref']));
     const nodes = filtered.map(t => ({
         node: 'tag',
@@ -77,16 +77,16 @@ function getBodyElement(node: XmlNode): XmlNodeElement | undefined {
         : undefined;
 }
 
-function sections2blocks(sections: EpubSection[], hooks: XmlHandler[], ds: ParserDiagnoser) {
+function parseRawNodes(sections: EpubSection[], hooks: XmlHandler[], ds: ParserDiagnoser) {
     const handlers = hooks.concat(standardHandlers);
     const handler = expectToHandle(combineHandlers(handlers));
 
     const env: XmlHandlerEnv = {
         ds: ds,
         filePath: null as any,
-        xml2blocks: null as any,
+        xml2raw: null as any,
     };
-    env.xml2blocks = n => handler(n, env);
+    env.xml2raw = n => handler(n, env);
 
     const result: RawBookNode[] = [];
     for (const section of sections) {
@@ -96,10 +96,10 @@ function sections2blocks(sections: EpubSection[], hooks: XmlHandler[], ds: Parse
         }
 
         env.filePath = section.filePath;
-        const blockArrays = body
+        const nodeArrays = body
             .children
-            .map(env.xml2blocks);
-        result.push(...flatten(blockArrays));
+            .map(env.xml2raw);
+        result.push(...flatten(nodeArrays));
     }
 
     return result;
@@ -123,20 +123,20 @@ const text = handleXml(node => {
 const italic = constrainElement(['em', 'i'], {}, (el, env) => ({
     node: 'attr',
     attributes: ['italic'],
-    content: buildContainerBlock(el.children, env),
+    content: buildContainerNode(el.children, env),
 }));
 
 const bold = constrainElement(['strong', 'b'], {}, (el, env) => ({
     node: 'attr',
     attributes: ['bold'],
-    content: buildContainerBlock(el.children, env),
+    content: buildContainerNode(el.children, env),
 }));
 
 const quote = constrainElement('q', { class: null }, (el, env) => {
     return {
         node: 'attr',
         attributes: ['quote'],
-        content: buildContainerBlock(el.children, env),
+        content: buildContainerNode(el.children, env),
     };
 });
 
@@ -151,13 +151,13 @@ const a = constrainElement(
             return {
                 node: 'ref',
                 to: el.attributes.href,
-                content: buildContainerBlock(el.children, env),
+                content: buildContainerNode(el.children, env),
             };
         } else if (el.attributes.id !== undefined) {
             return {
                 node: 'container',
                 ref: `${env.filePath}#${el.attributes.id}`,
-                nodes: [buildContainerBlock(el.children, env)],
+                nodes: [buildContainerNode(el.children, env)],
             };
         } else {
             return { node: 'ignore' };
@@ -171,7 +171,7 @@ const pph = constrainElement(
         'xml:space': null, // TODO: handle ?
     },
     (el, env) => {
-        const container = buildContainerBlock(el.children, env);
+        const container = buildContainerNode(el.children, env);
         const result: RawBookNode = el.attributes.id
             ? {
                 node: 'container',
@@ -249,9 +249,9 @@ const standardHandlers = [
     svg, rest,
 ];
 
-function buildContainerBlock(nodes: XmlNode[], env: XmlHandlerEnv): RawBookNode {
+function buildContainerNode(nodes: XmlNode[], env: XmlHandlerEnv): RawBookNode {
     const content = flatten(nodes
-        .map(ch => env.xml2blocks(ch)));
+        .map(ch => env.xml2raw(ch)));
 
     return {
         node: 'container',
