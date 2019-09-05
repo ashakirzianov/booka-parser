@@ -1,4 +1,4 @@
-import { KnownTag } from 'booka-common';
+import { KnownTag, RawBookNode, IgnoreNode } from 'booka-common';
 import {
     EpubConverterHooks, MetadataRecord,
 } from './epubConverter.types';
@@ -8,7 +8,6 @@ import {
     seq, children, and, whitespaced, name, attrs,
     attrsChildren, extractText, isElement, nameEq,
 } from '../xml';
-import { Block } from '../bookBlocks';
 import { forceType, flatten } from '../utils';
 import { XmlHandler, parserHook, ignoreClass } from './nodeHandler';
 import { ParserDiagnoser } from '../log';
@@ -52,7 +51,7 @@ function footnoteSection(): XmlHandler {
         ));
         const back = translate(
             name('a'),
-            () => [{ block: 'ignore' as const }]
+            () => [{ node: 'ignore' } as IgnoreNode]
         );
         const rec = headNode(env.xml2blocks);
 
@@ -61,14 +60,11 @@ function footnoteSection(): XmlHandler {
                 divId,
                 children(seq(title, some(choice(back, rec)))),
             ),
-            ([id, [tls, bs]]) => [forceType<Block>({
-                block: 'footnote-candidate',
-                id: `${env.filePath}#${id}` || 'no-id', // TODO: report missing id
-                title: tls || [], // TODO: report missing title
-                content: {
-                    block: 'container',
-                    content: flatten(bs),
-                },
+            ([id, [tls, bs]]) => [forceType<RawBookNode>({
+                node: 'container',
+                ref: `${env.filePath}#${id}` || 'no-id', // TODO: report missing id
+                // title: tls || [], // TODO: handle title
+                nodes: flatten(bs),
             })],
         );
 
@@ -80,19 +76,19 @@ function titlePage(): XmlHandler {
     return parserHook(() => {
         const bookTitle = translate(
             extractText(attrs({ class: 'title1' })),
-            t => forceType<Block>({
-                block: 'book-title',
-                title: t,
+            t => forceType<RawBookNode>({
+                node: 'tag',
+                tag: { tag: 'title', value: t },
             }),
         );
         const bookAuthor = translate(
             extractText(attrs({ class: 'title_authors' })),
-            a => forceType<Block>({
-                block: 'book-author',
-                author: a,
+            a => forceType<RawBookNode>({
+                node: 'tag',
+                tag: { tag: 'author', value: a },
             }),
         );
-        const ignore = headNode(() => forceType<Block>({ block: 'ignore' }));
+        const ignore = headNode(() => forceType<RawBookNode>({ node: 'ignore' }));
 
         const parser = attrsChildren(
             { class: 'titlepage' },
@@ -123,8 +119,8 @@ function divTitle(): XmlHandler {
 
         const parser = translate(
             and(divLevel, children(content)),
-            ([level, ts]) => [forceType<Block>({
-                block: 'chapter-title',
+            ([level, ts]) => [forceType<RawBookNode>({
+                node: 'title',
                 title: ts,
                 level: 4 - level,
             })],

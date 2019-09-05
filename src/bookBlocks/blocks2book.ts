@@ -1,11 +1,6 @@
 import {
-    Block, ContainerBlock, FootnoteCandidateBlock, BookTitleBlock,
-    BookAuthorBlock,
-    BookCoverBlock,
-} from './block';
-import {
     BookContentNode, Span, ChapterNode, VolumeNode, BookMeta,
-    assignAttributes,
+    RawBookNode, TagNode, tagValue, assignAttributes, containedNodes, RawContainerNode,
 } from 'booka-common';
 import {
     flatten, filterUndefined, assertNever,
@@ -16,7 +11,7 @@ export type Block2BookEnv = {
     ds: ParserDiagnoser,
     resolveImageRef: (ref: string) => Promise<Buffer | undefined>,
 };
-export async function blocks2book(blocks: Block[], env: Block2BookEnv): Promise<VolumeNode> {
+export async function blocks2book(blocks: RawBookNode[], env: Block2BookEnv): Promise<VolumeNode> {
     const { rest, footnotes } = separateFootnoteContainers(blocks);
     const meta = await collectMeta(rest, env);
     const preprocessed = preprocess(rest);
@@ -36,100 +31,79 @@ export async function blocks2book(blocks: Block[], env: Block2BookEnv): Promise<
     };
 }
 
-async function collectMeta(blocks: Block[], env: Block2BookEnv): Promise<Partial<BookMeta>> {
-    const result: Partial<BookMeta> = {};
-    const titleBlock = blocks.find((b): b is BookTitleBlock => b.block === 'book-title');
-    if (titleBlock) {
-        result.title = titleBlock.title;
-    }
+async function collectMeta(blocks: RawBookNode[], env: Block2BookEnv): Promise<Partial<BookMeta>> {
+    const tags = blocks
+        .filter((n): n is TagNode => n.node === 'tag')
+        .map(n => n.tag);
 
-    const authorBlock = blocks.find((b): b is BookAuthorBlock => b.block === 'book-author');
-    if (authorBlock) {
-        result.author = authorBlock.author;
-    }
+    const coverRef = tagValue(tags, 'cover-ref') || undefined;
+    const coverImageBuffer = coverRef ? await env.resolveImageRef(coverRef) : undefined;
+    const coverImageNode = coverRef && coverImageBuffer ? {
+        node: 'image-data' as const,
+        id: coverRef,
+        data: coverImageBuffer,
+    } : undefined;
 
-    const coverBlock = blocks.find((b): b is BookCoverBlock => b.block === 'cover');
-    if (coverBlock) {
-        const imageBuffer = await env.resolveImageRef(coverBlock.reference);
-        if (imageBuffer) {
-            result.coverImageNode = {
-                node: 'image-data',
-                id: coverBlock.reference,
-                data: imageBuffer,
-            };
-        } else {
-            env.ds.add({ diag: 'couldnt-resolve-ref', id: coverBlock.reference, context: 'cover' });
-        }
-    }
-
-    return result;
+    return {
+        title: tagValue(tags, 'title') || undefined,
+        author: tagValue(tags, 'author') || undefined,
+        coverImageNode: coverImageNode,
+    };
 }
 
-function separateFootnoteContainers(blocks: Block[]) {
+function separateFootnoteContainers(blocks: RawBookNode[]) {
     const footnoteIds = flatten(blocks.map(collectFootnoteIds));
     return separateFootnoteContainersImpl(blocks, footnoteIds);
 }
 
-function collectFootnoteIds(block: Block): string[] {
-    switch (block.block) {
-        case 'footnote-ref':
-            return [block.id];
-        case 'container':
-            return flatten(block.content.map(collectFootnoteIds));
-        case 'footnote-candidate':
-            return collectFootnoteIds(block.content);
-        case 'attrs':
-            return collectFootnoteIds(block.content);
+function collectFootnoteIds(block: RawBookNode): string[] {
+    switch (block.node) {
+        case 'ref':
+            return [block.to];
+        // TODO: collect from span node ?
         default:
-            return [];
+            const nodes = containedNodes(block);
+            return flatten(nodes.map(collectFootnoteIds));
     }
 }
 
-function separateFootnoteContainersImpl(blocks: Block[], footnoteIds: string[]) {
-    const rest: Block[] = [];
-    const footnotes: FootnoteCandidateBlock[] = [];
+// TODO: review and re-implement
+function separateFootnoteContainersImpl(blocks: RawBookNode[], footnoteIds: string[]) {
+    const rest: RawBookNode[] = [];
+    const footnotes: RawBookNode[] = [];
     for (const block of blocks) {
-        if (block.block === 'footnote-candidate') {
-            if (footnoteIds.some(fid => fid === block.id)) {
-                footnotes.push(block);
-            } else {
-                const inside = separateFootnoteContainersImpl([block.content], footnoteIds);
-                rest.push({
-                    block: 'container',
-                    content: inside.rest,
-                });
-                footnotes.push(...inside.footnotes);
-            }
-        } else if (block.block === 'container') {
-            const inside = separateFootnoteContainersImpl(block.content, footnoteIds);
-            rest.push({
-                ...block,
-                content: inside.rest,
-            });
-            footnotes.push(...inside.footnotes);
-        } else if (block.block === 'attrs') {
-            const inside = separateFootnoteContainersImpl([block.content], footnoteIds);
-            rest.push({
-                block: 'container',
-                content: inside.rest,
-            });
-            footnotes.push(...inside.footnotes);
+        if (footnoteIds.some(fid => fid === block.ref)) {
+            footnotes.push(block);
         } else {
-            rest.push(block);
+            const nodes = containedNodes(block);
+            if (nodes.length > 0) {
+                const inside = separateFootnoteContainersImpl(nodes, footnoteIds);
+                if (inside.footnotes.length > 0) {
+                    rest.push({
+                        node: 'container',
+                        nodes: inside.rest,
+                    });
+                    footnotes.push(...inside.footnotes);
+                } else {
+                    rest.push(block);
+                }
+            } else {
+                rest.push(block);
+            }
         }
     }
 
     return { rest, footnotes };
 }
 
-function preprocess(blocks: Block[]): Block[] {
-    const result: Block[] = [];
+function preprocess(blocks: RawBookNode[]): RawBookNode[] {
+    const result: RawBookNode[] = [];
     for (const block of blocks) {
-        switch (block.block) {
+        switch (block.node) {
             case 'container':
                 const preprocessed = {
                     ...block,
-                    content: preprocess(block.content),
+                    content: preprocess(block.nodes),
                 };
                 if (shouldBeFlatten(preprocessed)) {
                     result.push(...preprocessed.content);
@@ -137,9 +111,7 @@ function preprocess(blocks: Block[]): Block[] {
                     result.push(preprocessed);
                 }
                 break;
-            case 'cover':
-            case 'book-title':
-            case 'book-author':
+            case 'tag':
             case 'ignore':
                 break;
             default:
@@ -151,19 +123,19 @@ function preprocess(blocks: Block[]): Block[] {
     return result;
 }
 
-function shouldBeFlatten(container: ContainerBlock): boolean {
-    return !container.content.some(b => (b.block === 'text') || b.block === 'attrs');
+function shouldBeFlatten(container: RawContainerNode): boolean {
+    return !container.nodes.some(b => (b.node === 'span') || b.node === 'attr');
 }
 
 type Env = Block2BookEnv & {
-    footnotes: FootnoteCandidateBlock[],
+    footnotes: RawBookNode[],
 };
 
-async function buildChapters(blocks: Block[], env: Env) {
+async function buildChapters(blocks: RawBookNode[], env: Env) {
     const { nodes, next } = await buildChaptersImpl(blocks, undefined, env);
 
     if (next.length !== 0) {
-        env.ds.add({ diag: 'extra-blocks-tail', blocks });
+        env.ds.add({ diag: 'extra-blocks-tail', nodes: blocks });
     }
 
     return nodes;
@@ -171,14 +143,14 @@ async function buildChapters(blocks: Block[], env: Env) {
 
 type BuildChaptersResult = {
     nodes: BookContentNode[],
-    next: Block[],
+    next: RawBookNode[],
 };
-async function buildChaptersImpl(blocks: Block[], level: number | undefined, env: Env): Promise<BuildChaptersResult> {
+async function buildChaptersImpl(blocks: RawBookNode[], level: number | undefined, env: Env): Promise<BuildChaptersResult> {
     if (blocks.length === 0) {
         return { nodes: [], next: [] };
     }
     const block = blocks[0];
-    if (block.block === 'chapter-title') {
+    if (block.node === 'title') {
         if (level === undefined || level > block.level) {
             const content = await buildChaptersImpl(blocks.slice(1), block.level, env);
             const chapter: ChapterNode = {
@@ -208,23 +180,23 @@ async function buildChaptersImpl(blocks: Block[], level: number | undefined, env
     }
 }
 
-async function nodeFromBlock(block: Block, env: Env): Promise<BookContentNode | undefined> {
-    switch (block.block) {
-        case 'image':
-            const imageBuffer = await env.resolveImageRef(block.reference);
+async function nodeFromBlock(block: RawBookNode, env: Env): Promise<BookContentNode | undefined> {
+    switch (block.node) {
+        case 'image-ref':
+            const imageBuffer = await env.resolveImageRef(block.imageId);
             if (imageBuffer) {
                 return {
                     node: 'image-data',
-                    id: block.reference,
+                    id: block.imageId,
                     data: imageBuffer,
                 };
             } else {
-                env.ds.add({ diag: 'couldnt-resolve-ref', id: block.reference, context: 'image-node' });
+                env.ds.add({ diag: 'couldnt-resolve-ref', id: block.imageId, context: 'image-node' });
                 return undefined;
             }
-        case 'text':
-        case 'attrs':
-        case 'footnote-ref':
+        case 'span':
+        case 'attr':
+        case 'ref':
             const span = spanFromBlock(block, env);
             if (span) {
                 return {
@@ -235,7 +207,7 @@ async function nodeFromBlock(block: Block, env: Env): Promise<BookContentNode | 
                 return undefined;
             }
         case 'container':
-            const spans = filterUndefined(block.content
+            const spans = filterUndefined(block.nodes
                 .map(c => spanFromBlock(c, env)));
             return {
                 node: 'paragraph',
@@ -244,97 +216,68 @@ async function nodeFromBlock(block: Block, env: Env): Promise<BookContentNode | 
                     spans: spans,
                 },
             };
-        case 'footnote-candidate':
-            const footnoteSpan = spanFromBlock(block.content, env);
-            return footnoteSpan
-                ? {
-                    node: 'paragraph',
-                    span: footnoteSpan,
-                }
-                : undefined;
         default:
-            env.ds.add({ diag: 'unexpected-block', block, context: 'node' });
+            env.ds.add({ diag: 'unexpected-raw-node', node: block, context: 'node' });
             return undefined;
     }
 }
 
-function spanFromBlock(block: Block, env: Env): Span | undefined {
-    switch (block.block) {
-        case 'text':
-            return block.text;
-        case 'attrs':
+function spanFromBlock(block: RawBookNode, env: Env): Span | undefined {
+    switch (block.node) {
+        case 'span':
+            return block.span;
+        case 'attr':
             const attrSpan = spanFromBlock(block.content, env);
             if (attrSpan !== undefined) {
-                return assignAttributes(block.attr)(attrSpan);
+                return assignAttributes(...block.attributes)(attrSpan);
             } else {
-                env.ds.add({ diag: 'couldnt-build-span', block, context: 'attr' });
+                env.ds.add({ diag: 'couldnt-build-span', node: block, context: 'attr' });
                 return undefined;
             }
-        case 'footnote-ref':
-            const footnoteContainer = env.footnotes.find(f => f.id === block.id);
+        case 'ref':
+            const footnoteContainer = env.footnotes.find(f => f.ref === block.to);
             if (footnoteContainer) {
                 // TODO: extract title from content
                 const content = spanFromBlock(block.content, env);
                 if (!content) {
-                    env.ds.add({ diag: 'couldnt-build-span', block, context: 'footnote' });
+                    env.ds.add({ diag: 'couldnt-build-span', node: block, context: 'footnote' });
                     return undefined;
                 }
-                const footnote = spanFromBlock(footnoteContainer.content, env);
-                if (!footnote) {
-                    env.ds.add({ diag: 'couldnt-build-span', block, context: 'footnote' });
-                    return undefined;
-                }
+                // TODO: re-implement
+                // const footnote = spanFromBlock(footnoteContainer.content, env);
+                // if (!footnote) {
+                //     env.ds.add({ diag: 'couldnt-build-span', block, context: 'footnote' });
+                //     return undefined;
+                // }
                 return {
                     span: 'note',
-                    id: block.id,
+                    id: block.to,
                     content,
-                    footnote,
-                    title: footnoteContainer.title,
+                    footnote: '',
+                    title: [],
                 };
             } else {
-                env.ds.add({ diag: 'couldnt-resolve-ref', id: block.id, context: 'footnote' });
+                env.ds.add({ diag: 'couldnt-resolve-ref', id: block.to, context: 'footnote' });
                 return undefined;
             }
         case 'container':
-            const spans = filterUndefined(block.content.map(c => spanFromBlock(c, env)));
+            const spans = filterUndefined(block.nodes.map(c => spanFromBlock(c, env)));
             return {
                 span: 'compound',
                 spans: spans,
             };
-        case 'footnote-candidate':
-            return spanFromBlock(block.content, env);
-        case 'ignore': case 'book-author':
+        case 'ignore':
             return undefined;
-        case 'chapter-title': case 'book-title':
-        case 'cover': case 'image':
-            // TODO: turn back warns
-            // env.ds.warn(`Unexpected title: ${block2string(block)}`);
+        case 'image-data':
+        case 'image-ref':
+        case 'image-url':
+        case 'title':
+        case 'tag':
+            env.ds.add({ diag: 'unexpected-raw-node', node: block, context: 'span' });
             return undefined;
         default:
-            env.ds.add({ diag: 'unexpected-block', block, context: 'span' });
+            env.ds.add({ diag: 'unexpected-raw-node', node: block, context: 'span' });
             assertNever(block);
             return undefined;
-    }
-}
-
-function isEmptyBlock(block: Block): boolean {
-    switch (block.block) {
-        case 'text':
-            return block.text ? false : true;
-        case 'attrs':
-        case 'footnote-candidate':
-            return isEmptyBlock(block.content);
-        case 'container':
-            return block.content.length === 0 || block.content.every(isEmptyBlock);
-        case 'footnote-ref':
-        case 'book-author':
-        case 'book-title':
-        case 'chapter-title':
-        case 'cover':
-        case 'image':
-            return false;
-        case 'ignore':
-        default:
-            return true;
     }
 }

@@ -1,21 +1,21 @@
+import { RawBookNode } from 'booka-common';
 import { ParserDiagnoser } from '../log';
 import {
     XmlNode, XmlNodeElement, isElement, XmlParser,
     XmlAttributes,
 } from '../xml';
-import { Block } from '../bookBlocks';
 import { Constraint, ConstraintMap, checkValue, checkObject } from '../constraint';
 import { equalsToOneOf } from '../utils';
 
 export type XmlHandlerEnv = {
     ds: ParserDiagnoser,
-    xml2blocks: (x: XmlNode) => Block[],
+    xml2blocks: (x: XmlNode) => RawBookNode[],
     filePath: string,
 };
-export type XmlHandlerResult = Block[] | undefined;
+export type XmlHandlerResult = RawBookNode[] | undefined;
 export type XmlHandler = (x: XmlNode, env: XmlHandlerEnv) => XmlHandlerResult;
 
-export type SimpleHandler<T extends XmlNode = XmlNode> = (el: T, env: XmlHandlerEnv) => (Block | undefined);
+export type SimpleHandler<T extends XmlNode = XmlNode> = (el: T, env: XmlHandlerEnv) => (RawBookNode | undefined);
 
 export function handleXml(handler: SimpleHandler): XmlHandler {
     return (node, env) => {
@@ -71,7 +71,7 @@ export function handleElement(handler: SimpleElementHandler): XmlHandler {
     };
 }
 
-export function parserHook(buildParser: (env: XmlHandlerEnv) => XmlParser<Block[]>): XmlHandler {
+export function parserHook(buildParser: (env: XmlHandlerEnv) => XmlParser<RawBookNode[]>): XmlHandler {
     return (node, env) => {
         const parser = buildParser(env);
         const result = parser([node]);
@@ -96,7 +96,7 @@ export function combineHandlers(handlers: XmlHandler[]): XmlHandler {
 }
 
 export function expectToHandle(handler: XmlHandler) {
-    return (node: XmlNode, env: XmlHandlerEnv): Block[] => {
+    return (node: XmlNode, env: XmlHandlerEnv): RawBookNode[] => {
         const result = handler(node, env);
         if (result) {
             return result;
@@ -105,7 +105,7 @@ export function expectToHandle(handler: XmlHandler) {
                 diag: 'unexpected-node',
                 node: node,
             });
-            return [{ block: 'ignore' }];
+            return [{ node: 'ignore' }];
         }
     };
 }
@@ -113,7 +113,7 @@ export function expectToHandle(handler: XmlHandler) {
 export function ignoreClass(className: string) {
     return handleElement(el =>
         el.attributes.class === className
-            ? { block: 'ignore' }
+            ? { node: 'ignore' }
             : undefined
     );
 }
@@ -121,7 +121,7 @@ export function ignoreClass(className: string) {
 export function ignoreTags(tags: string[]) {
     return handleElement(el =>
         equalsToOneOf(el.name, tags)
-            ? { block: 'ignore' }
+            ? { node: 'ignore' }
             : undefined
     );
 }

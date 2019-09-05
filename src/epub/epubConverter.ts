@@ -1,12 +1,12 @@
-import { ChapterTitle, Book, KnownTag, tagValue } from 'booka-common';
+import { ChapterTitle, Book, KnownTag, tagValue, RawBookNode } from 'booka-common';
 import { EpubBook, EpubSection } from './epubParser.types';
 import {
     isElement, XmlNodeElement, XmlNode, childForPath,
 } from '../xml';
 import {
-    AsyncIter, isWhitespaces, flatten,
+    AsyncIter, isWhitespaces, flatten, equalsToOneOf,
 } from '../utils';
-import { Block, ContainerBlock, blocks2book } from '../bookBlocks';
+import { blocks2book } from '../bookBlocks';
 import { EpubConverterParameters, EpubConverter, EpubConverterResult, MetadataHook, MetadataRecord } from './epubConverter.types';
 import { ParserDiagnoser, diagnoser } from '../log';
 import {
@@ -61,34 +61,13 @@ async function convertEpub(epub: EpubBook, params: EpubConverterParameters): Pro
     }
 }
 
-function buildMetaBlocks(tags: KnownTag[]): Block[] {
-    const result: Block[] = [];
-
-    const titleTag = tagValue(tags, 'title');
-    if (titleTag) {
-        result.push({
-            block: 'book-title',
-            title: titleTag,
-        });
-    }
-
-    const authorTag = tagValue(tags, 'author');
-    if (authorTag) {
-        result.push({
-            block: 'book-author',
-            author: authorTag,
-        });
-    }
-
-    const coverRefTag = tagValue(tags, 'cover-ref');
-    if (coverRefTag) {
-        result.push({
-            block: 'cover',
-            reference: coverRefTag,
-        });
-    }
-
-    return result;
+function buildMetaBlocks(tags: KnownTag[]): RawBookNode[] {
+    const filtered = tags.filter(t => equalsToOneOf(t.tag, ['author', 'title', 'cover-ref']));
+    const nodes = filtered.map(t => ({
+        node: 'tag',
+        tag: t,
+    } as const));
+    return nodes;
 }
 
 function getBodyElement(node: XmlNode): XmlNodeElement | undefined {
@@ -109,7 +88,7 @@ function sections2blocks(sections: EpubSection[], hooks: XmlHandler[], ds: Parse
     };
     env.xml2blocks = n => handler(n, env);
 
-    const result: Block[] = [];
+    const result: RawBookNode[] = [];
     for (const section of sections) {
         const body = getBodyElement(section.content);
         if (!body) {
@@ -132,31 +111,31 @@ const text = handleXml(node => {
     }
     // Skip whitespace nodes
     if (node.text.startsWith('\n') && isWhitespaces(node.text)) {
-        return { block: 'ignore' };
+        return { node: 'ignore' };
     } else {
         return {
-            block: 'text',
-            text: node.text,
+            node: 'span',
+            span: node.text,
         };
     }
 });
 
 const italic = constrainElement(['em', 'i'], {}, (el, env) => ({
-    block: 'attrs',
-    attr: 'italic',
+    node: 'attr',
+    attributes: ['italic'],
     content: buildContainerBlock(el.children, env),
 }));
 
 const bold = constrainElement(['strong', 'b'], {}, (el, env) => ({
-    block: 'attrs',
-    attr: 'bold',
+    node: 'attr',
+    attributes: ['bold'],
     content: buildContainerBlock(el.children, env),
 }));
 
 const quote = constrainElement('q', { class: null }, (el, env) => {
     return {
-        block: 'attrs',
-        attr: 'quote',
+        node: 'attr',
+        attributes: ['quote'],
         content: buildContainerBlock(el.children, env),
     };
 });
@@ -170,19 +149,18 @@ const a = constrainElement(
     (el, env) => {
         if (el.attributes.href !== undefined) {
             return {
-                block: 'footnote-ref',
-                id: el.attributes.href,
+                node: 'ref',
+                to: el.attributes.href,
                 content: buildContainerBlock(el.children, env),
             };
         } else if (el.attributes.id !== undefined) {
             return {
-                block: 'footnote-candidate',
-                title: [],
-                id: `${env.filePath}#${el.attributes.id}`,
-                content: buildContainerBlock(el.children, env),
+                node: 'container',
+                ref: `${env.filePath}#${el.attributes.id}`,
+                nodes: [buildContainerBlock(el.children, env)],
             };
         } else {
-            return { block: 'ignore' };
+            return { node: 'ignore' };
         }
     });
 
@@ -194,12 +172,11 @@ const pph = constrainElement(
     },
     (el, env) => {
         const container = buildContainerBlock(el.children, env);
-        const result: Block = el.attributes.id
+        const result: RawBookNode = el.attributes.id
             ? {
-                block: 'footnote-candidate',
-                id: `${env.filePath}#${el.attributes.id}`,
-                title: [],
-                content: container,
+                node: 'container',
+                ref: `${env.filePath}#${el.attributes.id}`,
+                nodes: [container],
             }
             : container;
         return result;
@@ -212,15 +189,15 @@ const img = constrainElement(
         const src = el.attributes['src'];
         if (src) {
             return {
-                block: 'image',
-                reference: src,
+                node: 'image-ref',
+                imageId: src,
             };
         } else {
             env.ds.add({
                 diag: 'img-must-have-src',
                 node: el,
             });
-            return { block: 'ignore' };
+            return { node: 'ignore' };
         }
     });
 
@@ -228,12 +205,12 @@ const image = constrainElement('image', {}, (el, env) => {
     const xlinkHref = el.attributes['xlink:href'];
     if (xlinkHref) {
         return {
-            block: 'image',
-            reference: xlinkHref,
+            node: 'image-ref',
+            imageId: xlinkHref,
         };
     } else {
         env.ds.add({ diag: 'image-must-have-xlinkhref', node: el });
-        return { block: 'ignore' };
+        return { node: 'ignore' };
     }
 });
 
@@ -247,7 +224,7 @@ const header = constrainElement(
             env.ds.add({ diag: 'no-title', node: el });
         }
         return {
-            block: 'chapter-title',
+            node: 'title',
             title: title,
             level: 4 - level,
         };
@@ -256,14 +233,14 @@ const header = constrainElement(
 const svg = constrainElement(
     'svg',
     { viewBox: null, xmlns: null, class: null },
-    () => ({ block: 'ignore' })
+    () => ({ node: 'ignore' })
 );
 
 const rest = constrainElement(
     ['sup', 'sub', 'ul', 'li', 'br'], // TODO: do not ignore 'br'
     {},
     (el, env) => {
-        return { block: 'ignore' };
+        return { node: 'ignore' };
     });
 
 const standardHandlers = [
@@ -272,13 +249,13 @@ const standardHandlers = [
     svg, rest,
 ];
 
-function buildContainerBlock(nodes: XmlNode[], env: XmlHandlerEnv): ContainerBlock {
+function buildContainerBlock(nodes: XmlNode[], env: XmlHandlerEnv): RawBookNode {
     const content = flatten(nodes
         .map(ch => env.xml2blocks(ch)));
 
     return {
-        block: 'container',
-        content,
+        node: 'container',
+        nodes: content,
     };
 }
 

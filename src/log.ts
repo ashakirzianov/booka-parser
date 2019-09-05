@@ -1,5 +1,5 @@
+import { Node } from 'booka-common';
 import { XmlNode, XmlNodeElement } from './xml';
-import { Block } from './bookBlocks';
 import { MetadataRecord } from './epub/epubConverter.types';
 import { EpubKind } from './epub/epubParser.types';
 
@@ -35,9 +35,9 @@ export type ParserDiagnostic =
     | XmlDiag<'no-title'>
     | Diag<'unexpected-attr'> & { name: string, value: string | undefined, element: XmlNodeElement, constraint: string }
     | Diag<'empty-book-title'>
-    | Diag<'extra-blocks-tail'> & { blocks: Block[] }
-    | BlockDiag<'unexpected-block'>
-    | BlockDiag<'couldnt-build-span'> & { context: 'attr' | 'footnote' }
+    | Diag<'extra-blocks-tail'> & { nodes: Node[] }
+    | Diag<'unexpected-raw-node'> & { node: Node }
+    | Diag<'couldnt-build-span'> & { node: Node, context: 'attr' | 'footnote' }
     | Diag<'couldnt-resolve-ref'> & { id: string }
     | Diag<'unknown-kind'>
     | Diag<'unknown-meta'> & { key: string, value: any }
@@ -49,7 +49,6 @@ type Diag<K extends string> = {
     context?: string,
 };
 type XmlDiag<K extends string> = Diag<K> & { node: XmlNode };
-type BlockDiag<K extends string> = Diag<K> & { block: Block };
 
 export type LogLevel = 'info' | 'important' | 'warn';
 

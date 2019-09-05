@@ -4,6 +4,7 @@ import * as fs from 'fs';
 import { extname, join } from 'path';
 import { parseEpubAtPath } from '.';
 import { promisify } from 'util';
+import { extractNodeText } from 'booka-common';
 
 exec();
 
