@@ -1,5 +1,5 @@
 import {
-    BookContentNode, ChapterNode, VolumeNode, BookMeta,
+    BookContentNode, ChapterNode, VolumeNode, VolumeMeta,
     RawBookNode, TagNode, tagValue,
 } from 'booka-common';
 import { filterUndefined } from '../utils';
@@ -29,7 +29,7 @@ export async function buildVolume(rawNodes: RawBookNode[], env: BuildVolumeEnv):
     };
 }
 
-async function collectMeta(rawNodes: RawBookNode[], env: BuildVolumeEnv): Promise<BookMeta> {
+async function collectMeta(rawNodes: RawBookNode[], env: BuildVolumeEnv): Promise<VolumeMeta> {
     const tags = rawNodes
         .filter((n): n is TagNode => n.node === 'tag')
         .map(n => n.tag);
