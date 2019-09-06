@@ -16,7 +16,7 @@ function swipe1(nodes: RawBookNode[], refs: string[], ids: string[], ds: ParserD
     const footnotes: RawBookNode[] = [];
     const rest: RawBookNode[] = [];
     for (const node of nodes) {
-        let nodeToInsert = node;
+        let nodeToInsert: RawBookNode | undefined = node;
         if (node.ref) {
             ids.push(node.ref);
         }
@@ -25,7 +25,8 @@ function swipe1(nodes: RawBookNode[], refs: string[], ids: string[], ds: ParserD
             case 'ref':
                 if (node.to && !ids.some(id => id === node.to)) {
                     refs.push(node.to);
-                    rest.push(node);
+                } else {
+                    nodeToInsert = undefined;
                 }
                 break;
             case 'container':
@@ -53,12 +54,15 @@ function swipe1(nodes: RawBookNode[], refs: string[], ids: string[], ds: ParserD
                 break;
         }
 
-        const isFootnote = refs.some(r => r === node.ref);
-        if (isFootnote) {
-            footnotes.push(nodeToInsert);
-        } else {
-            rest.push(nodeToInsert);
+        if (nodeToInsert) {
+            const isFootnote = refs.some(r => r === node.ref);
+            if (isFootnote) {
+                footnotes.push(nodeToInsert);
+            } else {
+                rest.push(nodeToInsert);
+            }
         }
+
     }
 
     return { rest, footnotes };
