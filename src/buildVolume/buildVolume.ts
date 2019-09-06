@@ -1,11 +1,12 @@
 import {
     BookContentNode, ChapterNode, VolumeNode, BookMeta,
-    RawBookNode, TagNode, tagValue, RawContainerNode,
+    RawBookNode, TagNode, tagValue,
 } from 'booka-common';
 import { filterUndefined } from '../utils';
 import { ParserDiagnoser } from '../log';
 import { spanFromRawNode } from './common';
 import { resolveReferences } from './resolveReferences';
+import { flattenNodes } from './flattenNodes';
 
 export type BuildVolumeEnv = {
     ds: ParserDiagnoser,
@@ -14,7 +15,7 @@ export type BuildVolumeEnv = {
 export async function buildVolume(rawNodes: RawBookNode[], env: BuildVolumeEnv): Promise<VolumeNode> {
     const meta = await collectMeta(rawNodes, env);
     const resolved = resolveReferences(rawNodes, env.ds);
-    const preprocessed = preprocess(resolved);
+    const preprocessed = flattenNodes(resolved, env.ds);
     const nodes = await buildChapters(preprocessed, env);
 
     if (meta.title === undefined) {
@@ -49,37 +50,6 @@ async function collectMeta(rawNodes: RawBookNode[], env: BuildVolumeEnv): Promis
         author: tagValue(tags, 'author') || undefined,
         coverImageNode: coverImageNode,
     };
-}
-
-function preprocess(rawNodes: RawBookNode[]): RawBookNode[] {
-    const result: RawBookNode[] = [];
-    for (const node of rawNodes) {
-        switch (node.node) {
-            case 'container':
-                const preprocessed: RawContainerNode = {
-                    ...node,
-                    nodes: preprocess(node.nodes),
-                };
-                if (shouldBeFlatten(preprocessed)) {
-                    result.push(...preprocessed.nodes);
-                } else {
-                    result.push(preprocessed);
-                }
-                break;
-            case 'tag':
-            case 'ignore':
-                break;
-            default:
-                result.push(node);
-                break;
-        }
-    }
-
-    return result;
-}
-
-function shouldBeFlatten(container: RawContainerNode): boolean {
-    return !container.nodes.some(n => (n.node === 'span') || n.node === 'attr');
 }
 
 async function buildChapters(rawNodes: RawBookNode[], env: BuildVolumeEnv) {
