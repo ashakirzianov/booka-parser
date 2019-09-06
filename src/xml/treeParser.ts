@@ -11,35 +11,33 @@ export function nameEq(n1: string, n2: string): boolean {
     return caseInsensitiveEq(n1, n2);
 }
 
-const textNodeImpl = <T>(f?: (text: string) => T | null) => headParser((n: XmlNode) =>
-    n.type === 'text'
-        ? (f ? f(n.text) : n.text)
-        : null
-);
-
-export function textNode<T>(f: (text: string) => T | null): XmlParser<T>;
-export function textNode(): XmlParser<string>;
-export function textNode<T>(f?: (text: string) => T | null): XmlParser<T | string> {
-    return textNodeImpl(f);
+export function textNode<T, E = undefined>(f: (text: string) => T | null): XmlParser<T, E>;
+export function textNode<E = undefined>(): XmlParser<string, E>;
+export function textNode<T, E>(f?: (text: string) => T | null): XmlParser<T | string, E> {
+    return headParser((n: XmlNode) =>
+        n.type === 'text'
+            ? (f ? f(n.text) : n.text)
+            : null
+    );
 }
 
-export const whitespaces = textNode(text => isWhitespaces(text) ? true : null);
+export const whitespaces = textNode<boolean, any>(text => isWhitespaces(text) ? true : null);
 
-export function whitespaced<T>(parser: XmlParser<T>): XmlParser<T> {
+export function whitespaced<T, E>(parser: XmlParser<T, E>): XmlParser<T, E> {
     return translate(
         seq(whitespaces, parser),
         ([_, result]) => result,
     );
 }
 
-export function beforeWhitespaces<T>(parser: XmlParser<T>): XmlParser<T> {
+export function beforeWhitespaces<T, E>(parser: XmlParser<T, E>): XmlParser<T> {
     return translate(
         seq(parser, whitespaces),
         ([result, _]) => result,
     );
 }
 
-export function children<T>(parser: XmlParser<T>): XmlParser<T> {
+export function children<T, E>(parser: XmlParser<T, E>): XmlParser<T, E> {
     return input => {
         const head = input.stream[0];
         if (head === undefined) {
@@ -58,7 +56,7 @@ export function children<T>(parser: XmlParser<T>): XmlParser<T> {
     };
 }
 
-export function parent<T>(parser: XmlParser<T>): XmlParser<T> {
+export function parent<T, E>(parser: XmlParser<T, E>): XmlParser<T, E> {
     return input => {
         const head = input.stream[0];
         if (head === undefined) {
@@ -77,7 +75,7 @@ export function parent<T>(parser: XmlParser<T>): XmlParser<T> {
     };
 }
 
-export function between<T>(left: XmlParser<any>, right: XmlParser<any>, inside: XmlParser<T>): XmlParser<T> {
+export function between<T, E>(left: XmlParser<any, E>, right: XmlParser<any, E>, inside: XmlParser<T, E>): XmlParser<T, E> {
     return input => {
         const result = seq(
             some(not(left)),
@@ -93,7 +91,7 @@ export function between<T>(left: XmlParser<any>, right: XmlParser<any>, inside: 
     };
 }
 
-function parsePathHelper<T>(pathComponents: string[], then: XmlParser<T>, input: Stream<XmlNode>): Result<Stream<XmlNode>, T> {
+function parsePathHelper<T, E>(pathComponents: string[], then: XmlParser<T, E>, input: Stream<XmlNode, E>): Result<Stream<XmlNode, E>, T> {
     if (pathComponents.length === 0) {
         return fail('parse path: can\'t parse to empty path');
     }
@@ -118,6 +116,6 @@ function parsePathHelper<T>(pathComponents: string[], then: XmlParser<T>, input:
     return parsePathHelper(pathComponents.slice(1), then, nextInput);
 }
 
-export function path<T>(paths: string[], then: XmlParser<T>): XmlParser<T> {
+export function path<T, E>(paths: string[], then: XmlParser<T, E>): XmlParser<T, E> {
     return input => parsePathHelper(paths, then, input);
 }

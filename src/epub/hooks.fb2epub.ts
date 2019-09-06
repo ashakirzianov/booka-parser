@@ -5,7 +5,7 @@ import {
 import {
     nameChildren, textNode, nameAttrsChildren, some,
     translate, nameAttrs, choice,
-    seq, children, and, whitespaced, name, attrs,
+    seq, children, and, whitespaced, attrs,
     attrsChildren, extractText, isElement, nameEq, headParser, XmlNode,
 } from '../xml';
 import { forceType, flatten } from '../utils';

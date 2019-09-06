@@ -43,7 +43,7 @@ export function end<T = any>(): StreamParser<T, undefined> {
         : fail(`Expected end of input, got: '${input}`);
 }
 
-export function not<T>(parser: StreamParser<T, any>): StreamParser<T, T> {
+export function not<T, E>(parser: StreamParser<T, any, E>): StreamParser<T, T, E> {
     return input => {
         const head = input.stream[0];
         if (head === undefined) {
