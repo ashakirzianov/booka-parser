@@ -4,9 +4,9 @@ import {
 } from './epubConverter.types';
 import {
     nameChildren, textNode, nameAttrsChildren, some,
-    translate, headNode, nameAttrs, choice,
+    translate, nameAttrs, choice,
     seq, children, and, whitespaced, name, attrs,
-    attrsChildren, extractText, isElement, nameEq,
+    attrsChildren, extractText, isElement, nameEq, headParser, XmlNode,
 } from '../xml';
 import { forceType, flatten } from '../utils';
 import { XmlHandler, parserHook, ignoreClass } from './nodeHandler';
@@ -53,7 +53,7 @@ function footnoteSection(): XmlHandler {
             nameAttrs('a', { class: 'note_anchor' }),
             () => [{ node: 'ignore' } as IgnoreNode]
         );
-        const rec = headNode(env.xml2raw);
+        const rec = headParser(env.xml2raw);
 
         const parser = translate(
             and(
@@ -91,7 +91,7 @@ function titlePage(): XmlHandler {
                 tag: { tag: 'author', value: a },
             }),
         );
-        const ignore = headNode(() => forceType<RawBookNode>({ node: 'ignore' }));
+        const ignore = headParser((x: any) => forceType<RawBookNode>({ node: 'ignore' }));
 
         const parser = attrsChildren(
             { class: 'titlepage' },
@@ -104,7 +104,7 @@ function titlePage(): XmlHandler {
 
 function divTitle(): XmlHandler {
     return parserHook(() => {
-        const divLevel = headNode(n => {
+        const divLevel = headParser((n: XmlNode) => {
             if (isElement(n) && nameEq('div', n.name)
                 && n.attributes.class && n.attributes.class.startsWith('title')) {
                 const levelString = n.attributes.class.slice('title'.length);

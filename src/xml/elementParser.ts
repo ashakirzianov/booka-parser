@@ -6,18 +6,18 @@ import {
     tagged,
     projectFirst, and, expected, projectLast, translate,
 } from './parserCombinators';
-import { headNode, children, XmlParser, textNode } from './treeParser';
+import { children, XmlParser, textNode } from './treeParser';
 import { XmlNodeElement, isElement, xmlNode2String, XmlNode } from './xmlNode';
-import { predicate } from './arrayParser';
+import { headParser, predicate } from './streamParser';
 
 export const elementNode = <T>(f: (e: XmlNodeElement) => T | null) =>
-    headNode(n => isElement(n) ? f(n) : null);
+    headParser((n: XmlNode) => isElement(n) ? f(n) : null);
 
 function fromPredicate(pred: ElementPredicate) {
     return tagged(
         predicate(andPred(elemPred(), pred)),
-        nodes =>
-            `On node: ${nodes[0] && xmlNode2String(nodes[0])}`
+        input =>
+            `On node: ${input.stream[0] && xmlNode2String(input.stream[0])}`
     );
 }
 export const name = (n: ConstraintValue<string>) =>

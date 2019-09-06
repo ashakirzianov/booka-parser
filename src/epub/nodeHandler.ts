@@ -3,6 +3,7 @@ import { ParserDiagnoser } from '../log';
 import {
     XmlNode, XmlNodeElement, isElement, XmlParser,
     XmlAttributes,
+    stream,
 } from '../xml';
 import { Constraint, ConstraintMap, checkValue, checkObject } from '../constraint';
 import { equalsToOneOf } from '../utils';
@@ -74,7 +75,7 @@ export function handleElement(handler: SimpleElementHandler): XmlHandler {
 export function parserHook(buildParser: (env: XmlHandlerEnv) => XmlParser<RawBookNode[]>): XmlHandler {
     return (node, env) => {
         const parser = buildParser(env);
-        const result = parser([node]);
+        const result = parser(stream([node]));
 
         return result.success
             ? result.value

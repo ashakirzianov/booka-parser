@@ -3,16 +3,15 @@ import { caseInsensitiveEq, isWhitespaces } from '../utils';
 import {
     Result, success, fail, seq, some, translate,
 } from './parserCombinators';
-import { ArrayParser, headParser, not } from './arrayParser';
+import { StreamParser, headParser, stream, nextStream, not, Stream } from './streamParser';
 
-export type XmlParser<TOut = XmlNode> = ArrayParser<XmlNode, TOut>;
+export type XmlParser<Out = XmlNode, Env = undefined> = StreamParser<XmlNode, Out, Env>;
 
-export const headNode = headParser<XmlNode>();
 export function nameEq(n1: string, n2: string): boolean {
     return caseInsensitiveEq(n1, n2);
 }
 
-const textNodeImpl = <T>(f?: (text: string) => T | null) => headNode(n =>
+const textNodeImpl = <T>(f?: (text: string) => T | null) => headParser((n: XmlNode) =>
     n.type === 'text'
         ? (f ? f(n.text) : n.text)
         : null
@@ -42,7 +41,7 @@ export function beforeWhitespaces<T>(parser: XmlParser<T>): XmlParser<T> {
 
 export function children<T>(parser: XmlParser<T>): XmlParser<T> {
     return input => {
-        const head = input[0];
+        const head = input.stream[0];
         if (head === undefined) {
             return fail('children: empty input');
         }
@@ -50,9 +49,9 @@ export function children<T>(parser: XmlParser<T>): XmlParser<T> {
             return fail('children: no children');
         }
 
-        const result = parser(head.children);
+        const result = parser(stream(head.children, input.env));
         if (result.success) {
-            return success(result.value, input.slice(1), result.message);
+            return success(result.value, nextStream(input), result.message);
         } else {
             return result;
         }
@@ -61,7 +60,7 @@ export function children<T>(parser: XmlParser<T>): XmlParser<T> {
 
 export function parent<T>(parser: XmlParser<T>): XmlParser<T> {
     return input => {
-        const head = input[0];
+        const head = input.stream[0];
         if (head === undefined) {
             return fail('parent: empty input');
         }
@@ -69,9 +68,9 @@ export function parent<T>(parser: XmlParser<T>): XmlParser<T> {
             return fail('parent: no parent');
         }
 
-        const result = parser([head.parent]);
+        const result = parser(stream([head.parent], input.env));
         if (result.success) {
-            return success(result.value, input.slice(1), result.message);
+            return success(result.value, nextStream(input), result.message);
         } else {
             return result;
         }
@@ -88,34 +87,37 @@ export function between<T>(left: XmlParser<any>, right: XmlParser<any>, inside: 
         )(input);
 
         return result.success
-            ? inside(result.value[2])
+            ? inside(stream(result.value[2], input.env))
             : result
             ;
     };
 }
 
-function parsePathHelper<T>(pathComponents: string[], then: XmlParser<T>, input: XmlNode[]): Result<XmlNode[], T> {
+function parsePathHelper<T>(pathComponents: string[], then: XmlParser<T>, input: Stream<XmlNode>): Result<Stream<XmlNode>, T> {
     if (pathComponents.length === 0) {
         return fail('parse path: can\'t parse to empty path');
     }
     const pc = pathComponents[0];
 
-    const childIndex = input.findIndex(ch =>
+    const childIndex = input.stream.findIndex(ch =>
         ch.type === 'element' && nameEq(ch.name, pc));
-    const child = input[childIndex];
+    const child = input.stream[childIndex];
     if (!child) {
         return fail(`parse path: ${pc}: can't find child`);
     }
 
     if (pathComponents.length < 2) {
-        return then(input.slice(childIndex));
+        const next = stream(input.stream.slice(childIndex), input.env);
+        const result = then(next);
+        return result;
     }
 
-    const nextInput = hasChildren(child) ? child.children : [];
+    const nextNodes = hasChildren(child) ? child.children : [];
+    const nextInput = stream(nextNodes, input.env);
 
     return parsePathHelper(pathComponents.slice(1), then, nextInput);
 }
 
 export function path<T>(paths: string[], then: XmlParser<T>): XmlParser<T> {
-    return (input: XmlNode[]) => parsePathHelper(paths, then, input);
+    return input => parsePathHelper(paths, then, input);
 }
