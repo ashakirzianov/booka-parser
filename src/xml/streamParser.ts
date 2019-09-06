@@ -1,6 +1,6 @@
 import { Parser, success, fail } from './parserCombinators';
 // TODO: remove
-import { Predicate, andPred } from './predicate';
+import { Predicate } from './predicate';
 
 export type Stream<T, E = undefined> = {
     stream: T[],
@@ -9,9 +9,9 @@ export type Stream<T, E = undefined> = {
 export type StreamParser<TIn, TOut = TIn, TEnv = undefined> =
     Parser<Stream<TIn, TEnv>, TOut>;
 
-export function stream<I>(arr: I[]): Stream<I>;
-export function stream<I, E>(arr: I[], env: E): Stream<I, E>;
-export function stream<I, E = undefined>(arr: I[], env?: E): Stream<I, E> {
+export function makeStream<I>(arr: I[]): Stream<I>;
+export function makeStream<I, E>(arr: I[], env: E): Stream<I, E>;
+export function makeStream<I, E = undefined>(arr: I[], env?: E): Stream<I, E> {
     return {
         stream: arr,
         env: env as any,
@@ -57,7 +57,15 @@ export function not<T, E>(parser: StreamParser<T, any, E>): StreamParser<T, T, E
     };
 }
 
-export function predicate<TI, TO, TE = undefined>(pred: Predicate<TI, TO>): StreamParser<TI, TO, TE> {
+export function envParser<I, O, E>(f: (env: E) => StreamParser<I, O, E>): StreamParser<I, O, E> {
+    return input => {
+        const parser = f(input.env);
+        const result = parser(input);
+        return result;
+    };
+}
+
+export function predicate<TI, TO, TE = any>(pred: Predicate<TI, TO>): StreamParser<TI, TO, TE> {
     return input => {
         const head = input.stream[0];
         if (!head) {

@@ -2,7 +2,7 @@ import { expectSuccess } from '../utils';
 import { path } from './treeParser';
 import { name } from './elementParser';
 import { xmlElement } from './xmlNode';
-import { stream } from './streamParser';
+import { makeStream } from './streamParser';
 
 it('pathParser', () => {
     const nodes = [xmlElement('root', [
@@ -15,7 +15,7 @@ it('pathParser', () => {
             ]),
         ]),
     ])];
-    const input = stream(nodes);
+    const input = makeStream(nodes);
 
     const parser = path(['root', 'c', 'cb', 'cba'], name('cba'));
 

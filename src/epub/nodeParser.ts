@@ -3,7 +3,7 @@ import { ParserDiagnoser } from '../log';
 import {
     XmlNode, XmlNodeElement, isElement, XmlParser,
     XmlAttributes,
-    stream,
+    makeStream,
     headParser,
     success,
     elementNode,
@@ -11,7 +11,7 @@ import {
 import { Constraint, ConstraintMap, checkValue, checkObject } from '../constraint';
 import { equalsToOneOf } from '../utils';
 
-export type EpubNodeParser = XmlParser<RawBookNode[], EpubNodeParserEnv>;
+export type EpubNodeParser<T = RawBookNode[]> = XmlParser<T, EpubNodeParserEnv>;
 export type EpubNodeParserEnv = {
     ds: ParserDiagnoser,
     nodeParser: XmlParser<RawBookNode[], EpubNodeParserEnv>,
@@ -64,23 +64,23 @@ export function expectToParse(parser: EpubNodeParser): EpubNodeParser {
                 diag: 'unexpected-node',
                 node: input.stream[0],
             });
-            return success([{ node: 'ignore' }], stream([], input.env));
+            return success([{ node: 'ignore' }], makeStream([], input.env));
         }
     };
 }
 
-export function ignoreClass(className: string) {
-    return elementNode(el =>
+export function ignoreClass(className: string): EpubNodeParser {
+    return elementNode<RawBookNode[], EpubNodeParserEnv>(el =>
         el.attributes.class === className
-            ? { node: 'ignore' }
-            : undefined
+            ? [{ node: 'ignore' }]
+            : null
     );
 }
 
-export function ignoreTags(tags: string[]) {
-    return elementNode(el =>
+export function ignoreTags(tags: string[]): EpubNodeParser {
+    return elementNode<RawBookNode[], EpubNodeParserEnv>(el =>
         equalsToOneOf(el.name, tags)
-            ? { node: 'ignore' }
-            : undefined
+            ? [{ node: 'ignore' }]
+            : null
     );
 }

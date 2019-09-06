@@ -3,7 +3,7 @@ import { caseInsensitiveEq, isWhitespaces } from '../utils';
 import {
     Result, success, fail, seq, some, translate,
 } from './parserCombinators';
-import { StreamParser, headParser, stream, nextStream, not, Stream } from './streamParser';
+import { StreamParser, headParser, makeStream, nextStream, not, Stream } from './streamParser';
 
 export type XmlParser<Out = XmlNode, Env = undefined> = StreamParser<XmlNode, Out, Env>;
 
@@ -47,7 +47,7 @@ export function children<T, E>(parser: XmlParser<T, E>): XmlParser<T, E> {
             return fail('children: no children');
         }
 
-        const result = parser(stream(head.children, input.env));
+        const result = parser(makeStream(head.children, input.env));
         if (result.success) {
             return success(result.value, nextStream(input), result.message);
         } else {
@@ -66,7 +66,7 @@ export function parent<T, E>(parser: XmlParser<T, E>): XmlParser<T, E> {
             return fail('parent: no parent');
         }
 
-        const result = parser(stream([head.parent], input.env));
+        const result = parser(makeStream([head.parent], input.env));
         if (result.success) {
             return success(result.value, nextStream(input), result.message);
         } else {
@@ -85,7 +85,7 @@ export function between<T, E>(left: XmlParser<any, E>, right: XmlParser<any, E>,
         )(input);
 
         return result.success
-            ? inside(stream(result.value[2], input.env))
+            ? inside(makeStream(result.value[2], input.env))
             : result
             ;
     };
@@ -105,13 +105,13 @@ function parsePathHelper<T, E>(pathComponents: string[], then: XmlParser<T, E>, 
     }
 
     if (pathComponents.length < 2) {
-        const next = stream(input.stream.slice(childIndex), input.env);
+        const next = makeStream(input.stream.slice(childIndex), input.env);
         const result = then(next);
         return result;
     }
 
     const nextNodes = hasChildren(child) ? child.children : [];
-    const nextInput = stream(nextNodes, input.env);
+    const nextInput = makeStream(nextNodes, input.env);
 
     return parsePathHelper(pathComponents.slice(1), then, nextInput);
 }
