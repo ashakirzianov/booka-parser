@@ -25,14 +25,11 @@ export async function buildVolume(rawNodes: RawBookNode[], env: BuildVolumeEnv):
     return {
         node: 'volume',
         nodes,
-        meta: {
-            ...meta,
-            title: meta.title || 'no-title',
-        },
+        meta: meta,
     };
 }
 
-async function collectMeta(rawNodes: RawBookNode[], env: BuildVolumeEnv): Promise<Partial<BookMeta>> {
+async function collectMeta(rawNodes: RawBookNode[], env: BuildVolumeEnv): Promise<BookMeta> {
     const tags = rawNodes
         .filter((n): n is TagNode => n.node === 'tag')
         .map(n => n.tag);

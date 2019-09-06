@@ -1,7 +1,7 @@
 import { VolumeNode, BookContentNode, ImageDataNode, ImageUrlNode, ImageNode } from 'booka-common';
 import { filterUndefined } from '../utils';
 
-export type StoreBufferFn = (buffer: Buffer, id: string, title: string) => Promise<string | undefined>;
+export type StoreBufferFn = (buffer: Buffer, id: string, title?: string) => Promise<string | undefined>;
 export async function storeBuffers(volume: VolumeNode, fn: StoreBufferFn): Promise<VolumeNode> {
     const env: StoreBufferEnv = {
         title: volume.meta.title,
@@ -21,7 +21,7 @@ export async function storeBuffers(volume: VolumeNode, fn: StoreBufferFn): Promi
 }
 
 type StoreBufferEnv = {
-    title: string,
+    title?: string,
     fn: StoreBufferFn,
     resolved: {
         [key: string]: string | undefined,
