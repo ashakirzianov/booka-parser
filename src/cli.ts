@@ -3,8 +3,7 @@
 import * as fs from 'fs';
 import { extname, join } from 'path';
 import { parseEpubAtPath } from '.';
-import { promisify } from 'util';
-import { extractNodeText } from 'booka-common';
+import { promisify, inspect } from 'util';
 
 exec();
 
@@ -34,7 +33,7 @@ async function exec() {
         console.log(result.book.tags);
         if (result.diagnostics.length > 0) {
             console.log('Diagnostics:');
-            console.log(result.diagnostics);
+            console.log(inspect(result.diagnostics, false, null, true));
         }
     }
 }

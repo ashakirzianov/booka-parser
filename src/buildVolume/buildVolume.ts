@@ -13,9 +13,9 @@ export type BuildVolumeEnv = {
 };
 export async function buildVolume(rawNodes: RawBookNode[], env: BuildVolumeEnv): Promise<VolumeNode> {
     const meta = await collectMeta(rawNodes, env);
-    const preprocessed = preprocess(rawNodes);
-    const resolved = resolveReferences(preprocessed, env.ds);
-    const nodes = await buildChapters(resolved, env);
+    const resolved = resolveReferences(rawNodes, env.ds);
+    const preprocessed = preprocess(resolved);
+    const nodes = await buildChapters(preprocessed, env);
 
     if (meta.title === undefined) {
         env.ds.add({ diag: 'empty-book-title' });
@@ -79,7 +79,7 @@ function preprocess(rawNodes: RawBookNode[]): RawBookNode[] {
 }
 
 function shouldBeFlatten(container: RawContainerNode): boolean {
-    return !container.ref && !container.nodes.some(n => (n.node === 'span') || n.node === 'attr');
+    return !container.nodes.some(n => (n.node === 'span') || n.node === 'attr');
 }
 
 async function buildChapters(rawNodes: RawBookNode[], env: BuildVolumeEnv) {

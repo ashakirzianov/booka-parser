@@ -38,6 +38,7 @@ export type ParserDiagnostic =
     | Diag<'extra-nodes-tail'> & { nodes: Node[] }
     | Diag<'unexpected-raw-node'> & { node: Node }
     | Diag<'couldnt-build-span'> & { node: Node, context: 'attr' | 'footnote' }
+    | Diag<'unexpected-title'> & { node: Node }
     | Diag<'couldnt-resolve-ref'> & { id: string }
     | Diag<'unknown-kind'>
     | Diag<'unknown-meta'> & { key: string, value: any }

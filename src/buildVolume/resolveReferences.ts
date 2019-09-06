@@ -1,5 +1,4 @@
-import { RawBookNode, containedNodes, FootnoteSpan, SpanNode } from 'booka-common';
-import { flatten } from 'lodash';
+import { RawBookNode, FootnoteSpan, SpanNode } from 'booka-common';
 import { ParserDiagnoser } from '../log';
 import { spanFromRawNode } from './common';
 
@@ -76,7 +75,8 @@ function swipe2(nodes: RawBookNode[], footnotes: RawBookNode[], ds: ParserDiagno
             const footnoteNode = footnotes.find(f => f.ref === node.to);
             // Resolve footnote from footnote:
             const resolved = footnoteNode && swipe2([footnoteNode], footnotes, ds);
-            const footnote = resolved && spanFromRawNode(resolved[0], ds);
+            const titles = [] as string[];
+            const footnote = resolved && spanFromRawNode(resolved[0], ds, titles);
             if (footnote) {
                 const footnoteSpan: FootnoteSpan = {
                     span: 'note',
