@@ -50,7 +50,7 @@ function footnoteSection(): XmlHandler {
             some(h),
         ));
         const back = translate(
-            name('a'),
+            nameAttrs('a', { class: 'note_anchor' }),
             () => [{ node: 'ignore' } as IgnoreNode]
         );
         const rec = headNode(env.xml2raw);
@@ -60,12 +60,15 @@ function footnoteSection(): XmlHandler {
                 divId,
                 children(seq(title, some(choice(back, rec)))),
             ),
-            ([id, [tls, bs]]) => [forceType<RawBookNode>({
-                node: 'container',
-                ref: `${env.filePath}#${id}` || 'no-id', // TODO: report missing id
-                // title: tls || [], // TODO: handle title
-                nodes: flatten(bs),
-            })],
+            ([id, [tls, bs]]) => {
+                const ref = `${env.filePath}#${id}` || 'no-id'; // TODO: report missing id
+                return [forceType<RawBookNode>({
+                    node: 'container',
+                    ref: ref,
+                    // title: tls || [], // TODO: handle title
+                    nodes: flatten(bs),
+                })];
+            },
         );
 
         return parser;

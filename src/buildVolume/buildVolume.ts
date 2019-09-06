@@ -1,21 +1,21 @@
 import {
-    BookContentNode, Span, ChapterNode, VolumeNode, BookMeta,
-    RawBookNode, TagNode, tagValue, assignAttributes, containedNodes, RawContainerNode,
+    BookContentNode, ChapterNode, VolumeNode, BookMeta,
+    RawBookNode, TagNode, tagValue, RawContainerNode,
 } from 'booka-common';
-import {
-    flatten, filterUndefined, assertNever,
-} from '../utils';
+import { filterUndefined } from '../utils';
 import { ParserDiagnoser } from '../log';
+import { spanFromRawNode } from './common';
+import { resolveReferences } from './resolveReferences';
 
 export type BuildVolumeEnv = {
     ds: ParserDiagnoser,
     resolveImageRef: (ref: string) => Promise<Buffer | undefined>,
 };
 export async function buildVolume(rawNodes: RawBookNode[], env: BuildVolumeEnv): Promise<VolumeNode> {
-    const { rest, footnotes } = separateFootnoteContainers(rawNodes);
-    const meta = await collectMeta(rest, env);
-    const preprocessed = preprocess(rest);
-    const nodes = await buildChapters(preprocessed, { ...env, footnotes });
+    const preprocessed = preprocess(rawNodes);
+    const resolved = resolveReferences(preprocessed, env.ds);
+    const meta = await collectMeta(resolved, env);
+    const nodes = await buildChapters(resolved, env);
 
     if (meta.title === undefined) {
         env.ds.add({ diag: 'empty-book-title' });
@@ -51,62 +51,17 @@ async function collectMeta(rawNodes: RawBookNode[], env: BuildVolumeEnv): Promis
     };
 }
 
-function separateFootnoteContainers(rawNodes: RawBookNode[]) {
-    const footnoteIds = flatten(rawNodes.map(collectFootnoteIds));
-    return separateFootnoteContainersImpl(rawNodes, footnoteIds);
-}
-
-function collectFootnoteIds(rawNode: RawBookNode): string[] {
-    switch (rawNode.node) {
-        case 'ref':
-            return [rawNode.to];
-        // TODO: collect from span node ?
-        default:
-            const nodes = containedNodes(rawNode);
-            return flatten(nodes.map(collectFootnoteIds));
-    }
-}
-
-// TODO: review and re-implement
-function separateFootnoteContainersImpl(rawNodes: RawBookNode[], footnoteIds: string[]) {
-    const rest: RawBookNode[] = [];
-    const footnotes: RawBookNode[] = [];
-    for (const node of rawNodes) {
-        if (footnoteIds.some(fid => fid === node.ref)) {
-            footnotes.push(node);
-        } else {
-            const contained = containedNodes(node);
-            if (contained.length > 0) {
-                const inside = separateFootnoteContainersImpl(contained, footnoteIds);
-                if (inside.footnotes.length > 0) {
-                    rest.push({
-                        node: 'container',
-                        nodes: inside.rest,
-                    });
-                    footnotes.push(...inside.footnotes);
-                } else {
-                    rest.push(node);
-                }
-            } else {
-                rest.push(node);
-            }
-        }
-    }
-
-    return { rest, footnotes };
-}
-
 function preprocess(rawNodes: RawBookNode[]): RawBookNode[] {
     const result: RawBookNode[] = [];
     for (const node of rawNodes) {
         switch (node.node) {
             case 'container':
-                const preprocessed = {
+                const preprocessed: RawContainerNode = {
                     ...node,
-                    content: preprocess(node.nodes),
+                    nodes: preprocess(node.nodes),
                 };
                 if (shouldBeFlatten(preprocessed)) {
-                    result.push(...preprocessed.content);
+                    result.push(...preprocessed.nodes);
                 } else {
                     result.push(preprocessed);
                 }
@@ -124,14 +79,10 @@ function preprocess(rawNodes: RawBookNode[]): RawBookNode[] {
 }
 
 function shouldBeFlatten(container: RawContainerNode): boolean {
-    return !container.nodes.some(b => (b.node === 'span') || b.node === 'attr');
+    return !container.ref && !container.nodes.some(n => (n.node === 'span') || n.node === 'attr');
 }
 
-type Env = BuildVolumeEnv & {
-    footnotes: RawBookNode[],
-};
-
-async function buildChapters(rawNodes: RawBookNode[], env: Env) {
+async function buildChapters(rawNodes: RawBookNode[], env: BuildVolumeEnv) {
     const { nodes, next } = await buildChaptersImpl(rawNodes, undefined, env);
 
     if (next.length !== 0) {
@@ -145,7 +96,7 @@ type BuildChaptersResult = {
     nodes: BookContentNode[],
     next: RawBookNode[],
 };
-async function buildChaptersImpl(rawNodes: RawBookNode[], level: number | undefined, env: Env): Promise<BuildChaptersResult> {
+async function buildChaptersImpl(rawNodes: RawBookNode[], level: number | undefined, env: BuildVolumeEnv): Promise<BuildChaptersResult> {
     if (rawNodes.length === 0) {
         return { nodes: [], next: [] };
     }
@@ -180,7 +131,7 @@ async function buildChaptersImpl(rawNodes: RawBookNode[], level: number | undefi
     }
 }
 
-async function resolveRawNode(rawNode: RawBookNode, env: Env): Promise<BookContentNode | undefined> {
+async function resolveRawNode(rawNode: RawBookNode, env: BuildVolumeEnv): Promise<BookContentNode | undefined> {
     switch (rawNode.node) {
         case 'image-ref':
             const imageBuffer = await env.resolveImageRef(rawNode.imageId);
@@ -197,7 +148,7 @@ async function resolveRawNode(rawNode: RawBookNode, env: Env): Promise<BookConte
         case 'span':
         case 'attr':
         case 'ref':
-            const span = spanFromRawNode(rawNode, env);
+            const span = spanFromRawNode(rawNode, env.ds);
             if (span) {
                 return {
                     node: 'paragraph',
@@ -208,7 +159,7 @@ async function resolveRawNode(rawNode: RawBookNode, env: Env): Promise<BookConte
             }
         case 'container':
             const spans = filterUndefined(rawNode.nodes
-                .map(c => spanFromRawNode(c, env)));
+                .map(c => spanFromRawNode(c, env.ds)));
             return {
                 node: 'paragraph',
                 span: {
@@ -218,66 +169,6 @@ async function resolveRawNode(rawNode: RawBookNode, env: Env): Promise<BookConte
             };
         default:
             env.ds.add({ diag: 'unexpected-raw-node', node: rawNode, context: 'node' });
-            return undefined;
-    }
-}
-
-function spanFromRawNode(rawNode: RawBookNode, env: Env): Span | undefined {
-    switch (rawNode.node) {
-        case 'span':
-            return rawNode.span;
-        case 'attr':
-            const attrSpan = spanFromRawNode(rawNode.content, env);
-            if (attrSpan !== undefined) {
-                return assignAttributes(...rawNode.attributes)(attrSpan);
-            } else {
-                env.ds.add({ diag: 'couldnt-build-span', node: rawNode, context: 'attr' });
-                return undefined;
-            }
-        case 'ref':
-            const footnoteContainer = env.footnotes.find(f => f.ref === rawNode.to);
-            if (footnoteContainer) {
-                // TODO: extract title from content
-                const content = spanFromRawNode(rawNode.content, env);
-                if (!content) {
-                    env.ds.add({ diag: 'couldnt-build-span', node: rawNode, context: 'footnote' });
-                    return undefined;
-                }
-                // TODO: re-implement
-                // const footnote = spanFromBlock(footnoteContainer.content, env);
-                // if (!footnote) {
-                //     env.ds.add({ diag: 'couldnt-build-span', node: rawNode, context: 'footnote' });
-                //     return undefined;
-                // }
-                return {
-                    span: 'note',
-                    id: rawNode.to,
-                    content,
-                    footnote: '',
-                    title: [],
-                };
-            } else {
-                env.ds.add({ diag: 'couldnt-resolve-ref', id: rawNode.to, context: 'footnote' });
-                return undefined;
-            }
-        case 'container':
-            const spans = filterUndefined(rawNode.nodes.map(c => spanFromRawNode(c, env)));
-            return {
-                span: 'compound',
-                spans: spans,
-            };
-        case 'ignore':
-            return undefined;
-        case 'image-data':
-        case 'image-ref':
-        case 'image-url':
-        case 'title':
-        case 'tag':
-            env.ds.add({ diag: 'unexpected-raw-node', node: rawNode, context: 'span' });
-            return undefined;
-        default:
-            env.ds.add({ diag: 'unexpected-raw-node', node: rawNode, context: 'span' });
-            assertNever(rawNode);
             return undefined;
     }
 }
