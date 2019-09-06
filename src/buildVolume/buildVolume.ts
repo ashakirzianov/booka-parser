@@ -12,9 +12,9 @@ export type BuildVolumeEnv = {
     resolveImageRef: (ref: string) => Promise<Buffer | undefined>,
 };
 export async function buildVolume(rawNodes: RawBookNode[], env: BuildVolumeEnv): Promise<VolumeNode> {
+    const meta = await collectMeta(rawNodes, env);
     const preprocessed = preprocess(rawNodes);
     const resolved = resolveReferences(preprocessed, env.ds);
-    const meta = await collectMeta(resolved, env);
     const nodes = await buildChapters(resolved, env);
 
     if (meta.title === undefined) {
