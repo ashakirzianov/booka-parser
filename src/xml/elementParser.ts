@@ -10,8 +10,14 @@ import { children, XmlParser, textNode } from './treeParser';
 import { XmlNodeElement, isElement, xmlNode2String, XmlNode } from './xmlNode';
 import { headParser, predicate } from './streamParser';
 
-export const elementNode = <T>(f: (e: XmlNodeElement) => T | null) =>
-    headParser((n: XmlNode) => isElement(n) ? f(n) : null);
+export function elementNode<O, E>(f: (el: XmlNodeElement, env: E) => O | null) {
+    return headParser(
+        (n: XmlNode, env: E) =>
+            isElement(n)
+                ? f(n, env)
+                : null
+    );
+}
 
 function fromPredicate(pred: ElementPredicate) {
     return tagged(
