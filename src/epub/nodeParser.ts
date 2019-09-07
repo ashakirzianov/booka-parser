@@ -8,12 +8,13 @@ import {
     SuccessParser,
     Stream,
     some,
+    HeadFn,
 } from '../xml';
 import { Constraint, ConstraintMap, checkValue, checkObject } from '../constraint';
 import { equalsToOneOf, flatten } from '../utils';
 
 // TODO: remove
-export type TreeToNodes<T extends XmlNode = XmlNode> = (x: T, env: EpubNodeParserEnv) => (RawBookNode[] | undefined);
+export type TreeToNodes<T extends XmlNode = XmlNode> = (x: T, env: EpubNodeParserEnv) => (RawBookNode[] | null);
 
 export type EpubNodeParser<T = RawBookNode[]> = XmlParser<T, EpubNodeParserEnv>;
 export type FullEpubParser = SuccessParser<Stream<XmlNode, EpubNodeParserEnv>, RawBookNode[]>;
@@ -22,6 +23,8 @@ export type EpubNodeParserEnv = {
     nodeParser: XmlParser<RawBookNode[], EpubNodeParserEnv>,
     filePath: string,
 };
+
+export const headNode = (fn: HeadFn<XmlNode, RawBookNode[], EpubNodeParserEnv>) => headParser(fn);
 
 export function constrainElement<N extends string>(
     nameConstraint: Constraint<string, N>,
@@ -99,18 +102,6 @@ export function fullParser(parser: EpubNodeParser): FullEpubParser {
 }
 
 // TODO: remove
-export function parseSingleElement(fn: TreeToNodes<XmlNodeElement>): EpubNodeParser {
-    return headParser((node, env) => {
-        if (!isElement(node)) {
-            return null;
-        }
-
-        const result = fn(node, env);
-        return result || null;
-    });
-}
-
-// TODO: remove
 export function parserHook(buildParser: (env: EpubNodeParserEnv) => EpubNodeParser): EpubNodeParser {
     return input => {
         const parser = buildParser(input.env);
@@ -132,12 +123,4 @@ export function combineParsers(fns: EpubNodeParser[]): EpubNodeParser {
 
         return fail('');
     };
-}
-
-// TODO: remove
-export function parseSingleTree(fn: TreeToNodes): EpubNodeParser {
-    return headParser((node, env) => {
-        const result = fn(node, env);
-        return result || null;
-    });
 }

@@ -5,7 +5,7 @@ import {
 import { isWhitespaces } from '../utils';
 import { ParserDiagnoser } from '../log';
 import {
-    EpubNodeParserEnv, parseSingleTree, constrainElement, EpubNodeParser, fullParser,
+    EpubNodeParserEnv, constrainElement, EpubNodeParser, fullParser, headNode,
 } from './nodeParser';
 import { EpubSection } from './epubParser.types';
 
@@ -43,9 +43,9 @@ function buildSectionParser(parser: EpubNodeParser) {
     return resultParser;
 }
 
-const text = parseSingleTree(node => {
+const text = headNode(node => {
     if (node.type !== 'text') {
-        return undefined;
+        return null;
     }
     // Skip whitespace nodes
     if (node.text.startsWith('\n') && isWhitespaces(node.text)) {

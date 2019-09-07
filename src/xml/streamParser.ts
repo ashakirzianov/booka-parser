@@ -24,8 +24,9 @@ export function nextStream<T, E>(input: Stream<T, E>): Stream<T, E> {
     };
 }
 
-export function headParser<TIn, TOut, TEnv = undefined>(f: (n: TIn, env: TEnv) => TOut | null): StreamParser<TIn, TOut, TEnv> {
-    return (input: Stream<TIn, TEnv>) => {
+export type HeadFn<In, Out, Env> = (head: In, env: Env) => (Out | null);
+export function headParser<In, Out, Env = undefined>(f: HeadFn<In, Out, Env>): StreamParser<In, Out, Env> {
+    return (input: Stream<In, Env>) => {
         const head = input.stream[0];
         if (head === undefined) {
             return fail('first node: empty input');
