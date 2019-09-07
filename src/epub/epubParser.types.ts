@@ -1,4 +1,4 @@
-import { XmlNode } from '../xml';
+import { XmlTree } from '../xml';
 
 export type Image = {
     buffer: Buffer,
@@ -9,7 +9,7 @@ export type EpubCollection<T> = AsyncIterableIterator<T>;
 export type EpubSection = {
     filePath: string,
     id: string,
-    content: XmlNode,
+    content: XmlTree,
 };
 
 export type EpubMetadata = {

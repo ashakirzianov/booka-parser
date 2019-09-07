@@ -1,5 +1,5 @@
 import { KnownTag } from 'booka-common';
-import { isTextNode, isElement, XmlNodeWithChildren } from '../xml';
+import { isTextTree, isElementTree, XmlTreeWithChildren } from '../xml';
 import { ParserDiagnoser } from '../log';
 import { EpubConverterHooks, MetadataRecord } from './epubConverter.types';
 import { headNode } from './nodeParser';
@@ -43,12 +43,12 @@ function metaHook({ key, value }: MetadataRecord, ds: ParserDiagnoser): KnownTag
 }
 
 function titleElement() {
-    function extractTextLines(node: XmlNodeWithChildren): string[] {
+    function extractTextLines(node: XmlTreeWithChildren): string[] {
         const result: string[] = [];
         for (const ch of node.children) {
-            if (isElement(ch)) {
+            if (isElementTree(ch)) {
                 result.push(...extractTextLines(ch));
-            } else if (isTextNode(ch)) {
+            } else if (isTextTree(ch)) {
                 if (!ch.text.startsWith('\n')) {
                     result.push(ch.text);
                 }
@@ -59,7 +59,7 @@ function titleElement() {
     }
 
     return headNode(el => {
-        if (!isElement(el) || el.name !== 'div') {
+        if (!isElementTree(el) || el.name !== 'div') {
             return null;
         }
 

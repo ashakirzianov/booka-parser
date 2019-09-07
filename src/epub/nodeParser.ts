@@ -1,7 +1,7 @@
 import { RawBookNode } from 'booka-common';
 import { ParserDiagnoser } from '../log';
 import {
-    XmlNode, XmlNodeElement, isElement, XmlParser,
+    XmlTree, XmlTreeElement, isElementTree, TreeParser,
     XmlAttributes, makeStream, headParser, success,
     elementNode,
     fail,
@@ -14,25 +14,25 @@ import { Constraint, ConstraintMap, checkValue, checkObject } from '../constrain
 import { equalsToOneOf, flatten } from '../utils';
 
 // TODO: remove
-export type TreeToNodes<T extends XmlNode = XmlNode> = (x: T, env: EpubNodeParserEnv) => (RawBookNode[] | null);
+export type TreeToNodes<T extends XmlTree = XmlTree> = (x: T, env: EpubNodeParserEnv) => (RawBookNode[] | null);
 
-export type EpubNodeParser<T = RawBookNode[]> = XmlParser<T, EpubNodeParserEnv>;
-export type FullEpubParser = SuccessParser<Stream<XmlNode, EpubNodeParserEnv>, RawBookNode[]>;
+export type EpubNodeParser<T = RawBookNode[]> = TreeParser<T, EpubNodeParserEnv>;
+export type FullEpubParser = SuccessParser<Stream<XmlTree, EpubNodeParserEnv>, RawBookNode[]>;
 export type EpubNodeParserEnv = {
     ds: ParserDiagnoser,
-    recursive: XmlParser<RawBookNode[], EpubNodeParserEnv>,
+    recursive: TreeParser<RawBookNode[], EpubNodeParserEnv>,
     filePath: string,
 };
 
-export const headNode = (fn: HeadFn<XmlNode, RawBookNode[], EpubNodeParserEnv>) => headParser(fn);
+export const headNode = (fn: HeadFn<XmlTree, RawBookNode[], EpubNodeParserEnv>) => headParser(fn);
 
 export function constrainElement<N extends string>(
     nameConstraint: Constraint<string, N>,
     attrsConstraint: ConstraintMap<XmlAttributes>,
-    fn: TreeToNodes<XmlNodeElement>,
+    fn: TreeToNodes<XmlTreeElement>,
 ): EpubNodeParser {
     return headParser((node, env) => {
-        if (!isElement(node)) {
+        if (!isElementTree(node)) {
             return null;
         }
 

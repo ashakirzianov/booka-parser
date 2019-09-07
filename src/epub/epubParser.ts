@@ -1,9 +1,9 @@
 import { EPub, SYMBOL_RAW_DATA } from 'epub2';
 import { EpubParser, EpubBook, EpubSection, EpubKind, EpubKindResolver, resolveEpubKind, EpubMetadata } from './epubParser.types';
-import { XmlNodeDocument } from '../xml';
+import { XmlTreeDocument } from '../xml';
 import { last } from '../utils';
 
-export function createEpubParser(xmlParser: (text: string) => (XmlNodeDocument | undefined)): EpubParser {
+export function createEpubParser(xmlStringParser: (text: string) => (XmlTreeDocument | undefined)): EpubParser {
     return {
         async parseFile(filePath): Promise<EpubBook> {
             const epub = await FixedEpub.createAsync(filePath) as FixedEpub;
@@ -40,7 +40,7 @@ export function createEpubParser(xmlParser: (text: string) => (XmlNodeDocument |
                             // TODO: find better solution
                             const href = last(el.href.split('/'));
                             const chapter = await epub.chapterForId(el.id);
-                            const node = xmlParser(chapter);
+                            const node = xmlStringParser(chapter);
 
                             // TODO: report parsing issues
                             if (node) {

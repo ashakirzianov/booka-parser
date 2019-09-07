@@ -6,14 +6,14 @@ import {
     tagged,
     projectFirst, and, expected, projectLast, translate,
 } from './parserCombinators';
-import { children, XmlParser, textNode } from './treeParser';
-import { XmlNodeElement, isElement, xmlNode2String, XmlNode } from './xmlNode';
+import { children, TreeParser, textNode } from './treeParser';
+import { XmlTreeElement, isElementTree, tree2String, XmlTree } from './xmlTree';
 import { headParser, predicate } from './streamParser';
 
-export function elementNode<O, E>(f: (el: XmlNodeElement, env: E) => O | null) {
+export function elementNode<O, E>(f: (el: XmlTreeElement, env: E) => O | null) {
     return headParser(
-        (n: XmlNode, env: E) =>
-            isElement(n)
+        (n: XmlTree, env: E) =>
+            isElementTree(n)
                 ? f(n, env)
                 : null
     );
@@ -23,7 +23,7 @@ function fromPredicate(pred: ElementPredicate) {
     return tagged(
         predicate(andPred(elemPred(), pred)),
         input =>
-            `On node: ${input.stream[0] && xmlNode2String(input.stream[0])}`
+            `On node: ${input.stream[0] && tree2String(input.stream[0])}`
     );
 }
 export const name = (n: ConstraintValue<string>) =>
@@ -37,38 +37,38 @@ export const name = (n: ConstraintValue<string>) =>
 export const attrs = (x: ConstraintMap) =>
     fromPredicate(attrsPred(x));
 
-export const nameChildren = <T>(n: ConstraintValue<string>, ch: XmlParser<T>) =>
+export const nameChildren = <T>(n: ConstraintValue<string>, ch: TreeParser<T>) =>
     projectLast(and(name(n), expected(attrs({})), children(ch)));
 export const nameAttrs = (n: ConstraintValue<string>, attrMap: ConstraintMap) =>
     projectFirst(and(name(n), attrs(attrMap)));
-export const nameAttrsChildren = <T>(n: ConstraintValue<string>, attrMap: ConstraintMap, ch: XmlParser<T>) =>
+export const nameAttrsChildren = <T>(n: ConstraintValue<string>, attrMap: ConstraintMap, ch: TreeParser<T>) =>
     projectLast(and(name(n), attrs(attrMap), children(ch)));
-export const attrsChildren = <T>(attrMap: ConstraintMap, ch: XmlParser<T>) =>
+export const attrsChildren = <T>(attrMap: ConstraintMap, ch: TreeParser<T>) =>
     projectLast(and(attrs(attrMap), children(ch)));
 
-export const extractText = (parser: XmlParser) =>
+export const extractText = (parser: TreeParser) =>
     projectLast(and(parser, children(textNode())));
 
 // ---- Predicates
 
-function elemPred(): Predicate<XmlNode, XmlNodeElement> {
+function elemPred(): Predicate<XmlTree, XmlTreeElement> {
     return nd => {
-        if (isElement(nd)) {
+        if (isElementTree(nd)) {
             return predSucc(nd);
         } else {
-            return predFail(`Expected xml element, got: ${xmlNode2String(nd)}`);
+            return predFail(`Expected xml element, got: ${tree2String(nd)}`);
         }
     };
 }
 
 function namePred(n: ConstraintValue<string>): ElementPredicate {
-    return keyValuePred<XmlNodeElement>()({
+    return keyValuePred<XmlTreeElement>()({
         key: 'name',
         value: n,
     }) as any; // TODO: remove as any
 }
 
-type ElementPredicate<T = XmlNodeElement> = Predicate<XmlNodeElement, T>;
+type ElementPredicate<T = XmlTreeElement> = Predicate<XmlTreeElement, T>;
 type OptString = string | undefined;
 type ValueConstraint = OptString | OptString[] | ((v: OptString) => boolean) | true;
 
@@ -128,12 +128,12 @@ type ElementDescBase = {
     expectedAttrs: ConstraintMap,
 };
 type ElementDescChildren<TC> = {
-    children: XmlParser<TC>,
+    children: TreeParser<TC>,
     translate?: undefined,
 };
 type ElementDescChildrenTranslate<TC, TT> = {
-    children: XmlParser<TC>,
-    translate: (x: [XmlNodeElement, TC]) => TT,
+    children: TreeParser<TC>,
+    translate: (x: [XmlTreeElement, TC]) => TT,
 };
 type ElementDescFns<TC, TT> =
     | ElementDescChildren<TC>
@@ -141,10 +141,10 @@ type ElementDescFns<TC, TT> =
     | { children?: undefined, translate?: undefined }
     ;
 export type ElementDesc<TC, TT> = Partial<ElementDescBase> & ElementDescFns<TC, TT>;
-export function element(desc: Partial<ElementDescBase>): XmlParser<XmlNodeElement>;
-export function element<TC>(desc: Partial<ElementDescBase> & ElementDescChildren<TC>): XmlParser<TC>;
-export function element<TC, TT>(desc: Partial<ElementDescBase> & ElementDescChildrenTranslate<TC, TT>): XmlParser<TT>;
-export function element<TC, TT>(desc: ElementDesc<TC, TT>): XmlParser<TC | TT | XmlNodeElement> {
+export function element(desc: Partial<ElementDescBase>): TreeParser<XmlTreeElement>;
+export function element<TC>(desc: Partial<ElementDescBase> & ElementDescChildren<TC>): TreeParser<TC>;
+export function element<TC, TT>(desc: Partial<ElementDescBase> & ElementDescChildrenTranslate<TC, TT>): TreeParser<TT>;
+export function element<TC, TT>(desc: ElementDesc<TC, TT>): TreeParser<TC | TT | XmlTreeElement> {
     const pred = descPred(desc);
     const predParser = predicate(pred);
     if (desc.children) {

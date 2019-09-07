@@ -1,20 +1,20 @@
-import { XmlNode, hasChildren } from './xmlNode';
+import { XmlTree, hasChildren } from './xmlTree';
 import { caseInsensitiveEq, isWhitespaces } from '../utils';
 import {
     Result, success, fail, seq, some, translate,
 } from './parserCombinators';
 import { StreamParser, headParser, makeStream, nextStream, not, Stream } from './streamParser';
 
-export type XmlParser<Out = XmlNode, Env = undefined> = StreamParser<XmlNode, Out, Env>;
+export type TreeParser<Out = XmlTree, Env = undefined> = StreamParser<XmlTree, Out, Env>;
 
 export function nameEq(n1: string, n2: string): boolean {
     return caseInsensitiveEq(n1, n2);
 }
 
-export function textNode<T, E = undefined>(f: (text: string) => T | null): XmlParser<T, E>;
-export function textNode<E = undefined>(): XmlParser<string, E>;
-export function textNode<T, E>(f?: (text: string) => T | null): XmlParser<T | string, E> {
-    return headParser((n: XmlNode) =>
+export function textNode<T, E = undefined>(f: (text: string) => T | null): TreeParser<T, E>;
+export function textNode<E = undefined>(): TreeParser<string, E>;
+export function textNode<T, E>(f?: (text: string) => T | null): TreeParser<T | string, E> {
+    return headParser((n: XmlTree) =>
         n.type === 'text'
             ? (f ? f(n.text) : n.text)
             : null
@@ -23,21 +23,21 @@ export function textNode<T, E>(f?: (text: string) => T | null): XmlParser<T | st
 
 export const whitespaces = textNode<boolean, any>(text => isWhitespaces(text) ? true : null);
 
-export function whitespaced<T, E>(parser: XmlParser<T, E>): XmlParser<T, E> {
+export function whitespaced<T, E>(parser: TreeParser<T, E>): TreeParser<T, E> {
     return translate(
         seq(whitespaces, parser),
         ([_, result]) => result,
     );
 }
 
-export function beforeWhitespaces<T, E>(parser: XmlParser<T, E>): XmlParser<T> {
+export function beforeWhitespaces<T, E>(parser: TreeParser<T, E>): TreeParser<T> {
     return translate(
         seq(parser, whitespaces),
         ([result, _]) => result,
     );
 }
 
-export function children<T, E>(parser: XmlParser<T, E>): XmlParser<T, E> {
+export function children<T, E>(parser: TreeParser<T, E>): TreeParser<T, E> {
     return input => {
         const head = input.stream[0];
         if (head === undefined) {
@@ -56,7 +56,7 @@ export function children<T, E>(parser: XmlParser<T, E>): XmlParser<T, E> {
     };
 }
 
-export function parent<T, E>(parser: XmlParser<T, E>): XmlParser<T, E> {
+export function parent<T, E>(parser: TreeParser<T, E>): TreeParser<T, E> {
     return input => {
         const head = input.stream[0];
         if (head === undefined) {
@@ -75,7 +75,7 @@ export function parent<T, E>(parser: XmlParser<T, E>): XmlParser<T, E> {
     };
 }
 
-export function between<T, E>(left: XmlParser<any, E>, right: XmlParser<any, E>, inside: XmlParser<T, E>): XmlParser<T, E> {
+export function between<T, E>(left: TreeParser<any, E>, right: TreeParser<any, E>, inside: TreeParser<T, E>): TreeParser<T, E> {
     return input => {
         const result = seq(
             some(not(left)),
@@ -91,7 +91,7 @@ export function between<T, E>(left: XmlParser<any, E>, right: XmlParser<any, E>,
     };
 }
 
-function parsePathHelper<T, E>(pathComponents: string[], then: XmlParser<T, E>, input: Stream<XmlNode, E>): Result<Stream<XmlNode, E>, T> {
+function parsePathHelper<T, E>(pathComponents: string[], then: TreeParser<T, E>, input: Stream<XmlTree, E>): Result<Stream<XmlTree, E>, T> {
     if (pathComponents.length === 0) {
         return fail('parse path: can\'t parse to empty path');
     }
@@ -116,6 +116,6 @@ function parsePathHelper<T, E>(pathComponents: string[], then: XmlParser<T, E>, 
     return parsePathHelper(pathComponents.slice(1), then, nextInput);
 }
 
-export function path<T, E>(paths: string[], then: XmlParser<T, E>): XmlParser<T, E> {
+export function path<T, E>(paths: string[], then: TreeParser<T, E>): TreeParser<T, E> {
     return input => parsePathHelper(paths, then, input);
 }

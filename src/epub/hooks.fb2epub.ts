@@ -6,7 +6,7 @@ import {
     nameChildren, textNode, nameAttrsChildren, some,
     translate, nameAttrs, choice,
     seq, children, and, whitespaced, attrs,
-    attrsChildren, extractText, isElement, nameEq, headParser, XmlNode, envParser,
+    attrsChildren, extractText, isElementTree, nameEq, headParser, XmlTree, envParser,
 } from '../xml';
 import { forceType, flatten } from '../utils';
 import { ignoreClass, EpubNodeParser } from './nodeParser';
@@ -101,8 +101,8 @@ function titlePage(): EpubNodeParser {
 }
 
 function divTitle(): EpubNodeParser {
-    const divLevel = headParser((n: XmlNode) => {
-        if (isElement(n) && nameEq('div', n.name)
+    const divLevel = headParser((n: XmlTree) => {
+        if (isElementTree(n) && nameEq('div', n.name)
             && n.attributes.class && n.attributes.class.startsWith('title')) {
             const levelString = n.attributes.class.slice('title'.length);
             const level = parseInt(levelString, 10);

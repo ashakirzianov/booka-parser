@@ -1,7 +1,7 @@
 import { expectSuccess } from '../utils';
 import { path } from './treeParser';
 import { name } from './elementParser';
-import { xmlElement } from './xmlNode';
+import { xmlElement } from './xmlTree';
 import { makeStream } from './streamParser';
 
 it('pathParser', () => {

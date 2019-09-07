@@ -1,6 +1,6 @@
 import { ChapterTitle, RawBookNode } from 'booka-common';
 import {
-    XmlNode, makeStream, path, children, choice,
+    XmlTree, makeStream, path, children, choice,
 } from '../xml';
 import { isWhitespaces } from '../utils';
 import { ParserDiagnoser } from '../log';
@@ -188,7 +188,7 @@ const standardParsers = [
     svg, rest,
 ];
 
-function buildContainerNode(nodes: XmlNode[], env: EpubNodeParserEnv): RawBookNode {
+function buildContainerNode(nodes: XmlTree[], env: EpubNodeParserEnv): RawBookNode {
     const parser = fullParser(env.recursive);
     const stream = makeStream(nodes, env);
     const result = parser(stream);
@@ -199,7 +199,7 @@ function buildContainerNode(nodes: XmlNode[], env: EpubNodeParserEnv): RawBookNo
     };
 }
 
-function extractTitle(nodes: XmlNode[], ds: ParserDiagnoser): ChapterTitle {
+function extractTitle(nodes: XmlTree[], ds: ParserDiagnoser): ChapterTitle {
     const lines: string[] = [];
     for (const node of nodes) {
         switch (node.type) {

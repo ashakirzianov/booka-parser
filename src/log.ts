@@ -1,5 +1,5 @@
 import { Node } from 'booka-common';
-import { XmlNode, XmlNodeElement } from './xml';
+import { XmlTree, XmlTreeElement } from './xml';
 import { MetadataRecord } from './epub/epubConverter.types';
 import { EpubKind } from './epub/epubParser.types';
 
@@ -33,7 +33,7 @@ export type ParserDiagnostic =
     | XmlDiag<'link-must-have-ref'>
     | XmlDiag<'unexpected-node'>
     | XmlDiag<'no-title'>
-    | Diag<'unexpected-attr'> & { name: string, value: string | undefined, element: XmlNodeElement, constraint: string }
+    | Diag<'unexpected-attr'> & { name: string, value: string | undefined, element: XmlTreeElement, constraint: string }
     | Diag<'empty-book-title'>
     | Diag<'extra-nodes-tail'> & { nodes: any[] }
     | Diag<'unexpected-raw-node'> & { node: Node }
@@ -43,7 +43,7 @@ export type ParserDiagnostic =
     | Diag<'unknown-kind'>
     | Diag<'unknown-meta'> & { key: string, value: any }
     | Diag<'bad-meta'> & { meta: MetadataRecord }
-    | Diag<'failed-to-parse'> & { trees: XmlNode[] }
+    | Diag<'failed-to-parse'> & { trees: XmlTree[] }
     | Diag<'couldnt-parse-section'> & { filePath: string }
     ;
 
@@ -51,7 +51,7 @@ type Diag<K extends string> = {
     diag: K,
     context?: string,
 };
-type XmlDiag<K extends string> = Diag<K> & { node: XmlNode };
+type XmlDiag<K extends string> = Diag<K> & { node: XmlTree };
 
 export type LogLevel = 'info' | 'important' | 'warn';
 

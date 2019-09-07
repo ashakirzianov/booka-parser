@@ -4,55 +4,55 @@ import { assertNever, isWhitespaces } from '../utils';
 export type XmlAttributes = {
     [key: string]: string | undefined,
 };
-export type XmlNodeBase<T extends string> = {
+export type XmlTreeBase<T extends string> = {
     type: T,
-    parent: XmlNode,
+    parent: XmlTree,
 };
-export type XmlNodeWithParent<T extends string> = XmlNodeBase<T> & {
-    parent: XmlNodeWithChildren,
+export type XmlTreeWithParent<T extends string> = XmlTreeBase<T> & {
+    parent: XmlTreeWithChildren,
 };
 
-export type XmlNode = XmlNodeDocument | XmlNodeElement | XmlNodeText | XmlNodeCData | XmlNodeComment;
-export type XmlNodeDocument = {
+export type XmlTree = XmlTreeDocument | XmlTreeElement | XmlTreeText | XmlTreeCData | XmlTreeComment;
+export type XmlTreeDocument = {
     type: 'document',
-    children: XmlNode[],
+    children: XmlTree[],
     parent: undefined,
 };
-export type XmlNodeElement = XmlNodeBase<'element'> & {
+export type XmlTreeElement = XmlTreeBase<'element'> & {
     name: string,
     attributes: XmlAttributes,
-    children: XmlNode[],
+    children: XmlTree[],
 };
-export type XmlNodeText = XmlNodeBase<'text'> & { text: string };
-export type XmlNodeCData = XmlNodeBase<'cdata'> & { text: string };
-export type XmlNodeComment = XmlNodeBase<'comment'> & { content: string };
+export type XmlTreeText = XmlTreeBase<'text'> & { text: string };
+export type XmlTreeCData = XmlTreeBase<'cdata'> & { text: string };
+export type XmlTreeComment = XmlTreeBase<'comment'> & { content: string };
 
-export type XmlNodeType = XmlNode['type'];
+export type XmlTreeType = XmlTree['type'];
 
-export type XmlNodeWithChildren = XmlNodeDocument | XmlNodeElement;
-export function hasChildren(node: XmlNode): node is XmlNodeWithChildren {
-    return (node.type === 'document' || node.type === 'element') && node.children !== undefined;
+export type XmlTreeWithChildren = XmlTreeDocument | XmlTreeElement;
+export function hasChildren(tree: XmlTree): tree is XmlTreeWithChildren {
+    return (tree.type === 'document' || tree.type === 'element') && tree.children !== undefined;
 }
 
-export function isTextNode(node: XmlNode): node is XmlNodeText {
-    return node.type === 'text';
+export function isTextTree(tree: XmlTree): tree is XmlTreeText {
+    return tree.type === 'text';
 }
 
-export function isElement(node: XmlNode): node is XmlNodeElement {
-    return node.type === 'element';
+export function isElementTree(tree: XmlTree): tree is XmlTreeElement {
+    return tree.type === 'element';
 }
 
-export function isComment(node: XmlNode): node is XmlNodeComment {
-    return node.type === 'comment';
+export function isCommentTree(tree: XmlTree): tree is XmlTreeComment {
+    return tree.type === 'comment';
 }
 
-export function isDocument(node: XmlNode): node is XmlNodeDocument {
-    return node.type === 'document';
+export function isDocumentTree(tree: XmlTree): tree is XmlTreeDocument {
+    return tree.type === 'document';
 }
 
-export function string2tree(xml: string): XmlNodeDocument | undefined {
+export function string2tree(xmlString: string): XmlTreeDocument | undefined {
     try {
-        return parseXmlLib(xml, { preserveComments: false });
+        return parseXmlLib(xmlString, { preserveComments: false });
     } catch (e) {
         return undefined; // TODO: report parsing errors
     }
@@ -66,7 +66,7 @@ export function parsePartialXml(xml: string) {
         : undefined;
 }
 
-export function xmlText(text: string, parent?: XmlNodeWithChildren): XmlNodeText {
+export function xmlText(text: string, parent?: XmlTreeWithChildren): XmlTreeText {
     return {
         type: 'text',
         text,
@@ -76,10 +76,10 @@ export function xmlText(text: string, parent?: XmlNodeWithChildren): XmlNodeText
 
 export function xmlElement(
     name: string,
-    children?: XmlNode[],
+    children?: XmlTree[],
     attrs?: XmlAttributes,
-    parent?: XmlNodeWithChildren,
-): XmlNodeElement {
+    parent?: XmlTreeWithChildren,
+): XmlTreeElement {
     return {
         type: 'element',
         name: name,
@@ -89,17 +89,17 @@ export function xmlElement(
     };
 }
 
-export function childForPath(node: XmlNode, ...path: string[]): XmlNode | undefined {
+export function childForPath(tree: XmlTree, ...path: string[]): XmlTree | undefined {
     if (path.length === 0) {
-        return node;
+        return tree;
     }
 
-    if (!hasChildren(node)) {
+    if (!hasChildren(tree)) {
         return undefined;
     }
 
     const head = path[0];
-    const child = node.children.find(ch => isElement(ch) && sameName(ch.name, head));
+    const child = tree.children.find(ch => isElementTree(ch) && sameName(ch.name, head));
 
     return child
         ? childForPath(child, ...path.slice(1))
@@ -118,7 +118,7 @@ export function attributesToString(attr: XmlAttributes): string {
     return result;
 }
 
-export function xmlNode2String(n: XmlNode): string {
+export function tree2String(n: XmlTree): string {
     switch (n.type) {
         case 'element':
         case 'document':
@@ -130,7 +130,7 @@ export function xmlNode2String(n: XmlNode): string {
                 : '';
             const attrsStr = attrs.length > 0 ? ' ' + attrs : '';
             const chs = n.children
-                .map(xmlNode2String)
+                .map(tree2String)
                 .reduce((all, cur) => all + cur, '');
             return chs.length > 0
                 ? `<${name}${attrsStr}>${chs}</${name}>`
