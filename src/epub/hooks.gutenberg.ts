@@ -41,7 +41,13 @@ function metaHook({ key, value }: MetadataRecord, ds: ParserDiagnoser): KnownTag
 function footnote(): EpubNodeParser {
     return envParser(env => {
         const footnoteId = translate(
-            nameAttrs('a', { id: i => i ? i.startsWith('linknote-') : false }),
+            nameAttrs(
+                'a',
+                {
+                    id: i => i
+                        ? i.startsWith('link')
+                        : false,
+                }),
             el => el.attributes.id || null,
         );
         const footnoteMarker = translate(
