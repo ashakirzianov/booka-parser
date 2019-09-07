@@ -11,7 +11,7 @@ import { EpubConverterParameters, EpubConverter, EpubConverterResult, MetadataHo
 import { ParserDiagnoser, diagnoser } from '../log';
 import {
     EpubNodeParserEnv, handleXml, constrainElement,
-    combineHandlers, EpubNodeParser, makeHandler, fullParser,
+    combineHandlers, EpubNodeParser, fullParser,
 } from './nodeParser';
 
 export function createConverter(params: EpubConverterParameters): EpubConverter {
@@ -98,7 +98,7 @@ function parseRawNodes(sections: EpubSection[], hooks: EpubNodeParser[], ds: Par
         };
         const nodes = section.content.type === 'document'
             ? section.content.children
-            : [];
+            : [section.content];
         const stream = makeStream(nodes, env);
         const sectionResult = sectionParser(stream);
         if (sectionResult.success) {

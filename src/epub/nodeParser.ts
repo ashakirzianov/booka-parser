@@ -163,15 +163,3 @@ export function handleXml(handler: SimpleHandler): EpubNodeParser {
             : null;
     });
 }
-
-// TODO: remove
-export function makeHandler(parser: EpubNodeParser): XmlHandler {
-    return (node, env) => {
-        const stream = makeStream([node], env);
-        const result = parser(stream);
-
-        return result.success
-            ? result.value
-            : [{ node: 'ignore' }];
-    };
-}
