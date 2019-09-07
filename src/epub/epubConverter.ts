@@ -1,7 +1,7 @@
 import { ChapterTitle, Book, KnownTag, RawBookNode } from 'booka-common';
 import { EpubBook, EpubSection } from './epubParser.types';
 import {
-    isElement, XmlNodeElement, XmlNode, childForPath, makeStream,
+    isElement, XmlNodeElement, XmlNode, childForPath, makeStream, path, children,
 } from '../xml';
 import {
     AsyncIter, isWhitespaces, flatten, equalsToOneOf, filterUndefined,
@@ -77,27 +77,35 @@ function getBodyElement(node: XmlNode): XmlNodeElement | undefined {
         : undefined;
 }
 
+function buildSectionParser(parser: EpubNodeParser) {
+    const bodyParser = children(fullParser(parser));
+    const resultParser = path(['html', 'body'], bodyParser);
+
+    return resultParser;
+}
+
 function parseRawNodes(sections: EpubSection[], hooks: EpubNodeParser[], ds: ParserDiagnoser) {
     const handlers = hooks.concat(standardHandlers);
-    const parser = combineHandlers(handlers);
+    const singleParser = combineHandlers(handlers);
+    const sectionParser = buildSectionParser(singleParser);
 
     const result: RawBookNode[] = [];
     for (const section of sections) {
         const env: EpubNodeParserEnv = {
             ds: ds,
             filePath: section.filePath,
-            nodeParser: parser,
+            nodeParser: singleParser,
         };
-        const body = getBodyElement(section.content);
-        if (!body) {
-            continue;
+        const nodes = section.content.type === 'document'
+            ? section.content.children
+            : [];
+        const stream = makeStream(nodes, env);
+        const sectionResult = sectionParser(stream);
+        if (sectionResult.success) {
+            result.push(...sectionResult.value);
+        } else {
+            ds.add({ diag: 'couldnt-parse-section', filePath: section.filePath });
         }
-
-        const nodeHandler = makeHandler(env.nodeParser);
-        const nodeArrays = body
-            .children
-            .map(n => nodeHandler(n, env));
-        result.push(...flatten(filterUndefined(nodeArrays)));
     }
 
     return result;

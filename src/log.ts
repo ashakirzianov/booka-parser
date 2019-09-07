@@ -44,6 +44,7 @@ export type ParserDiagnostic =
     | Diag<'unknown-meta'> & { key: string, value: any }
     | Diag<'bad-meta'> & { meta: MetadataRecord }
     | Diag<'failed-to-parse'> & { trees: XmlNode[] }
+    | Diag<'couldnt-parse-section'> & { filePath: string }
     ;
 
 type Diag<K extends string> = {
