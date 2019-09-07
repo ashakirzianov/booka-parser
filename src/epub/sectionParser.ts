@@ -5,13 +5,13 @@ import {
 import { isWhitespaces } from '../utils';
 import { ParserDiagnoser } from '../log';
 import {
-    EpubNodeParserEnv, handleXml, constrainElement, EpubNodeParser, fullParser,
+    EpubNodeParserEnv, parseSingleTree, constrainElement, EpubNodeParser, fullParser,
 } from './nodeParser';
 import { EpubSection } from './epubParser.types';
 
 export function parseSections(sections: EpubSection[], hooks: EpubNodeParser[], ds: ParserDiagnoser) {
-    const handlers = hooks.concat(standardHandlers);
-    const singleParser = choice(...handlers);
+    const allParsers = hooks.concat(standardParsers);
+    const singleParser = choice(...allParsers);
     const sectionParser = buildSectionParser(singleParser);
 
     const result: RawBookNode[] = [];
@@ -43,39 +43,39 @@ function buildSectionParser(parser: EpubNodeParser) {
     return resultParser;
 }
 
-const text = handleXml(node => {
+const text = parseSingleTree(node => {
     if (node.type !== 'text') {
         return undefined;
     }
     // Skip whitespace nodes
     if (node.text.startsWith('\n') && isWhitespaces(node.text)) {
-        return { node: 'ignore' };
+        return [];
     } else {
-        return {
+        return [{
             node: 'span',
             span: node.text,
-        };
+        }];
     }
 });
 
-const italic = constrainElement(['em', 'i'], {}, (el, env) => ({
+const italic = constrainElement(['em', 'i'], {}, (el, env) => [{
     node: 'attr',
     attributes: ['italic'],
     content: buildContainerNode(el.children, env),
-}));
+}]);
 
-const bold = constrainElement(['strong', 'b'], {}, (el, env) => ({
+const bold = constrainElement(['strong', 'b'], {}, (el, env) => [{
     node: 'attr',
     attributes: ['bold'],
     content: buildContainerNode(el.children, env),
-}));
+}]);
 
 const quote = constrainElement('q', { class: null }, (el, env) => {
-    return {
+    return [{
         node: 'attr',
         attributes: ['quote'],
         content: buildContainerNode(el.children, env),
-    };
+    }];
 });
 
 const a = constrainElement(
@@ -86,22 +86,23 @@ const a = constrainElement(
     },
     (el, env) => {
         if (el.attributes.href !== undefined) {
-            return {
+            return [{
                 node: 'ref',
                 to: el.attributes.href,
                 content: buildContainerNode(el.children, env),
-            };
+            }];
         } else if (el.attributes.id !== undefined) {
-            return {
+            return [{
                 node: 'container',
                 ref: `${env.filePath}#${el.attributes.id}`,
                 nodes: [buildContainerNode(el.children, env)],
-            };
+            }];
         } else {
-            return { node: 'ignore' };
+            return [];
         }
     });
 
+// TODO: re-implement
 const pph = constrainElement(
     ['p', 'div', 'span'],
     {
@@ -110,13 +111,13 @@ const pph = constrainElement(
     },
     (el, env) => {
         const container = buildContainerNode(el.children, env);
-        const result: RawBookNode = el.attributes.id
-            ? {
+        const result: RawBookNode[] = el.attributes.id
+            ? [{
                 node: 'container',
                 ref: `${env.filePath}#${el.attributes.id}`,
                 nodes: [container],
-            }
-            : container;
+            }]
+            : [container];
         return result;
     });
 
@@ -126,29 +127,29 @@ const img = constrainElement(
     (el, env) => {
         const src = el.attributes['src'];
         if (src) {
-            return {
+            return [{
                 node: 'image-ref',
                 imageId: src,
-            };
+            }];
         } else {
             env.ds.add({
                 diag: 'img-must-have-src',
                 node: el,
             });
-            return { node: 'ignore' };
+            return [];
         }
     });
 
 const image = constrainElement('image', {}, (el, env) => {
     const xlinkHref = el.attributes['xlink:href'];
     if (xlinkHref) {
-        return {
+        return [{
             node: 'image-ref',
             imageId: xlinkHref,
-        };
+        }];
     } else {
         env.ds.add({ diag: 'image-must-have-xlinkhref', node: el });
-        return { node: 'ignore' };
+        return [];
     }
 });
 
@@ -161,27 +162,27 @@ const header = constrainElement(
         if (title.length === 0) {
             env.ds.add({ diag: 'no-title', node: el });
         }
-        return {
+        return [{
             node: 'title',
             title: title,
             level: 4 - level,
-        };
+        }];
     });
 
 const svg = constrainElement(
     'svg',
     { viewBox: null, xmlns: null, class: null },
-    () => ({ node: 'ignore' })
+    () => []
 );
 
 const rest = constrainElement(
     ['sup', 'sub', 'ul', 'li', 'br'], // TODO: do not ignore 'br'
     {},
     (el, env) => {
-        return { node: 'ignore' };
+        return [];
     });
 
-const standardHandlers = [
+const standardParsers = [
     text, italic, bold, quote,
     a, pph, img, image, header,
     svg, rest,

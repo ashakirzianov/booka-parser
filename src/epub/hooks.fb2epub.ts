@@ -9,7 +9,7 @@ import {
     attrsChildren, extractText, isElement, nameEq, headParser, XmlNode,
 } from '../xml';
 import { forceType, flatten } from '../utils';
-import { XmlHandler, parserHook, ignoreClass, EpubNodeParser } from './nodeParser';
+import { parserHook, ignoreClass, EpubNodeParser } from './nodeParser';
 import { ParserDiagnoser } from '../log';
 
 export const fb2epubHooks: EpubConverterHooks = {
@@ -65,7 +65,7 @@ function footnoteSection(): EpubNodeParser {
                 return [forceType<RawBookNode>({
                     node: 'container',
                     ref: ref,
-                    // title: tls || [], // TODO: handle title
+                    // title: tls || [], // TODO: use title
                     nodes: flatten(bs),
                 })];
             },

@@ -2,7 +2,7 @@ import { KnownTag } from 'booka-common';
 import { isTextNode, isElement, XmlNodeWithChildren } from '../xml';
 import { ParserDiagnoser } from '../log';
 import { EpubConverterHooks, MetadataRecord } from './epubConverter.types';
-import { handleElement } from './nodeParser';
+import { parseSingleElement } from './nodeParser';
 
 export const fictionBookEditorHooks: EpubConverterHooks = {
     nodeHooks: [
@@ -58,7 +58,7 @@ function titleElement() {
         return result;
     }
 
-    return handleElement(el => {
+    return parseSingleElement(el => {
         if (el.name !== 'div') {
             return undefined;
         }
@@ -73,11 +73,11 @@ function titleElement() {
             if (!isNaN(level)) {
                 const title = extractTextLines(el);
                 if (title) {
-                    return {
+                    return [{
                         node: 'title',
                         level: 1 - level,
                         title,
-                    };
+                    }];
                 }
             }
         }
