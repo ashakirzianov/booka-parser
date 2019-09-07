@@ -167,17 +167,23 @@ const svg = constrainElement(
     () => []
 );
 
-const rest = constrainElement(
+const ignore = constrainElement(
     ['sup', 'sub', 'ul', 'li', 'br'], // TODO: do not ignore 'br'
     {},
     (el, env) => {
         return [];
     });
 
+const skip = headNode((node, env) => {
+    env.ds.add({ diag: 'unexpected-node', node });
+    return [];
+});
+
 const standardParsers = [
     text, attr,
     a, pph, img, image, header, br,
-    svg, rest,
+    svg,
+    ignore, skip,
 ];
 
 function buildContainerNode(nodes: XmlTree[], env: EpubNodeParserEnv): RawBookNode {
