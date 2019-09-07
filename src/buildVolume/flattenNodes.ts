@@ -5,7 +5,7 @@ export function flattenNodes(rawNodes: RawBookNode[], ds: ParserDiagnoser): RawB
     const result: RawBookNode[] = [];
     for (const node of rawNodes) {
         switch (node.node) {
-            case 'container':
+            case 'compound-raw':
                 const preprocessed: RawContainerNode = {
                     ...node,
                     nodes: flattenNodes(node.nodes, ds),

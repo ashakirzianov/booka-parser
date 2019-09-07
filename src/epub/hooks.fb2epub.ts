@@ -63,7 +63,7 @@ function footnoteSection(): EpubNodeParser {
             ([id, [tls, bs]]) => {
                 const ref = id && buildRef(env.filePath, id); // TODO: report missing id
                 return [{
-                    node: 'container',
+                    node: 'compound-raw',
                     ref: ref,
                     // title: tls || [], // TODO: use title
                     nodes: flatten(bs),

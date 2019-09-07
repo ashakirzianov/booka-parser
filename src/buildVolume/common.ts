@@ -18,7 +18,7 @@ export function spanFromRawNode(
                 ds.add({ diag: 'couldnt-build-span', node: rawNode, context: 'attr' });
                 return undefined;
             }
-        case 'container':
+        case 'compound-raw':
             const spans = filterUndefined(rawNode.nodes.map(c => spanFromRawNode(c, ds, titles)));
             return {
                 span: 'compound',

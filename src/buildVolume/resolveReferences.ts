@@ -29,7 +29,7 @@ function swipe1(nodes: RawBookNode[], refs: string[], ids: string[], ds: ParserD
                     nodeToInsert = undefined;
                 }
                 break;
-            case 'container':
+            case 'compound-raw':
                 {
                     const inside = swipe1(node.nodes, refs, ids, ds);
                     footnotes.push(...inside.footnotes);
@@ -46,7 +46,7 @@ function swipe1(nodes: RawBookNode[], refs: string[], ids: string[], ds: ParserD
                     nodeToInsert = {
                         ...node,
                         content: {
-                            node: 'container',
+                            node: 'compound-raw',
                             nodes: inside.rest,
                         },
                     };
@@ -97,7 +97,7 @@ function swipe2(nodes: RawBookNode[], footnotes: RawBookNode[], ds: ParserDiagno
             } else {
                 ds.add({ diag: 'couldnt-resolve-ref', id: node.to, context: 'footnote' });
             }
-        } else if (node.node === 'container') {
+        } else if (node.node === 'compound-raw') {
             const inside = swipe2(node.nodes, footnotes, ds);
             result.push({
                 ...node,

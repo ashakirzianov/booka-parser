@@ -80,7 +80,7 @@ const a = constrainElement(
             }];
         } else if (el.attributes.id !== undefined) {
             return [{
-                node: 'container',
+                node: 'compound-raw',
                 ref: buildRef(env.filePath, el.attributes.id),
                 nodes: [buildContainerNode(el.children, env)],
             }];
@@ -100,7 +100,7 @@ const pph = constrainElement(
         const container = buildContainerNode(el.children, env);
         const result: RawBookNode[] = el.attributes.id
             ? [{
-                node: 'container',
+                node: 'compound-raw',
                 ref: buildRef(env.filePath, el.attributes.id),
                 nodes: [container],
             }]
@@ -192,7 +192,7 @@ function buildContainerNode(nodes: XmlTree[], env: EpubNodeParserEnv): RawBookNo
     const result = parser(stream);
 
     return {
-        node: 'container',
+        node: 'compound-raw',
         nodes: result.value,
     };
 }

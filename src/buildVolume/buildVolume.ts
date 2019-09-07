@@ -124,7 +124,7 @@ async function resolveRawNode(rawNode: RawBookNode, env: BuildVolumeEnv): Promis
             } else {
                 return undefined;
             }
-        case 'container':
+        case 'compound-raw':
             const spans = filterUndefined(rawNode.nodes
                 .map(c => spanFromRawNode(c, env.ds)));
             return {
