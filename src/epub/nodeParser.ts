@@ -9,6 +9,7 @@ import {
     Stream,
     some,
     HeadFn,
+    yieldOne,
 } from '../xml';
 import { Constraint, ConstraintMap, checkValue, checkObject } from '../constraint';
 import { equalsToOneOf, flatten } from '../utils';
@@ -88,4 +89,18 @@ export function fullParser(parser: EpubNodeParser): FullEpubParser {
 
 export function buildRef(filePath: string, id: string) {
     return `${filePath}#${id}`;
+}
+
+export function logWhileParsing(message?: string, dontLogTree?: boolean) {
+    return yieldOne((stream: Stream<XmlTree, EpubNodeParserEnv>) => {
+        if (!dontLogTree) {
+            // tslint:disable-next-line: no-console
+            console.log(stream.stream[0]);
+        }
+        if (message) {
+            // tslint:disable-next-line: no-console
+            console.log(message);
+        }
+        return;
+    });
 }

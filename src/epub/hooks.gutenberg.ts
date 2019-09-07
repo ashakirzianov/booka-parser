@@ -1,8 +1,8 @@
 import { KnownTag } from 'booka-common';
 import { EpubConverterHooks, MetadataRecord } from './epubConverter.types';
-import { ignoreTags, EpubNodeParser, buildRef } from './nodeParser';
+import { ignoreTags, EpubNodeParser, buildRef, logWhileParsing } from './nodeParser';
 import { ParserDiagnoser } from '../log';
-import { name, and, children, nameAttrs, translate, textNode, seq, maybe, envParser } from '../xml';
+import { name, and, children, nameAttrs, translate, textNode, seq, maybe, envParser, yieldOne, whitespaces } from '../xml';
 
 export const gutenbergHooks: EpubConverterHooks = {
     nodeHooks: [
@@ -71,13 +71,13 @@ function footnote(): EpubNodeParser {
         const footnoteP = nameAttrs('p', { class: 'foot' });
 
         const footnoteContainer = translate(
-            seq(footnoteP, children(footnoteContent)),
+            and(footnoteP, children(footnoteContent)),
             ([_, [title, content]]) => content,
         );
 
         const fullFootnote: EpubNodeParser = translate(
-            seq(footnoteMarker, footnoteContainer),
-            ([id, content]) => [{
+            seq(footnoteMarker, whitespaces, footnoteContainer),
+            ([id, _, content]) => [{
                 node: 'container',
                 ref: buildRef(env.filePath, id),
                 nodes: content,
