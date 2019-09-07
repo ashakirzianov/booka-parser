@@ -8,7 +8,7 @@ import {
     seq, children, and, whitespaced, attrs,
     attrsChildren, extractText, isElementTree, nameEq, headParser, XmlTree, envParser,
 } from '../xml';
-import { forceType, flatten } from '../utils';
+import { flatten } from '../utils';
 import { ignoreClass, EpubNodeParser, buildRef } from './nodeParser';
 import { ParserDiagnoser } from '../log';
 
@@ -62,12 +62,12 @@ function footnoteSection(): EpubNodeParser {
             ),
             ([id, [tls, bs]]) => {
                 const ref = id && buildRef(env.filePath, id); // TODO: report missing id
-                return [forceType<RawBookNode>({
+                return [{
                     node: 'container',
                     ref: ref,
                     // title: tls || [], // TODO: use title
                     nodes: flatten(bs),
-                })];
+                } as RawBookNode];
             },
         );
 
@@ -78,19 +78,21 @@ function footnoteSection(): EpubNodeParser {
 function titlePage(): EpubNodeParser {
     const bookTitle = translate(
         extractText(attrs({ class: 'title1' })),
-        t => forceType<RawBookNode>({
+        t => ({
             node: 'tag',
             tag: { tag: 'title', value: t },
-        }),
+        } as RawBookNode),
     );
     const bookAuthor = translate(
         extractText(attrs({ class: 'title_authors' })),
-        a => forceType<RawBookNode>({
+        a => ({
             node: 'tag',
             tag: { tag: 'author', value: a },
-        }),
+        } as RawBookNode),
     );
-    const ignore = headParser((x: any) => forceType<RawBookNode>({ node: 'ignore' }));
+    const ignore = headParser(
+        (x: XmlTree) => ({ node: 'ignore' } as RawBookNode),
+    );
 
     const parser = attrsChildren(
         { class: 'titlepage' },
@@ -119,11 +121,11 @@ function divTitle(): EpubNodeParser {
 
     const parser = translate(
         and(divLevel, children(content)),
-        ([level, ts]) => [forceType<RawBookNode>({
+        ([level, ts]) => [{
             node: 'title',
             title: ts,
             level: 4 - level,
-        })],
+        } as RawBookNode],
     );
 
     return parser;

@@ -24,10 +24,6 @@ export function typeGuard<T, U extends T>(f: (x: T) => boolean): TypeGuard<T, U>
     return f as TypeGuard<T, U>;
 }
 
-export function forceType<T>(x: T): T {
-    return x;
-}
-
 export function filterType<T, U extends T>(arr: T[], tg: TypeGuard<T, U>): U[] {
     return arr.filter(tg);
 }
