@@ -9,7 +9,7 @@ export const gutenbergHooks: EpubConverterHooks = {
         // TODO: do not ignore?
         ignoreTags([
             'hr', 'blockquote', 'table',
-            'br', 'big', 'small', 'ins',
+            'br', 'ins',
             'ol', 'ul',
         ]),
         footnote(),

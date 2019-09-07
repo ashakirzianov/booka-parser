@@ -1,4 +1,4 @@
-import { ChapterTitle, RawBookNode } from 'booka-common';
+import { ChapterTitle, RawBookNode, AttributeName } from 'booka-common';
 import {
     XmlTree, makeStream, path, children, choice,
 } from '../xml';
@@ -58,25 +58,12 @@ const text = headNode(node => {
     }
 });
 
-const italic = constrainElement(['em', 'i'], {}, (el, env) => [{
-    node: 'attr',
-    attributes: ['italic'],
-    content: buildContainerNode(el.children, env),
-}]);
-
-const bold = constrainElement(['strong', 'b'], {}, (el, env) => [{
-    node: 'attr',
-    attributes: ['bold'],
-    content: buildContainerNode(el.children, env),
-}]);
-
-const quote = constrainElement('q', { class: null }, (el, env) => {
-    return [{
-        node: 'attr',
-        attributes: ['quote'],
-        content: buildContainerNode(el.children, env),
-    }];
-});
+const italic = attributeParser(['em', 'i'], ['italic']);
+const bold = attributeParser(['strong', 'b'], ['bold']);
+const quote = attributeParser(['q'], ['quote']);
+const small = attributeParser(['small'], ['small']);
+const big = attributeParser(['big'], ['big']);
+const attr = choice(italic, bold, quote, small, big);
 
 const a = constrainElement(
     'a',
@@ -183,7 +170,7 @@ const rest = constrainElement(
     });
 
 const standardParsers = [
-    text, italic, bold, quote,
+    text, attr,
     a, pph, img, image, header,
     svg, rest,
 ];
@@ -230,4 +217,14 @@ function extractTitle(nodes: XmlTree[], ds: ParserDiagnoser): ChapterTitle {
     }
 
     return lines;
+}
+
+function attributeParser(tagNames: string[], attrs: AttributeName[]) {
+    return constrainElement(tagNames, { class: null }, (el, env) => {
+        return [{
+            node: 'attr',
+            attributes: attrs,
+            content: buildContainerNode(el.children, env),
+        }];
+    });
 }
