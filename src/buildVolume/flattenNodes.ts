@@ -29,5 +29,5 @@ export function flattenNodes(rawNodes: RawBookNode[], ds: ParserDiagnoser): RawB
 }
 
 function shouldBeFlatten(container: RawContainerNode): boolean {
-    return !container.nodes.some(n => (n.node === 'span') || n.node === 'attr');
+    return !container.nodes.every(n => (n.node === 'span') || n.node === 'attr');
 }
