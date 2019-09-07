@@ -1,7 +1,7 @@
 import { ChapterTitle, Book, KnownTag, RawBookNode } from 'booka-common';
 import { EpubBook, EpubSection } from './epubParser.types';
 import {
-    isElement, XmlNodeElement, XmlNode, childForPath, makeStream, path, children,
+    isElement, XmlNodeElement, XmlNode, childForPath, makeStream, path, children, choice,
 } from '../xml';
 import {
     AsyncIter, isWhitespaces, flatten, equalsToOneOf, filterUndefined,
@@ -10,8 +10,7 @@ import { buildVolume } from '../buildVolume';
 import { EpubConverterParameters, EpubConverter, EpubConverterResult, MetadataHook, MetadataRecord } from './epubConverter.types';
 import { ParserDiagnoser, diagnoser } from '../log';
 import {
-    EpubNodeParserEnv, handleXml, constrainElement,
-    combineHandlers, EpubNodeParser, fullParser,
+    EpubNodeParserEnv, handleXml, constrainElement, EpubNodeParser, fullParser,
 } from './nodeParser';
 
 export function createConverter(params: EpubConverterParameters): EpubConverter {
@@ -86,7 +85,7 @@ function buildSectionParser(parser: EpubNodeParser) {
 
 function parseRawNodes(sections: EpubSection[], hooks: EpubNodeParser[], ds: ParserDiagnoser) {
     const handlers = hooks.concat(standardHandlers);
-    const singleParser = combineHandlers(handlers);
+    const singleParser = choice(...handlers);
     const sectionParser = buildSectionParser(singleParser);
 
     const result: RawBookNode[] = [];

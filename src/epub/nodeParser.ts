@@ -139,22 +139,6 @@ export function combineHandlers(handlers: EpubNodeParser[]): EpubNodeParser {
 }
 
 // TODO: remove
-export function expectToHandle(handler: EpubNodeParser): XmlHandler {
-    return (node: XmlNode, env: EpubNodeParserEnv): RawBookNode[] => {
-        const result = handler(makeStream([node], env));
-        if (result.success) {
-            return result.value;
-        } else {
-            env.ds.add({
-                diag: 'unexpected-node',
-                node: node,
-            });
-            return [{ node: 'ignore' }];
-        }
-    };
-}
-
-// TODO: remove
 export function handleXml(handler: SimpleHandler): EpubNodeParser {
     return headParser((node, env) => {
         const result = handler(node, env);
