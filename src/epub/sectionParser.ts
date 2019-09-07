@@ -156,6 +156,11 @@ const header = constrainElement(
         }];
     });
 
+const br = constrainElement(
+    'br', {},
+    () => [{ node: 'span', span: '\n' }],
+);
+
 const svg = constrainElement(
     'svg',
     { viewBox: null, xmlns: null, class: null },
@@ -171,7 +176,7 @@ const rest = constrainElement(
 
 const standardParsers = [
     text, attr,
-    a, pph, img, image, header,
+    a, pph, img, image, header, br,
     svg, rest,
 ];
 
