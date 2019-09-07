@@ -122,7 +122,7 @@ function divTitle(): EpubNodeParser {
     const parser = translate(
         and(divLevel, children(content)),
         ([level, ts]) => [{
-            node: 'title',
+            node: 'chapter-title',
             title: ts,
             level: 4 - level,
         } as RawBookNode],

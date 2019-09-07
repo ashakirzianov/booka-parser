@@ -1,6 +1,6 @@
-import { KnownTag, RawBookNode } from 'booka-common';
+import { KnownTag } from 'booka-common';
 import { EpubMetadata } from './epubParser.types';
-import { flatten, equalsToOneOf } from '../utils';
+import { flatten } from '../utils';
 import { MetadataHook, MetadataRecord } from './epubConverter.types';
 import { ParserDiagnoser } from '../log';
 
@@ -60,7 +60,6 @@ function buildMetaTags(meta: EpubMetadata, metadataHooks: MetadataHook[], ds: Pa
 }
 
 function buildMetaTagsForRecord(key: string, value: string, allHooks: MetadataHook[], ds: ParserDiagnoser): KnownTag[] {
-    const result: KnownTag[] = [];
     const record = { key, value };
     const tags = allHooks.reduce<KnownTag[] | undefined>(
         (res, hook) => res || hook(record, ds),

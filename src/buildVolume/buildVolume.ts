@@ -68,7 +68,7 @@ async function buildChaptersImpl(rawNodes: RawBookNode[], level: number | undefi
         return { nodes: [], next: [] };
     }
     const headNode = rawNodes[0];
-    if (headNode.node === 'title') {
+    if (headNode.node === 'chapter-title') {
         if (level === undefined || level > headNode.level) {
             const content = await buildChaptersImpl(rawNodes.slice(1), headNode.level, env);
             const chapter: ChapterNode = {

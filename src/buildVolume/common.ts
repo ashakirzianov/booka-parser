@@ -26,7 +26,7 @@ export function spanFromRawNode(
             };
         case 'ignore':
             return undefined;
-        case 'title':
+        case 'chapter-title':
             if (titles) {
                 titles.push(...rawNode.title);
             } else {

@@ -74,7 +74,7 @@ function titleElement() {
                 const title = extractTextLines(el);
                 if (title) {
                     return [{
-                        node: 'title',
+                        node: 'chapter-title',
                         level: 1 - level,
                         title,
                     }];

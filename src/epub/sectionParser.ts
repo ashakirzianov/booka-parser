@@ -150,7 +150,7 @@ const header = constrainElement(
             env.ds.add({ diag: 'no-title', node: el });
         }
         return [{
-            node: 'title',
+            node: 'chapter-title',
             title: title,
             level: 4 - level,
         }];
