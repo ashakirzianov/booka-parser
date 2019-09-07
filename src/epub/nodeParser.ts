@@ -20,7 +20,7 @@ export type EpubNodeParser<T = RawBookNode[]> = XmlParser<T, EpubNodeParserEnv>;
 export type FullEpubParser = SuccessParser<Stream<XmlNode, EpubNodeParserEnv>, RawBookNode[]>;
 export type EpubNodeParserEnv = {
     ds: ParserDiagnoser,
-    nodeParser: XmlParser<RawBookNode[], EpubNodeParserEnv>,
+    recursive: XmlParser<RawBookNode[], EpubNodeParserEnv>,
     filePath: string,
 };
 

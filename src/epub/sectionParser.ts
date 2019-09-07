@@ -19,7 +19,7 @@ export function parseSections(sections: EpubSection[], hooks: EpubNodeParser[], 
         const env: EpubNodeParserEnv = {
             ds: ds,
             filePath: section.filePath,
-            nodeParser: singleParser,
+            recursive: singleParser,
         };
         const nodes = section.content.type === 'document'
             ? section.content.children
@@ -189,7 +189,7 @@ const standardParsers = [
 ];
 
 function buildContainerNode(nodes: XmlNode[], env: EpubNodeParserEnv): RawBookNode {
-    const parser = fullParser(env.nodeParser);
+    const parser = fullParser(env.recursive);
     const stream = makeStream(nodes, env);
     const result = parser(stream);
 

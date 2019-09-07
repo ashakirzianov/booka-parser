@@ -53,7 +53,7 @@ function footnoteSection(): EpubNodeParser {
             nameAttrs('a', { class: 'note_anchor' }),
             () => [{ node: 'ignore' } as IgnoreNode]
         );
-        const rec = env.nodeParser;
+        const rec = env.recursive;
 
         const parser = translate(
             and(
