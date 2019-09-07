@@ -4,6 +4,7 @@ import * as fs from 'fs';
 import { extname, join } from 'path';
 import { parseEpubAtPath } from '.';
 import { promisify, inspect } from 'util';
+import { extractNodeText } from 'booka-common';
 
 exec();
 
@@ -31,6 +32,8 @@ async function exec() {
         console.log(`---- ${epubPath}:`);
         console.log('Tags:');
         console.log(result.book.tags);
+        const bookText = extractNodeText(result.book.volume);
+        console.log(`Book length: ${bookText && bookText.length} symbols`);
         if (result.diagnostics.length > 0) {
             console.log('Diagnostics:');
             console.log(inspect(result.diagnostics, false, null, true));

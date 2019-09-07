@@ -1,7 +1,7 @@
 import { ChapterTitle, Book, KnownTag, RawBookNode } from 'booka-common';
 import { EpubBook, EpubSection } from './epubParser.types';
 import {
-    isElement, XmlNodeElement, XmlNode, childForPath,
+    isElement, XmlNodeElement, XmlNode, childForPath, makeStream,
 } from '../xml';
 import {
     AsyncIter, isWhitespaces, flatten, equalsToOneOf, filterUndefined,
@@ -11,7 +11,7 @@ import { EpubConverterParameters, EpubConverter, EpubConverterResult, MetadataHo
 import { ParserDiagnoser, diagnoser } from '../log';
 import {
     EpubNodeParserEnv, handleXml, constrainElement,
-    combineHandlers, expectToHandle, EpubNodeParser, makeHandler,
+    combineHandlers, EpubNodeParser, makeHandler, fullParser,
 } from './nodeParser';
 
 export function createConverter(params: EpubConverterParameters): EpubConverter {
@@ -80,23 +80,20 @@ function getBodyElement(node: XmlNode): XmlNodeElement | undefined {
 function parseRawNodes(sections: EpubSection[], hooks: EpubNodeParser[], ds: ParserDiagnoser) {
     const handlers = hooks.concat(standardHandlers);
     const parser = combineHandlers(handlers);
-    const handler = expectToHandle(parser);
-
-    const env: EpubNodeParserEnv = {
-        ds: ds,
-        filePath: null as any,
-        nodeParser: parser,
-    };
 
     const result: RawBookNode[] = [];
     for (const section of sections) {
+        const env: EpubNodeParserEnv = {
+            ds: ds,
+            filePath: section.filePath,
+            nodeParser: parser,
+        };
         const body = getBodyElement(section.content);
         if (!body) {
             continue;
         }
 
         const nodeHandler = makeHandler(env.nodeParser);
-        env.filePath = section.filePath;
         const nodeArrays = body
             .children
             .map(n => nodeHandler(n, env));
@@ -250,15 +247,14 @@ const standardHandlers = [
     svg, rest,
 ];
 
-// TODO: re-implement
 function buildContainerNode(nodes: XmlNode[], env: EpubNodeParserEnv): RawBookNode {
-    const handler = makeHandler(env.nodeParser);
-    const rawNodeArrays = filterUndefined(nodes.map(n => handler(n, env)));
-    const rawNodes = flatten(rawNodeArrays);
+    const parser = fullParser(env.nodeParser);
+    const stream = makeStream(nodes, env);
+    const result = parser(stream);
 
     return {
         node: 'container',
-        nodes: rawNodes,
+        nodes: result.value,
     };
 }
 

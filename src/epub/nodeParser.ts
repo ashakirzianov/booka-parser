@@ -5,15 +5,19 @@ import {
     XmlAttributes, makeStream, headParser, success,
     elementNode,
     fail,
+    SuccessParser,
+    Stream,
+    some,
 } from '../xml';
 import { Constraint, ConstraintMap, checkValue, checkObject } from '../constraint';
-import { equalsToOneOf } from '../utils';
+import { equalsToOneOf, flatten } from '../utils';
 
 // TODO: remove
 export type XmlHandlerResult = RawBookNode[] | undefined;
 export type XmlHandler = (x: XmlNode, env: EpubNodeParserEnv) => XmlHandlerResult;
 
 export type EpubNodeParser<T = RawBookNode[]> = XmlParser<T, EpubNodeParserEnv>;
+export type FullEpubParser = SuccessParser<Stream<XmlNode, EpubNodeParserEnv>, RawBookNode[]>;
 export type EpubNodeParserEnv = {
     ds: ParserDiagnoser,
     nodeParser: XmlParser<RawBookNode[], EpubNodeParserEnv>,
@@ -85,6 +89,17 @@ export function ignoreTags(tags: string[]): EpubNodeParser {
             ? [{ node: 'ignore' }]
             : null
     );
+}
+
+export function fullParser(parser: EpubNodeParser): FullEpubParser {
+    return input => {
+        const result = some(parser)(input);
+        if (result.next.stream.length > 0) {
+            input.env.ds.add({ diag: 'extra-nodes-tail', nodes: result.next.stream });
+        }
+
+        return success(flatten(result.value), result.next, result.message);
+    };
 }
 
 // TODO: remove
