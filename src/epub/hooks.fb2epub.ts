@@ -9,7 +9,7 @@ import {
     attrsChildren, extractText, isElementTree, nameEq, headParser, XmlTree, envParser,
 } from '../xml';
 import { forceType, flatten } from '../utils';
-import { ignoreClass, EpubNodeParser } from './nodeParser';
+import { ignoreClass, EpubNodeParser, buildRef } from './nodeParser';
 import { ParserDiagnoser } from '../log';
 
 export const fb2epubHooks: EpubConverterHooks = {
@@ -61,7 +61,7 @@ function footnoteSection(): EpubNodeParser {
                 children(seq(title, some(choice(back, rec)))),
             ),
             ([id, [tls, bs]]) => {
-                const ref = `${env.filePath}#${id}` || 'no-id'; // TODO: report missing id
+                const ref = id && buildRef(env.filePath, id); // TODO: report missing id
                 return [forceType<RawBookNode>({
                     node: 'container',
                     ref: ref,

@@ -85,3 +85,7 @@ export function fullParser(parser: EpubNodeParser): FullEpubParser {
         return success(flatten(result.value), result.next, result.message);
     };
 }
+
+export function buildRef(filePath: string, id: string) {
+    return `${filePath}#${id}`;
+}

@@ -5,7 +5,7 @@ import {
 import { isWhitespaces } from '../utils';
 import { ParserDiagnoser } from '../log';
 import {
-    EpubNodeParserEnv, constrainElement, EpubNodeParser, fullParser, headNode,
+    EpubNodeParserEnv, constrainElement, EpubNodeParser, fullParser, headNode, buildRef,
 } from './nodeParser';
 import { EpubSection } from './epubParser.types';
 
@@ -94,7 +94,7 @@ const a = constrainElement(
         } else if (el.attributes.id !== undefined) {
             return [{
                 node: 'container',
-                ref: `${env.filePath}#${el.attributes.id}`,
+                ref: buildRef(env.filePath, el.attributes.id),
                 nodes: [buildContainerNode(el.children, env)],
             }];
         } else {
@@ -102,7 +102,7 @@ const a = constrainElement(
         }
     });
 
-// TODO: re-implement
+// TODO: re-implement (do not extra wrap container)
 const pph = constrainElement(
     ['p', 'div', 'span'],
     {
@@ -114,7 +114,7 @@ const pph = constrainElement(
         const result: RawBookNode[] = el.attributes.id
             ? [{
                 node: 'container',
-                ref: `${env.filePath}#${el.attributes.id}`,
+                ref: buildRef(env.filePath, el.attributes.id),
                 nodes: [container],
             }]
             : [container];
