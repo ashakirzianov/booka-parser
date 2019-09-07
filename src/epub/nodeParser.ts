@@ -100,17 +100,3 @@ export function fullParser(parser: EpubNodeParser): FullEpubParser {
         return success(flatten(result.value), result.next, result.message);
     };
 }
-
-// TODO: remove
-export function combineParsers(fns: EpubNodeParser[]): EpubNodeParser {
-    return input => {
-        for (const fn of fns) {
-            const result = fn(input);
-            if (result.success) {
-                return result;
-            }
-        }
-
-        return fail('');
-    };
-}
