@@ -7,6 +7,7 @@ export type XmlAttributes = {
 export type XmlTreeBase<T extends string> = {
     type: T,
     parent: XmlTree,
+    name?: string,
 };
 export type XmlTreeWithParent<T extends string> = XmlTreeBase<T> & {
     parent: XmlTreeWithChildren,
