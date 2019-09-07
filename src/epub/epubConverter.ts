@@ -4,15 +4,15 @@ import {
     isElement, XmlNodeElement, XmlNode, childForPath,
 } from '../xml';
 import {
-    AsyncIter, isWhitespaces, flatten, equalsToOneOf,
+    AsyncIter, isWhitespaces, flatten, equalsToOneOf, filterUndefined,
 } from '../utils';
 import { buildVolume } from '../buildVolume';
 import { EpubConverterParameters, EpubConverter, EpubConverterResult, MetadataHook, MetadataRecord } from './epubConverter.types';
 import { ParserDiagnoser, diagnoser } from '../log';
 import {
-    XmlHandlerEnv, handleXml, constrainElement,
-    XmlHandler, combineHandlers, expectToHandle,
-} from './nodeHandler';
+    EpubNodeParserEnv, handleXml, constrainElement,
+    combineHandlers, expectToHandle, EpubNodeParser, makeHandler,
+} from './nodeParser';
 
 export function createConverter(params: EpubConverterParameters): EpubConverter {
     return {
@@ -77,16 +77,16 @@ function getBodyElement(node: XmlNode): XmlNodeElement | undefined {
         : undefined;
 }
 
-function parseRawNodes(sections: EpubSection[], hooks: XmlHandler[], ds: ParserDiagnoser) {
+function parseRawNodes(sections: EpubSection[], hooks: EpubNodeParser[], ds: ParserDiagnoser) {
     const handlers = hooks.concat(standardHandlers);
-    const handler = expectToHandle(combineHandlers(handlers));
+    const parser = combineHandlers(handlers);
+    const handler = expectToHandle(parser);
 
-    const env: XmlHandlerEnv = {
+    const env: EpubNodeParserEnv = {
         ds: ds,
         filePath: null as any,
-        xml2raw: null as any,
+        nodeParser: parser,
     };
-    env.xml2raw = n => handler(n, env);
 
     const result: RawBookNode[] = [];
     for (const section of sections) {
@@ -95,11 +95,12 @@ function parseRawNodes(sections: EpubSection[], hooks: XmlHandler[], ds: ParserD
             continue;
         }
 
+        const nodeHandler = makeHandler(env.nodeParser);
         env.filePath = section.filePath;
         const nodeArrays = body
             .children
-            .map(env.xml2raw);
-        result.push(...flatten(nodeArrays));
+            .map(n => nodeHandler(n, env));
+        result.push(...flatten(filterUndefined(nodeArrays)));
     }
 
     return result;
@@ -249,13 +250,15 @@ const standardHandlers = [
     svg, rest,
 ];
 
-function buildContainerNode(nodes: XmlNode[], env: XmlHandlerEnv): RawBookNode {
-    const content = flatten(nodes
-        .map(ch => env.xml2raw(ch)));
+// TODO: re-implement
+function buildContainerNode(nodes: XmlNode[], env: EpubNodeParserEnv): RawBookNode {
+    const handler = makeHandler(env.nodeParser);
+    const rawNodeArrays = filterUndefined(nodes.map(n => handler(n, env)));
+    const rawNodes = flatten(rawNodeArrays);
 
     return {
         node: 'container',
-        nodes: content,
+        nodes: rawNodes,
     };
 }
 

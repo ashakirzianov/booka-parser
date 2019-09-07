@@ -1,6 +1,6 @@
 import { KnownTag } from 'booka-common';
 import { EpubConverterHooks, MetadataRecord } from './epubConverter.types';
-import { ignoreTags } from './nodeHandler';
+import { ignoreTags } from './nodeParser';
 import { ParserDiagnoser } from '../log';
 
 export const gutenbergHooks: EpubConverterHooks = {

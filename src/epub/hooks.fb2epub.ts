@@ -9,7 +9,7 @@ import {
     attrsChildren, extractText, isElement, nameEq, headParser, XmlNode,
 } from '../xml';
 import { forceType, flatten } from '../utils';
-import { XmlHandler, parserHook, ignoreClass } from './nodeHandler';
+import { XmlHandler, parserHook, ignoreClass, EpubNodeParser } from './nodeParser';
 import { ParserDiagnoser } from '../log';
 
 export const fb2epubHooks: EpubConverterHooks = {
@@ -37,7 +37,7 @@ function metaHook({ key, value }: MetadataRecord, ds: ParserDiagnoser): KnownTag
     }
 }
 
-function footnoteSection(): XmlHandler {
+function footnoteSection(): EpubNodeParser {
     return parserHook(env => {
         const divId = translate(
             nameAttrs('div', { class: 'section2', id: id => id !== undefined }),
@@ -53,7 +53,7 @@ function footnoteSection(): XmlHandler {
             nameAttrs('a', { class: 'note_anchor' }),
             () => [{ node: 'ignore' } as IgnoreNode]
         );
-        const rec = headParser(env.xml2raw);
+        const rec = env.nodeParser;
 
         const parser = translate(
             and(
@@ -75,7 +75,7 @@ function footnoteSection(): XmlHandler {
     });
 }
 
-function titlePage(): XmlHandler {
+function titlePage(): EpubNodeParser {
     return parserHook(() => {
         const bookTitle = translate(
             extractText(attrs({ class: 'title1' })),
@@ -102,7 +102,7 @@ function titlePage(): XmlHandler {
     });
 }
 
-function divTitle(): XmlHandler {
+function divTitle(): EpubNodeParser {
     return parserHook(() => {
         const divLevel = headParser((n: XmlNode) => {
             if (isElement(n) && nameEq('div', n.name)

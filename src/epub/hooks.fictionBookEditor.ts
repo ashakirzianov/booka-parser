@@ -2,7 +2,7 @@ import { KnownTag } from 'booka-common';
 import { isTextNode, isElement, XmlNodeWithChildren } from '../xml';
 import { ParserDiagnoser } from '../log';
 import { EpubConverterHooks, MetadataRecord } from './epubConverter.types';
-import { handleElement } from './nodeHandler';
+import { handleElement } from './nodeParser';
 
 export const fictionBookEditorHooks: EpubConverterHooks = {
     nodeHooks: [

@@ -1,7 +1,7 @@
 import { Book, KnownTag } from 'booka-common';
 import { ParserDiagnostic, ParserDiagnoser } from '../log';
-import { EpubBook, EpubKind, EpubMetadata } from './epubParser.types';
-import { XmlHandler } from './nodeHandler';
+import { EpubBook, EpubKind } from './epubParser.types';
+import { EpubNodeParser } from './nodeParser';
 
 export type EpubConverterResult = {
     success: true,
@@ -30,6 +30,6 @@ export type MetadataRecord = {
 };
 export type MetadataHook = (meta: MetadataRecord, ds: ParserDiagnoser) => KnownTag[] | undefined;
 export type EpubConverterHooks = {
-    nodeHooks: XmlHandler[],
+    nodeHooks: EpubNodeParser[],
     metadataHooks: MetadataHook[],
 };

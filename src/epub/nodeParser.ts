@@ -2,14 +2,16 @@ import { RawBookNode } from 'booka-common';
 import { ParserDiagnoser } from '../log';
 import {
     XmlNode, XmlNodeElement, isElement, XmlParser,
-    XmlAttributes,
-    makeStream,
-    headParser,
-    success,
+    XmlAttributes, makeStream, headParser, success,
     elementNode,
+    fail,
 } from '../xml';
 import { Constraint, ConstraintMap, checkValue, checkObject } from '../constraint';
 import { equalsToOneOf } from '../utils';
+
+// TODO: remove
+export type XmlHandlerResult = RawBookNode[] | undefined;
+export type XmlHandler = (x: XmlNode, env: EpubNodeParserEnv) => XmlHandlerResult;
 
 export type EpubNodeParser<T = RawBookNode[]> = XmlParser<T, EpubNodeParserEnv>;
 export type EpubNodeParserEnv = {
@@ -37,13 +39,13 @@ export function constrainElement<N extends string>(
         }
 
         const attrCheck = checkObject(node.attributes, attrsConstraint);
-        for (const fail of attrCheck) {
+        for (const failedCheck of attrCheck) {
             env.ds.add({
                 diag: 'unexpected-attr',
                 element: node,
-                name: fail.key,
-                value: fail.value,
-                constraint: fail.constraint,
+                name: failedCheck.key,
+                value: failedCheck.value,
+                constraint: failedCheck.constraint,
             });
         }
 
@@ -83,4 +85,78 @@ export function ignoreTags(tags: string[]): EpubNodeParser {
             ? [{ node: 'ignore' }]
             : null
     );
+}
+
+// TODO: remove
+export function handleElement(handler: SimpleElementHandler): EpubNodeParser {
+    return headParser((node, env) => {
+        if (!isElement(node)) {
+            return null;
+        }
+
+        const result = handler(node, env);
+        return result ? [result] : null;
+    });
+}
+
+// TODO: remove
+export function parserHook(buildParser: (env: EpubNodeParserEnv) => EpubNodeParser): EpubNodeParser {
+    return input => {
+        const parser = buildParser(input.env);
+        const result = parser(input);
+
+        return result;
+    };
+}
+
+// TODO: remove
+export function combineHandlers(handlers: EpubNodeParser[]): EpubNodeParser {
+    return input => {
+        for (const handler of handlers) {
+            const result = handler(input);
+            if (result.success) {
+                return result;
+            }
+        }
+
+        return fail('');
+    };
+}
+
+// TODO: remove
+export function expectToHandle(handler: EpubNodeParser): XmlHandler {
+    return (node: XmlNode, env: EpubNodeParserEnv): RawBookNode[] => {
+        const result = handler(makeStream([node], env));
+        if (result.success) {
+            return result.value;
+        } else {
+            env.ds.add({
+                diag: 'unexpected-node',
+                node: node,
+            });
+            return [{ node: 'ignore' }];
+        }
+    };
+}
+
+// TODO: remove
+export function handleXml(handler: SimpleHandler): EpubNodeParser {
+    return headParser((node, env) => {
+        const result = handler(node, env);
+        return result
+            ? [result]
+            : null;
+    });
+}
+
+// TODO: remove
+export function makeHandler(parser: EpubNodeParser): XmlHandler {
+    return (node, env) => {
+        const stream = makeStream([node], env);
+        const result = parser(stream);
+
+        return result.success
+            ? result.value
+            : [{ node: 'ignore' }];
+    };
 }
