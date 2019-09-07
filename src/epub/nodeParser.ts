@@ -59,21 +59,6 @@ export function constrainElement<N extends string>(
     });
 }
 
-export function expectToParse(parser: EpubNodeParser): EpubNodeParser {
-    return input => {
-        const result = parser(input);
-        if (result.success) {
-            return result;
-        } else {
-            input.env.ds.add({
-                diag: 'unexpected-node',
-                node: input.stream[0],
-            });
-            return success([{ node: 'ignore' }], makeStream([], input.env));
-        }
-    };
-}
-
 export function ignoreClass(className: string): EpubNodeParser {
     return elementNode<RawBookNode[], EpubNodeParserEnv>(el =>
         el.attributes.class === className
