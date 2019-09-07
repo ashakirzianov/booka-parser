@@ -6,10 +6,10 @@ import {
     nameChildren, textNode, nameAttrsChildren, some,
     translate, nameAttrs, choice,
     seq, children, and, whitespaced, attrs,
-    attrsChildren, extractText, isElement, nameEq, headParser, XmlNode,
+    attrsChildren, extractText, isElement, nameEq, headParser, XmlNode, envParser,
 } from '../xml';
 import { forceType, flatten } from '../utils';
-import { parserHook, ignoreClass, EpubNodeParser } from './nodeParser';
+import { ignoreClass, EpubNodeParser } from './nodeParser';
 import { ParserDiagnoser } from '../log';
 
 export const fb2epubHooks: EpubConverterHooks = {
@@ -38,7 +38,7 @@ function metaHook({ key, value }: MetadataRecord, ds: ParserDiagnoser): KnownTag
 }
 
 function footnoteSection(): EpubNodeParser {
-    return parserHook(env => {
+    return envParser(env => {
         const divId = translate(
             nameAttrs('div', { class: 'section2', id: id => id !== undefined }),
             el => el.attributes.id,
@@ -76,59 +76,55 @@ function footnoteSection(): EpubNodeParser {
 }
 
 function titlePage(): EpubNodeParser {
-    return parserHook(() => {
-        const bookTitle = translate(
-            extractText(attrs({ class: 'title1' })),
-            t => forceType<RawBookNode>({
-                node: 'tag',
-                tag: { tag: 'title', value: t },
-            }),
-        );
-        const bookAuthor = translate(
-            extractText(attrs({ class: 'title_authors' })),
-            a => forceType<RawBookNode>({
-                node: 'tag',
-                tag: { tag: 'author', value: a },
-            }),
-        );
-        const ignore = headParser((x: any) => forceType<RawBookNode>({ node: 'ignore' }));
+    const bookTitle = translate(
+        extractText(attrs({ class: 'title1' })),
+        t => forceType<RawBookNode>({
+            node: 'tag',
+            tag: { tag: 'title', value: t },
+        }),
+    );
+    const bookAuthor = translate(
+        extractText(attrs({ class: 'title_authors' })),
+        a => forceType<RawBookNode>({
+            node: 'tag',
+            tag: { tag: 'author', value: a },
+        }),
+    );
+    const ignore = headParser((x: any) => forceType<RawBookNode>({ node: 'ignore' }));
 
-        const parser = attrsChildren(
-            { class: 'titlepage' },
-            some(choice(bookTitle, bookAuthor, ignore)),
-        );
+    const parser = attrsChildren(
+        { class: 'titlepage' },
+        some(choice(bookTitle, bookAuthor, ignore)),
+    );
 
-        return parser;
-    });
+    return parser;
 }
 
 function divTitle(): EpubNodeParser {
-    return parserHook(() => {
-        const divLevel = headParser((n: XmlNode) => {
-            if (isElement(n) && nameEq('div', n.name)
-                && n.attributes.class && n.attributes.class.startsWith('title')) {
-                const levelString = n.attributes.class.slice('title'.length);
-                const level = parseInt(levelString, 10);
+    const divLevel = headParser((n: XmlNode) => {
+        if (isElement(n) && nameEq('div', n.name)
+            && n.attributes.class && n.attributes.class.startsWith('title')) {
+            const levelString = n.attributes.class.slice('title'.length);
+            const level = parseInt(levelString, 10);
 
-                return isNaN(level)
-                    ? null
-                    : level;
-            }
+            return isNaN(level)
+                ? null
+                : level;
+        }
 
-            return null;
-        });
-        const h = whitespaced(nameChildren(n => n.startsWith('h'), textNode()));
-        const content = some(h);
-
-        const parser = translate(
-            and(divLevel, children(content)),
-            ([level, ts]) => [forceType<RawBookNode>({
-                node: 'title',
-                title: ts,
-                level: 4 - level,
-            })],
-        );
-
-        return parser;
+        return null;
     });
+    const h = whitespaced(nameChildren(n => n.startsWith('h'), textNode()));
+    const content = some(h);
+
+    const parser = translate(
+        and(divLevel, children(content)),
+        ([level, ts]) => [forceType<RawBookNode>({
+            node: 'title',
+            title: ts,
+            level: 4 - level,
+        })],
+    );
+
+    return parser;
 }

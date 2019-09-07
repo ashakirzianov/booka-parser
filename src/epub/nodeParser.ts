@@ -102,16 +102,6 @@ export function fullParser(parser: EpubNodeParser): FullEpubParser {
 }
 
 // TODO: remove
-export function parserHook(buildParser: (env: EpubNodeParserEnv) => EpubNodeParser): EpubNodeParser {
-    return input => {
-        const parser = buildParser(input.env);
-        const result = parser(input);
-
-        return result;
-    };
-}
-
-// TODO: remove
 export function combineParsers(fns: EpubNodeParser[]): EpubNodeParser {
     return input => {
         for (const fn of fns) {
