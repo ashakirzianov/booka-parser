@@ -1,6 +1,7 @@
-import { Book } from 'booka-common';
 import { parsePath, EpubConverterResult } from './epub';
 import { preprocessBook, StoreBufferFn } from './preprocessBook';
+
+export { storeBuffers } from './preprocessBook';
 
 export const parserVersion = '1.1.2';
 

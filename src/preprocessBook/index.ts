@@ -1,2 +1,2 @@
 export { preprocessBook } from './preprocess';
-export { StoreBufferFn } from './storeBuffers';
+export { StoreBufferFn, storeBuffers } from './storeBuffers';
