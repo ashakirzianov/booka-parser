@@ -2,18 +2,26 @@ import {
     VolumeNode, BookContentNode,
     Span, AttributeName, ParagraphNode, CompoundSpan,
     isChapter, isParagraph, isImage,
-    isSimpleSpan, isAttributedSpan, isFootnoteSpan, isCompoundSpan, isSemanticSpan,
+    isSimpleSpan, isAttributedSpan, isFootnoteSpan, isCompoundSpan, isSemanticSpan, Book,
 } from 'booka-common';
 import { assertNever } from '../utils';
 import { logger } from '../log';
 
-export function optimizeVolume(book: VolumeNode): VolumeNode {
-    const optimized = {
+export function optimizeBook(book: Book): Book {
+    const volume = optimizeVolume(book.volume);
+    return {
         ...book,
-        nodes: optimizeNodes(book.nodes),
+        volume,
+    };
+}
+
+function optimizeVolume(volume: VolumeNode): VolumeNode {
+    const optimized = {
+        ...volume,
+        nodes: optimizeNodes(volume.nodes),
     };
 
-    const before = JSON.stringify(book).length;
+    const before = JSON.stringify(volume).length;
     const after = JSON.stringify(optimized).length;
     const won = Math.floor((before - after) / before * 100);
     const length = Math.floor(after / 1000);
