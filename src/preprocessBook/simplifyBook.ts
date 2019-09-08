@@ -2,13 +2,21 @@ import {
     VolumeNode, BookContentNode, ChapterNode, ParagraphNode,
     Span,
     isChapter, isParagraph, isImage,
-    isSimpleSpan, isAttributedSpan, isFootnoteSpan, isCompoundSpan,
+    isSimpleSpan, isAttributedSpan, isFootnoteSpan, isCompoundSpan, isSemanticSpan, Book,
 } from 'booka-common';
 import {
     filterUndefined, assertNever, isWhitespaces,
 } from '../utils';
 
-export function simplifyVolume(volume: VolumeNode): VolumeNode {
+export function simplifyBook(book: Book): Book {
+    const volume = simplifyVolume(book.volume);
+    return {
+        ...book,
+        volume,
+    };
+}
+
+function simplifyVolume(volume: VolumeNode): VolumeNode {
     const nodes = simplifyNodes(volume.nodes);
     return {
         ...volume,
@@ -58,7 +66,7 @@ function simplifySpan(span: Span): Span | undefined {
         return isWhitespaces(span)
             ? undefined
             : span;
-    } else if (isAttributedSpan(span)) {
+    } else if (isAttributedSpan(span) || isSemanticSpan(span)) {
         const content = simplifySpan(span.content);
         return content === undefined
             ? undefined

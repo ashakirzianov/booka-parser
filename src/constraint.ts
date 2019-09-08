@@ -9,57 +9,62 @@ export type Constraint<TV, TC extends TV = TV> =
 export type ConstraintMap<T> = {
     [K in keyof T]: Constraint<T[K]> | undefined;
 };
-export type ConstraintResult = {
-    satisfy: true,
-} | {
-    satisfy: false,
-    reason: ConstraintFailReason,
-};
-export type ConstraintFailReason = string[];
 export type ConstrainedType<T, C extends ConstraintMap<T>> = {
     [k in keyof T]: C[k] extends Constraint<infer CV> ? CV : T[k];
 };
+export type ConstraintFailReason = {
+    key: string,
+    value: string,
+    constraint: string,
+};
 
-export function checkValue<T, C extends T>(value: T, constraint: Constraint<T, C>): ConstraintResult {
+export function checkValue<T, C extends T>(value: T, constraint: Constraint<T, C>): boolean {
     if (Array.isArray(constraint)) {
-        if (equalsToOneOf(value, constraint)) {
-            return { satisfy: true };
-        } else {
-            return {
-                satisfy: false,
-                reason: [`${value} is not one of [${constraint.join(', ')}]`],
-            };
-        }
+        return equalsToOneOf(value, constraint);
     } else if (typeof constraint === 'function') {
         const fn = constraint as (x: T) => boolean;
         const result = fn(value);
-        return result
-            ? { satisfy: true }
-            : { satisfy: false, reason: [`${value} does not satisfy function constraint`] };
+        return result;
     } else if (constraint === null) {
-        return { satisfy: true };
+        return true;
     } else {
-        return value === constraint
-            ? { satisfy: true }
-            : { satisfy: false, reason: [`${value} is not equal to ${constraint}`] };
+        return value === constraint;
     }
 }
 
-export function checkObject<T>(obj: T, constraintMap: ConstraintMap<T>): ConstraintResult {
-    const reasons: string[] = [];
+export function constraintToString<T>(constraint: Constraint<T>): string {
+    if (Array.isArray(constraint)) {
+        return `[${constraint.join(', ')}]`;
+    } else if (typeof constraint === 'function') {
+        return 'fn';
+    } else if (constraint === null) {
+        return '<any>';
+    } else {
+        return JSON.stringify(constraint);
+    }
+}
+
+export function checkObject<T>(obj: T, constraintMap: ConstraintMap<T>): ConstraintFailReason[] {
+    const reasons: ConstraintFailReason[] = [];
     for (const [key, value] of Object.entries(obj)) {
         const constraint = constraintMap[key as keyof T] as Constraint<T[keyof T]>;
         if (constraint === undefined) {
-            reasons.push(`Unexpected '${key} = ${value}'`);
+            reasons.push({
+                key: key,
+                value: value,
+                constraint: 'should not be set',
+            });
         } else {
             const result = checkValue(value, constraint);
-            if (!result.satisfy) {
-                reasons.push(`${key} = ${value}: ${result.reason}`);
+            if (!result) {
+                reasons.push({
+                    key: key,
+                    value: value,
+                    constraint: constraintToString(constraint),
+                });
             }
         }
     }
 
-    return reasons.length === 0
-        ? { satisfy: true }
-        : { satisfy: false, reason: reasons };
+    return reasons;
 }

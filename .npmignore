@@ -65,3 +65,6 @@ public/cache/**/*
 
 server.key
 server.crt
+
+# epub examples
+epub/*

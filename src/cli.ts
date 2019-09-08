@@ -3,13 +3,15 @@
 import * as fs from 'fs';
 import { extname, join } from 'path';
 import { parseEpubAtPath } from '.';
-import { promisify } from 'util';
+import { promisify, inspect } from 'util';
+import { extractNodeText } from 'booka-common';
 
 exec();
 
 async function exec() {
     const args = process.argv;
     const path = args[2];
+    const reportMeta = args[3] ? false : true;
     if (!path) {
         console.log('You need to pass epub path as an arg');
         return;
@@ -29,11 +31,15 @@ async function exec() {
             continue;
         }
         console.log(`---- ${epubPath}:`);
-        console.log('Meta:');
-        console.log(result.volume.meta);
+        if (reportMeta) {
+            console.log('Tags:');
+            console.log(result.book.tags);
+            const bookText = extractNodeText(result.book.volume);
+            console.log(`Book length: ${bookText && bookText.length} symbols`);
+        }
         if (result.diagnostics.length > 0) {
             console.log('Diagnostics:');
-            console.log(result.diagnostics);
+            console.log(inspect(result.diagnostics, false, null, true));
         }
     }
 }

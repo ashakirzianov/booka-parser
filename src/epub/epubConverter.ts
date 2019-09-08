@@ -1,29 +1,64 @@
-import { ParserDiagnostic } from '../log';
-import { EpubBook, EpubSource, Image } from './epubParser';
-import { VolumeNode } from 'booka-common';
-import { NodeHandler } from './nodeHandler';
+import { Book, KnownTag, RawBookNode } from 'booka-common';
+import { AsyncIter, equalsToOneOf } from '../utils';
+import { buildVolume } from '../buildVolume';
+import { diagnoser } from '../log';
+import { EpubBook } from './epubParser.types';
+import { EpubConverterParameters, EpubConverter, EpubConverterResult } from './epubConverter.types';
+import { parseSections } from './sectionParser';
+import { parseMeta } from './metaParser';
 
-export type EpubConverterResult = {
-    success: true,
-    volume: VolumeNode,
-    diagnostics: ParserDiagnostic[],
-    resolveImage(id: string): Promise<Image | undefined>,
-} | {
-    success: false,
-    diagnostics: ParserDiagnostic[],
-};
-export type EpubConverter = {
-    convertEpub: (epub: EpubBook) => Promise<EpubConverterResult>,
-};
+export function createConverter(params: EpubConverterParameters): EpubConverter {
+    return {
+        convertEpub: epub => convertEpub(epub, params),
+    };
+}
 
-export type EpubConverterParameters = {
-    options: EpubConverterOptionsTable,
-};
+async function convertEpub(epub: EpubBook, params: EpubConverterParameters): Promise<EpubConverterResult> {
+    const ds = diagnoser({ context: 'epub', kind: epub.kind });
+    try {
+        if (epub.kind === 'unknown') {
+            ds.add({ diag: 'unknown-kind' });
+        }
 
-export type EpubConverterOptionsTable = {
-    [key in EpubSource]: EpubConverterHooks;
-};
+        const hooks = params.options[epub.kind];
+        const tags = parseMeta(epub.metadata, hooks.metadataHooks, ds);
+        const sections = await AsyncIter.toArray(epub.sections());
+        const rawNodes = parseSections(sections, hooks.nodeHooks, ds);
+        const metaNodes = buildMetaNodesFromTags(tags);
+        const allNodes = rawNodes.concat(metaNodes);
 
-export type EpubConverterHooks = {
-    nodeHooks: NodeHandler[],
-};
+        const volume = await buildVolume(allNodes, {
+            ds,
+            resolveImageRef: epub.imageResolver,
+        });
+        const book: Book = {
+            volume,
+            source: {
+                source: 'epub',
+                kind: epub.kind,
+            },
+            tags: tags,
+        };
+
+        return {
+            success: true,
+            book: book,
+            kind: epub.kind,
+            diagnostics: ds.all(),
+        };
+    } catch {
+        return {
+            success: false,
+            diagnostics: ds.all(),
+        };
+    }
+}
+
+function buildMetaNodesFromTags(tags: KnownTag[]): RawBookNode[] {
+    const filtered = tags.filter(t => equalsToOneOf(t.tag, ['author', 'title', 'cover-ref']));
+    const nodes = filtered.map(t => ({
+        node: 'tag',
+        tag: t,
+    } as const));
+    return nodes;
+}

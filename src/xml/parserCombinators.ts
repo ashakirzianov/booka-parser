@@ -303,3 +303,7 @@ export function tagged<TIn, TOut>(parser: Parser<TIn, TOut>, f: (x: TIn) => stri
             : fail(taggedMessage(result.message, f(input)));
     };
 }
+
+export function yieldOne<In, Out>(f: (x: In) => Out): Parser<In, Out> {
+    return input => success(f(input), input);
+}

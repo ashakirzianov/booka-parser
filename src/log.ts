@@ -1,5 +1,7 @@
-import { XmlNode, XmlNodeElement } from './xml';
-import { Block } from './bookBlocks';
+import { Node } from 'booka-common';
+import { XmlTree, XmlTreeElement } from './xml';
+import { MetadataRecord } from './epub/epubConverter.types';
+import { EpubKind } from './epub/epubParser.types';
 
 export function diagnoser(context: ParserContext): ParserDiagnoser {
     return new ParserDiagnoser(context);
@@ -23,29 +25,33 @@ export type ParserContext =
     | Context<'epub'> & { title?: string }
     ;
 
-type Context<K extends string> = { context: K };
+type Context<K extends string> = { context: K, kind?: EpubKind };
 
 export type ParserDiagnostic =
-    | NodeDiag<'node-other'> & { message: string }
-    | NodeDiag<'img-must-have-src'>
-    | NodeDiag<'image-must-have-xlinkhref'>
-    | NodeDiag<'link-must-have-ref'>
-    | NodeDiag<'unexpected-node'> & { context?: 'title' }
-    | Diag<'no-title'> & { nodes: XmlNode[] }
-    | Diag<'unexpected-attr'> & { name: string, value: string | undefined, element: XmlNodeElement }
+    | XmlDiag<'img-must-have-src'>
+    | XmlDiag<'image-must-have-xlinkhref'>
+    | XmlDiag<'link-must-have-ref'>
+    | XmlDiag<'unexpected-node'>
+    | XmlDiag<'no-title'>
+    | Diag<'unexpected-attr'> & { name: string, value: string | undefined, element: XmlTreeElement, constraint: string }
     | Diag<'empty-book-title'>
-    | Diag<'extra-blocks-tail'> & { blocks: Block[] }
-    | BlockDiag<'unexpected-block'>
-    | BlockDiag<'couldnt-build-span'> & { context: 'attr' | 'footnote' }
+    | Diag<'extra-nodes-tail'> & { nodes: any[] }
+    | Diag<'unexpected-raw-node'> & { node: Node }
+    | Diag<'couldnt-build-span'> & { node: Node, context: 'attr' | 'footnote' }
+    | Diag<'unexpected-title'> & { node: Node }
     | Diag<'couldnt-resolve-ref'> & { id: string }
-    | Diag<'unknown-source'>
+    | Diag<'unknown-kind'>
+    | Diag<'unknown-meta'> & { key: string, value: any }
+    | Diag<'bad-meta'> & { meta: MetadataRecord }
+    | Diag<'failed-to-parse'> & { trees: XmlTree[] }
+    | Diag<'couldnt-parse-section'> & { filePath: string }
     ;
 
 type Diag<K extends string> = {
     diag: K,
+    context?: string,
 };
-type NodeDiag<K extends string> = Diag<K> & { node: XmlNode };
-type BlockDiag<K extends string> = Diag<K> & { block: Block };
+type XmlDiag<K extends string> = Diag<K> & { node: XmlTree };
 
 export type LogLevel = 'info' | 'important' | 'warn';
 

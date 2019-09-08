@@ -1,44 +1,139 @@
-import { XmlNode } from '../xml';
+import { EPub, SYMBOL_RAW_DATA } from 'epub2';
+import { EpubParser, EpubBook, EpubSection, EpubKind, EpubKindResolver, resolveEpubKind, EpubMetadata } from './epubParser.types';
+import { XmlTreeDocument } from '../xml';
+import { last } from '../utils';
 
-export type Image = {
-    buffer: Buffer,
-    mimeType?: string,
-};
-export type EpubCollection<T> = AsyncIterableIterator<T>;
+export function createEpubParser(xmlStringParser: (text: string) => (XmlTreeDocument | undefined)): EpubParser {
+    return {
+        async parseFile(filePath): Promise<EpubBook> {
+            const epub = await FixedEpub.createAsync(filePath) as FixedEpub;
 
-export type EpubSection = {
-    filePath: string,
-    id: string,
-    content: XmlNode,
-};
+            const kind = identifyKind(epub);
+            return {
+                kind: kind,
+                metadata: extractMetadata(epub),
+                imageResolver: async href => {
+                    // const root = 'OPS/';
+                    // const path = root + href;
+                    // return new Promise((res, rej) => {
+                    //     epub.readFile(path, undefined, (err: any, data: any) => {
+                    //         if (err) {
+                    //             rej(err);
+                    //         } else {
+                    //             res({
+                    //                 buffer: data,
+                    //             });
+                    //         }
+                    //     });
+                    // });
 
-export type EpubMetadata = {
-    title?: string,
-    author?: string,
-    cover?: string,
-};
+                    const idItem = epub.listImage().find(item => item.href && item.href.endsWith(href));
+                    if (!idItem || !idItem.id) {
+                        return undefined;
+                    }
+                    const [buffer, mimeType] = await epub.getImageAsync(idItem.id);
+                    return buffer;
+                },
+                sections: async function* () {
+                    for (const el of epub.flow) {
+                        if (el.id && el.href) {
+                            // TODO: find better solution
+                            const href = last(el.href.split('/'));
+                            const chapter = await epub.chapterForId(el.id);
+                            const node = xmlStringParser(chapter);
 
-export type EpubSource = 'fb2epub' | 'fictionBookEditor' | 'unknown';
-export type EpubSourceResolver<EpubType> = {
-    [key in Exclude<EpubSource, 'unknown'>]: (epub: EpubType) => boolean;
-};
-export function resolveEpubSource<EpubType>(epub: EpubType, resolver: EpubSourceResolver<EpubType>): EpubSource {
-    for (const [source, predicate] of Object.entries(resolver)) {
-        if (predicate(epub)) {
-            return source as EpubSource;
-        }
-    }
-
-    return 'unknown';
+                            // TODO: report parsing issues
+                            if (node) {
+                                const section: EpubSection = {
+                                    id: el.id,
+                                    filePath: href,
+                                    content: node,
+                                };
+                                yield section;
+                            }
+                        }
+                    }
+                },
+            };
+        },
+    };
 }
 
-export type EpubBook = {
-    source: EpubSource,
-    metadata: EpubMetadata,
-    imageResolver(id: string): Promise<Image | undefined>,
-    sections(): EpubCollection<EpubSection>,
+class FixedEpub extends EPub {
+    static libPromise = Promise;
+
+    // This is workaround for epub2 bug. Remove it once fixed
+    walkNavMap(branch: any, path: any, idList: any, level: number, pe?: any, parentNcx?: any, ncxIdx?: any) {
+        if (Array.isArray(branch)) {
+            branch.forEach(b => {
+                if (b.navLabel && b.navLabel.text === '') {
+                    b.navLabel.text = ' ';
+                }
+            });
+        }
+        return super.walkNavMap(branch, path, idList, level, pe, parentNcx, ncxIdx);
+    }
+
+    chapterForId(id: string): Promise<string> {
+        return this.getChapterRawAsync(id);
+    }
+}
+
+function extractMetadata(epub: EPub): EpubMetadata {
+    const metadata = { ...epub.metadata } as any;
+    const coverId = metadata.cover;
+    if (coverId) {
+        const coverItem = epub.listImage().find(item => item.id === coverId);
+        if (coverItem) {
+            metadata.cover = coverItem.href;
+        }
+    }
+    const raw = getRawData(epub.metadata);
+    metadata['dc:rights'] = raw['dc:rights'];
+    metadata['dc:identifier'] = raw['dc:identifier'];
+
+    return metadata;
+}
+
+function identifyKind(epub: EPub): EpubKind {
+    return resolveEpubKind(epub, kindResolver);
+}
+
+const kindResolver: EpubKindResolver<EPub> = {
+    gutenberg: epub => {
+        const rawMetadata = getRawData(epub.metadata) as any;
+        if (!rawMetadata) {
+            return false;
+        }
+
+        const source = rawMetadata['dc:source'];
+        return typeof source === 'string'
+            && source.startsWith('http://www.gutenberg.org');
+    },
+    fb2epub: epub => {
+        const rawMetadata = getRawData(epub.metadata) as any;
+        if (!rawMetadata) {
+            return false;
+        }
+
+        const contributor = rawMetadata['dc:contributor'];
+        if (!contributor || !Array.isArray(contributor)) {
+            return false;
+        }
+
+        const fb2epub = contributor
+            .map(i => i['#'])
+            .find(i => typeof i === 'string' && i.startsWith('Fb2epub'));
+
+        return fb2epub !== undefined;
+    },
+    fictionBookEditor: epub => {
+        const marker = epub.metadata['FB2.document-info.program-used'];
+        return marker !== undefined && marker.startsWith('FictionBook Editor');
+    },
 };
 
-export type EpubParser = {
-    parseFile: (filePath: string) => Promise<EpubBook>,
-};
+function getRawData(object: any): any {
+    const symbol = EPub.SYMBOL_RAW_DATA;
+    return object[symbol];
+}

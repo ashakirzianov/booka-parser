@@ -1,21 +1,24 @@
 import { parsePath, EpubConverterResult } from './epub';
-import { preprocessBook } from './preprocessBook';
+import { preprocessBook, StoreBufferFn } from './preprocessBook';
 
-export { Image } from './epub';
+export { storeBuffers } from './preprocessBook';
 
 export const parserVersion = '1.1.2';
 
 export type ParsingResult = EpubConverterResult;
-export async function parseEpubAtPath(path: string): Promise<ParsingResult> {
+export type ParsingOptions = {
+    storeImages?: StoreBufferFn,
+};
+export async function parseEpubAtPath(path: string, options?: ParsingOptions): Promise<ParsingResult> {
     const converterResult = await parsePath(path);
     if (converterResult.success) {
-        const preprocessed = preprocessBook(converterResult.volume);
+        const preprocessed = await preprocessBook(converterResult.book, {
+            storeBuffer: options && options.storeImages,
+        });
 
         return {
-            success: true,
-            volume: preprocessed,
-            resolveImage: converterResult.resolveImage,
-            diagnostics: converterResult.diagnostics,
+            ...converterResult,
+            book: preprocessed,
         };
     } else {
         return converterResult;

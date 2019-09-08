@@ -1,0 +1,72 @@
+import { VolumeNode, BookContentNode, ImageUrlNode, ImageNode, Book } from 'booka-common';
+import { filterUndefined } from '../utils';
+
+export type StoreBufferFn = (buffer: Buffer, id: string, title?: string) => Promise<string | undefined>;
+export async function storeBuffers(book: Book, fn: StoreBufferFn): Promise<Book> {
+    const env: StoreBufferEnv = {
+        title: book.volume.meta.title,
+        fn,
+        resolved: {},
+    };
+    const processed = await processNodes(book.volume.nodes, env);
+    const coverImageNode = book.volume.meta.coverImageNode && await resolveImageData(book.volume.meta.coverImageNode, env);
+    const volume: VolumeNode = {
+        ...book.volume,
+        meta: {
+            ...book.volume.meta,
+            coverImageNode: coverImageNode,
+        },
+        nodes: processed,
+    };
+
+    return {
+        ...book,
+        volume,
+    };
+}
+
+type StoreBufferEnv = {
+    title?: string,
+    fn: StoreBufferFn,
+    resolved: {
+        [key: string]: string | undefined,
+    },
+};
+async function processNodes(nodes: BookContentNode[], env: StoreBufferEnv): Promise<BookContentNode[]> {
+    const result = await Promise.all(nodes.map(n => processNode(n, env)));
+
+    return filterUndefined(result);
+}
+
+async function processNode(node: BookContentNode, env: StoreBufferEnv): Promise<BookContentNode | undefined> {
+    switch (node.node) {
+        case 'image-data':
+            return resolveImageData(node, env);
+        case 'chapter':
+            return {
+                ...node,
+                nodes: await processNodes(node.nodes, env),
+            };
+        default:
+            return node;
+    }
+}
+
+async function resolveImageData(node: ImageNode, env: StoreBufferEnv): Promise<ImageUrlNode | undefined> {
+    if (node.node === 'image-url') {
+        return node;
+    }
+
+    const stored = env.resolved[node.id];
+    const url = stored || await env.fn(node.data, node.id, env.title);
+    if (url) {
+        env.resolved[node.id] = url;
+        return {
+            node: 'image-url',
+            id: node.id,
+            url: url,
+        };
+    } else {
+        return undefined;
+    }
+}
