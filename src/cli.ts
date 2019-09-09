@@ -33,8 +33,8 @@ async function exec() {
         console.log(`---- ${epubPath}:`);
         if (reportMeta) {
             console.log('Tags:');
-            console.log(result.value.book.tags);
-            const bookText = extractNodeText(result.value.book.volume);
+            console.log(result.value.tags);
+            const bookText = extractNodeText(result.value.volume);
             console.log(`Book length: ${bookText && bookText.length} symbols`);
         }
         if (typeof result.message === 'string' && result.message.length > 0) {
