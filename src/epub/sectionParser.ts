@@ -6,7 +6,7 @@ import { ParserDiagnoser } from '../log';
 import {
     EpubNodeParserEnv, constrainElement, EpubNodeParser, fullParser, headNode, buildRef,
 } from './nodeParser';
-import { EpubSection } from './epubParser.types';
+import { EpubSection } from './epubBook';
 
 export type SectionsParserEnv = {
     ds: ParserDiagnoser,

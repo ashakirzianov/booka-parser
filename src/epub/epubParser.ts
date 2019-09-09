@@ -1,7 +1,13 @@
 import { EPub } from 'epub2';
-import { EpubParser, EpubBook, EpubSection, EpubKind, EpubKindResolver, resolveEpubKind, EpubMetadata } from './epubParser.types';
+import {
+    EpubBook, EpubSection, EpubKind, EpubKindResolver, resolveEpubKind, EpubMetadata,
+} from './epubBook';
 import { XmlStringParser } from '../xmlParser';
 import { last } from '../utils';
+
+export type EpubParser = {
+    parseFile: (filePath: string) => Promise<EpubBook>,
+};
 
 export function createEpubParser(xmlStringParser: XmlStringParser): EpubParser {
     return {

@@ -1,5 +1,5 @@
 import { KnownTag } from 'booka-common';
-import { EpubMetadata } from './epubParser.types';
+import { EpubMetadata } from './epubBook';
 import { flatten } from '../utils';
 import { MetadataHook, MetadataRecord } from './epubConverter.types';
 import { ParserDiagnoser } from '../log';

@@ -2,7 +2,7 @@ import { Book, KnownTag, RawBookNode } from 'booka-common';
 import { AsyncIter, equalsToOneOf } from '../utils';
 import { buildVolume } from '../buildVolume';
 import { diagnoser } from '../log';
-import { EpubBook } from './epubParser.types';
+import { EpubBook } from './epubBook';
 import { EpubConverterParameters, EpubConverter, EpubConverterResult } from './epubConverter.types';
 import { sectionsParser } from './sectionParser';
 import { parseMeta } from './metaParser';

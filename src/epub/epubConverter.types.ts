@@ -1,6 +1,6 @@
 import { Book, KnownTag } from 'booka-common';
 import { ParserDiagnostic, ParserDiagnoser } from '../log';
-import { EpubBook, EpubKind } from './epubParser.types';
+import { EpubBook, EpubKind } from './epubBook';
 import { EpubNodeParser } from './nodeParser';
 
 export type EpubConverterResult = {

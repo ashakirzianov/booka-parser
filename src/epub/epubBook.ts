@@ -1,21 +1,18 @@
-import { XmlTree } from '../xmlParser';
+import { XmlTreeDocument } from '../xmlParser';
 
-export type Image = {
-    buffer: Buffer,
-    mimeType?: string,
-};
 export type EpubCollection<T> = AsyncIterableIterator<T>;
 
 export type EpubSection = {
     filePath: string,
     id: string,
-    content: XmlTree,
+    content: XmlTreeDocument,
 };
 
 export type EpubMetadata = {
     [key: string]: string | string[] | undefined;
 };
 
+// TODO: rethink this
 export type EpubKind =
     | 'fb2epub' | 'fictionBookEditor' | 'gutenberg'
     | 'unknown'
@@ -38,8 +35,4 @@ export type EpubBook = {
     metadata: EpubMetadata,
     imageResolver(id: string): Promise<Buffer | undefined>,
     sections(): EpubCollection<EpubSection>,
-};
-
-export type EpubParser = {
-    parseFile: (filePath: string) => Promise<EpubBook>,
 };

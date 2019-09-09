@@ -1,7 +1,6 @@
 import { Node } from 'booka-common';
 import { XmlTree, XmlTreeElement } from './xmlParser';
-import { MetadataRecord } from './epub/epubConverter.types';
-import { EpubKind } from './epub/epubParser.types';
+import { MetadataRecord, EpubKind } from './epub';
 
 export function diagnoser(context: ParserContext): ParserDiagnoser {
     return new ParserDiagnoser(context);
