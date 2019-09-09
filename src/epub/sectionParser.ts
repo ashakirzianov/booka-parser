@@ -2,12 +2,12 @@ import { ChapterTitle, RawBookNode, AttributeName } from 'booka-common';
 import { XmlTree, path, xmlChildren } from '../xmlParser';
 import {
     choice, makeStream, success, emptyStream, SuccessStreamParser,
-    successValue, fail,
+    successValue, fail, headParser,
 } from '../combinators';
 import { isWhitespaces } from '../utils';
 import { ParserDiagnoser } from '../log';
 import {
-    EpubNodeParserEnv, constrainElement, EpubNodeParser, fullParser, headNode, buildRef,
+    EpubNodeParserEnv, constrainElement, EpubNodeParser, fullParser, buildRef,
 } from './nodeParser';
 import { EpubSection } from './epubBook';
 
@@ -45,7 +45,7 @@ export const sectionsParser: SectionsParser = input => {
     return success(result, emptyStream(input.env));
 };
 
-const text = headNode(node => {
+const text: EpubNodeParser = headParser(node => {
     if (node.type !== 'text') {
         return fail({ custom: 'expected-xml-text' });
     }
@@ -174,7 +174,7 @@ const ignore = constrainElement(
     () => successValue([]),
 );
 
-const skip = headNode(node => {
+const skip: EpubNodeParser = headParser(node => {
     return successValue([], { custom: 'unexpected-node', node });
 });
 

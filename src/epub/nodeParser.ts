@@ -18,8 +18,6 @@ export type EpubNodeParserEnv = {
     filePath: string,
 };
 
-export const headNode = (fn: HeadFn<XmlTree, RawBookNode[], EpubNodeParserEnv>) => headParser(fn);
-
 export function constrainElement<N extends string>(
     nameConstraint: Constraint<string, N>,
     attrsConstraint: ConstraintMap<XmlAttributes>,

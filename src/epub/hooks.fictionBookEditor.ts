@@ -1,9 +1,9 @@
 import { KnownTag } from 'booka-common';
-import { fail, successValue } from '../combinators';
+import { fail, successValue, headParser } from '../combinators';
 import { isTextTree, isElementTree, XmlTreeWithChildren } from '../xmlParser';
 import { ParserDiagnoser } from '../log';
 import { EpubConverterHooks, MetadataRecord } from './epubBookParser';
-import { headNode } from './nodeParser';
+import { EpubNodeParser } from './nodeParser';
 
 export const fictionBookEditorHooks: EpubConverterHooks = {
     nodeHooks: [
@@ -43,7 +43,7 @@ function metaHook({ key, value }: MetadataRecord, ds: ParserDiagnoser): KnownTag
     }
 }
 
-function titleElement() {
+function titleElement(): EpubNodeParser {
     function extractTextLines(node: XmlTreeWithChildren): string[] {
         const result: string[] = [];
         for (const ch of node.children) {
@@ -59,7 +59,7 @@ function titleElement() {
         return result;
     }
 
-    return headNode(el => {
+    return headParser(el => {
         if (!isElementTree(el) || el.name !== 'div') {
             return fail();
         }

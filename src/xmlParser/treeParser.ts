@@ -8,27 +8,6 @@ import { Constraint, ConstraintMap, checkObject, checkValue } from '../constrain
 
 export type TreeParser<Out = XmlTree, Env = undefined> = StreamParser<XmlTree, Out, Env>;
 
-export function nameEq(n1: string, n2: string): boolean {
-    return caseInsensitiveEq(n1, n2);
-}
-
-export function textNode<T, E = any>(f: (text: string) => T | null): TreeParser<T, E>;
-export function textNode<E = any>(): TreeParser<string, E>;
-export function textNode<T, E>(f?: (text: string) => T | null): TreeParser<T | string, E> {
-    return headParser((n: XmlTree) => {
-        if (n.type === 'text') {
-            if (f) {
-                const result = f(n.text);
-                return result !== null ? successValue(n.text) : fail({ custom: 'xml-text-rejected' });
-            } else {
-                return successValue(n.text);
-            }
-        } else {
-            return fail({ custom: 'expected-xml- text' });
-        }
-    });
-}
-
 // TODO: remove ?
 export function elementNode<O, E>(f: HeadFn<XmlTreeElement, O, E>) {
     return headParser((n: XmlTree, env: E) => {
@@ -84,9 +63,6 @@ export function xmlNameChildren<T, E = any>(name: Constraint<string>, childrenPa
     );
 }
 
-export const extractText = (parser: TreeParser) =>
-    projectLast(and(parser, xmlChildren(textNode())));
-
 export function xmlChildren<T, E>(parser: TreeParser<T, E>): TreeParser<T, E> {
     return input => {
         const head = input.stream[0];
@@ -106,7 +82,7 @@ export function xmlChildren<T, E>(parser: TreeParser<T, E>): TreeParser<T, E> {
     };
 }
 
-export function parent<T, E>(parser: TreeParser<T, E>): TreeParser<T, E> {
+export function xmlParent<T, E>(parser: TreeParser<T, E>): TreeParser<T, E> {
     return input => {
         const head = input.stream[0];
         if (head === undefined) {
@@ -170,7 +146,31 @@ export function path<T, E>(paths: string[], then: TreeParser<T, E>): TreeParser<
     return input => parsePathHelper(paths, then, input);
 }
 
-// Whitespaces:
+// Text:
+
+export function nameEq(n1: string, n2: string): boolean {
+    return caseInsensitiveEq(n1, n2);
+}
+
+export const extractText = (parser: TreeParser) =>
+    projectLast(and(parser, xmlChildren(textNode())));
+
+export function textNode<T, E = any>(f: (text: string) => T | null): TreeParser<T, E>;
+export function textNode<E = any>(): TreeParser<string, E>;
+export function textNode<T, E>(f?: (text: string) => T | null): TreeParser<T | string, E> {
+    return headParser((n: XmlTree) => {
+        if (n.type === 'text') {
+            if (f) {
+                const result = f(n.text);
+                return result !== null ? successValue(n.text) : fail({ custom: 'xml-text-rejected' });
+            } else {
+                return successValue(n.text);
+            }
+        } else {
+            return fail({ custom: 'expected-xml- text' });
+        }
+    });
+}
 
 export const whitespaces = textNode<boolean, any>(text => isWhitespaces(text) ? true : null);
 
