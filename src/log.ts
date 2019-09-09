@@ -1,5 +1,5 @@
 import { Node } from 'booka-common';
-import { XmlTree, XmlTreeElement } from './xml';
+import { XmlTree, XmlTreeElement } from './xmlParser';
 import { MetadataRecord } from './epub/epubConverter.types';
 import { EpubKind } from './epub/epubParser.types';
 

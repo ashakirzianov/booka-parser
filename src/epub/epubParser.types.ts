@@ -1,4 +1,4 @@
-import { XmlTree } from '../xml';
+import { XmlTree } from '../xmlParser';
 
 export type Image = {
     buffer: Buffer,

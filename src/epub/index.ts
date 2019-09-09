@@ -1,7 +1,7 @@
 import { createEpubParser } from './epubParser';
 import { createConverter } from './epubConverter';
 import { converterHooks } from './hooks';
-import { xmlStringParser } from '../xml';
+import { xmlStringParser } from '../xmlParser';
 
 export { EpubConverterResult } from './epubConverter.types';
 export { Image } from './epubParser.types';

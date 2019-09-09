@@ -1,5 +1,5 @@
 import { KnownTag } from 'booka-common';
-import { isTextTree, isElementTree, XmlTreeWithChildren } from '../xml';
+import { isTextTree, isElementTree, XmlTreeWithChildren } from '../xmlParser';
 import { ParserDiagnoser } from '../log';
 import { EpubConverterHooks, MetadataRecord } from './epubConverter.types';
 import { headNode } from './nodeParser';

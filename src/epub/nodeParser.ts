@@ -3,7 +3,7 @@ import { ParserDiagnoser } from '../log';
 import {
     XmlTree, XmlTreeElement, isElementTree, TreeParser,
     XmlAttributes, elementNode,
-} from '../xml';
+} from '../xmlParser';
 import {
     SuccessParser, Stream, some, HeadFn, yieldOne, headParser, success,
 } from '../combinators';

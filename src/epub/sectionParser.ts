@@ -1,5 +1,5 @@
 import { ChapterTitle, RawBookNode, AttributeName } from 'booka-common';
-import { XmlTree, path, children } from '../xml';
+import { XmlTree, path, children } from '../xmlParser';
 import { choice, makeStream } from '../combinators';
 import { isWhitespaces } from '../utils';
 import { ParserDiagnoser } from '../log';

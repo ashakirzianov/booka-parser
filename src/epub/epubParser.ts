@@ -1,10 +1,9 @@
 import { EPub } from 'epub2';
 import { EpubParser, EpubBook, EpubSection, EpubKind, EpubKindResolver, resolveEpubKind, EpubMetadata } from './epubParser.types';
-import { XmlTreeDocument } from '../xml';
+import { XmlStringParser } from '../xmlParser';
 import { last } from '../utils';
-import { Parser } from '../combinators';
 
-export function createEpubParser(xmlStringParser: Parser<string, XmlTreeDocument>): EpubParser {
+export function createEpubParser(xmlStringParser: XmlStringParser): EpubParser {
     return {
         async parseFile(filePath): Promise<EpubBook> {
             const epub = await FixedEpub.createAsync(filePath) as FixedEpub;

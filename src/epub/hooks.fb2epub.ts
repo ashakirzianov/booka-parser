@@ -6,7 +6,7 @@ import {
     nameChildren, textNode, nameAttrsChildren,
     nameAttrs, children, whitespaced, attrs,
     attrsChildren, extractText, isElementTree, nameEq, XmlTree,
-} from '../xml';
+} from '../xmlParser';
 import {
     some, translate, choice, seq, and, headParser, envParser,
 } from '../combinators';
