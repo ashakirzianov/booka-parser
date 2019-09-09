@@ -2,7 +2,7 @@ import { KnownTag } from 'booka-common';
 import { EpubConverterHooks, MetadataRecord } from './epubBookParser';
 import { ignoreTags, EpubNodeParser, buildRef } from './nodeParser';
 import { ParserDiagnoser } from '../log';
-import { name, children, nameAttrs, textNode, whitespaces } from '../xmlParser';
+import { xmlName, xmlNameAttrs, children, textNode, whitespaces } from '../xmlParser';
 import {
     and, translate, seq, maybe, envParser, yieldOne,
 } from '../combinators';
@@ -44,7 +44,7 @@ function metaHook({ key, value }: MetadataRecord, ds: ParserDiagnoser): KnownTag
 function footnote(): EpubNodeParser {
     return envParser(env => {
         const footnoteId = translate(
-            nameAttrs(
+            xmlNameAttrs(
                 'a',
                 {
                     id: i => i
@@ -54,7 +54,7 @@ function footnote(): EpubNodeParser {
             el => el.attributes.id || null,
         );
         const footnoteMarker = translate(
-            and(name('p'), children(footnoteId)),
+            and(xmlName('p'), children(footnoteId)),
             ([_, id]) => id,
         );
 
@@ -69,15 +69,15 @@ function footnote(): EpubNodeParser {
         const footnoteTitleLine = translate(
             seq(
                 footnoteTitle,
-                name('a'),
+                xmlName('a'),
                 textNode(),
-                name('br'),
+                xmlName('br'),
             ),
             ([title]) => title,
         );
 
         const footnoteContent = seq(maybe(footnoteTitleLine), env.recursive);
-        const footnoteP = nameAttrs('p', { class: 'foot' });
+        const footnoteP = xmlNameAttrs('p', { class: 'foot' });
 
         const footnoteContainer = translate(
             and(footnoteP, children(footnoteContent)),

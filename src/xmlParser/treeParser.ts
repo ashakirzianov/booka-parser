@@ -11,8 +11,8 @@ export function nameEq(n1: string, n2: string): boolean {
     return caseInsensitiveEq(n1, n2);
 }
 
-export function textNode<T, E = undefined>(f: (text: string) => T | null): TreeParser<T, E>;
-export function textNode<E = undefined>(): TreeParser<string, E>;
+export function textNode<T, E = any>(f: (text: string) => T | null): TreeParser<T, E>;
+export function textNode<E = any>(): TreeParser<string, E>;
 export function textNode<T, E>(f?: (text: string) => T | null): TreeParser<T | string, E> {
     return headParser((n: XmlTree) =>
         n.type === 'text'

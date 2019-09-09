@@ -3,9 +3,8 @@ import {
     EpubConverterHooks, MetadataRecord,
 } from './epubBookParser';
 import {
-    nameChildren, textNode, nameAttrsChildren,
-    nameAttrs, children, whitespaced, attrs,
-    attrsChildren, extractText, isElementTree, nameEq, XmlTree,
+    textNode, children, whitespaced, extractText, isElementTree,
+    nameEq, XmlTree, xmlNameAttrs, xmlNameAttrsChildren, xmlAttributes, xmlNameChildren,
 } from '../xmlParser';
 import {
     some, translate, choice, seq, and, headParser, envParser,
@@ -42,17 +41,17 @@ function metaHook({ key, value }: MetadataRecord, ds: ParserDiagnoser): KnownTag
 function footnoteSection(): EpubNodeParser {
     return envParser(env => {
         const divId = translate(
-            nameAttrs('div', { class: 'section2', id: id => id !== undefined }),
+            xmlNameAttrs('div', { class: 'section2', id: id => id !== undefined }),
             el => el.attributes.id,
         );
-        const h = whitespaced(nameChildren(n => n.startsWith('h'), textNode()));
-        const title = whitespaced(nameAttrsChildren(
+        const h = whitespaced(xmlNameChildren(n => n.startsWith('h'), textNode()));
+        const title = whitespaced(xmlNameAttrsChildren(
             'div',
             { class: 'note_section' },
             some(h),
         ));
         const back = translate(
-            nameAttrs('a', { class: 'note_anchor' }),
+            xmlNameAttrs('a', { class: 'note_anchor' }),
             () => [{ node: 'ignore' } as IgnoreNode]
         );
         const rec = env.recursive;
@@ -79,14 +78,14 @@ function footnoteSection(): EpubNodeParser {
 
 function titlePage(): EpubNodeParser {
     const bookTitle = translate(
-        extractText(attrs({ class: 'title1' })),
+        extractText(xmlAttributes({ class: 'title1' })),
         t => ({
             node: 'tag',
             tag: { tag: 'title', value: t },
         } as RawBookNode),
     );
     const bookAuthor = translate(
-        extractText(attrs({ class: 'title_authors' })),
+        extractText(xmlAttributes({ class: 'title_authors' })),
         a => ({
             node: 'tag',
             tag: { tag: 'author', value: a },
@@ -96,7 +95,8 @@ function titlePage(): EpubNodeParser {
         (x: XmlTree) => ({ node: 'ignore' } as RawBookNode),
     );
 
-    const parser = attrsChildren(
+    const parser = xmlNameAttrsChildren(
+        null,
         { class: 'titlepage' },
         some(choice(bookTitle, bookAuthor, ignore)),
     );
@@ -118,7 +118,7 @@ function divTitle(): EpubNodeParser {
 
         return null;
     });
-    const h = whitespaced(nameChildren(n => n.startsWith('h'), textNode()));
+    const h = whitespaced(xmlNameChildren(n => n.startsWith('h'), textNode()));
     const content = some(h);
 
     const parser = translate(

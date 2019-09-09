@@ -1,6 +1,4 @@
 import { Parser, success, fail, SuccessParser } from './base';
-// TODO: remove
-import { Predicate } from './predicate';
 
 export type Stream<T, E = undefined> = {
     stream: T[],
@@ -29,7 +27,7 @@ export function emptyStream<E>(env: E): Stream<any, E> {
 }
 
 export type HeadFn<In, Out, Env> = (head: In, env: Env) => (Out | null);
-export function headParser<In, Out, Env = undefined>(f: HeadFn<In, Out, Env>): StreamParser<In, Out, Env> {
+export function headParser<In, Out, Env = any>(f: HeadFn<In, Out, Env>): StreamParser<In, Out, Env> {
     return (input: Stream<In, Env>) => {
         const head = input.stream[0];
         if (head === undefined) {
@@ -67,21 +65,5 @@ export function envParser<I, O, E>(f: (env: E) => StreamParser<I, O, E>): Stream
         const parser = f(input.env);
         const result = parser(input);
         return result;
-    };
-}
-
-export function predicate<TI, TO, TE = any>(pred: Predicate<TI, TO>): StreamParser<TI, TO, TE> {
-    return input => {
-        const head = input.stream[0];
-        if (!head) {
-            return fail('empty-stream');
-        }
-
-        const result = pred(head);
-        if (result.success) {
-            return success(result.value, nextStream(input), result.diagnostic);
-        } else {
-            return fail(result.diagnostic);
-        }
     };
 }

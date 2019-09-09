@@ -27,6 +27,7 @@ export type XmlTreeWithParent<T extends string> = XmlTreeBase<T> & {
 
 export type XmlTree = XmlTreeDocument | XmlTreeElement | XmlTreeText | XmlTreeCData | XmlTreeComment;
 export type XmlTreeDocument = {
+    name?: string,
     type: 'document',
     children: XmlTree[],
     parent: undefined,
