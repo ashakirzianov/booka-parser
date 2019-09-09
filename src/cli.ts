@@ -38,7 +38,7 @@ async function exec() {
             console.log(`Book length: ${bookText && bookText.length} symbols`);
         }
         if (result.diagnostics.length > 0) {
-            console.log('Diagnostics:');
+            console.log('\x1b[31mDiagnostics:\x1b[0m');
             console.log(inspect(result.diagnostics, false, null, true));
         }
     }
