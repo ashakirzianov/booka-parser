@@ -3,7 +3,7 @@ import {
     EpubConverterHooks, MetadataRecord,
 } from './epubBookParser';
 import {
-    textNode, children, whitespaced, extractText, isElementTree,
+    textNode, xmlChildren, whitespaced, extractText, isElementTree,
     nameEq, XmlTree, xmlNameAttrs, xmlNameAttrsChildren, xmlAttributes, xmlNameChildren,
 } from '../xmlParser';
 import {
@@ -59,7 +59,7 @@ function footnoteSection(): EpubNodeParser {
         const parser = translate(
             and(
                 divId,
-                children(seq(title, some(choice(back, rec)))),
+                xmlChildren(seq(title, some(choice(back, rec)))),
             ),
             ([id, [tls, bs]]) => {
                 const ref = id && buildRef(env.filePath, id); // TODO: report missing id
@@ -122,7 +122,7 @@ function divTitle(): EpubNodeParser {
     const content = some(h);
 
     const parser = translate(
-        and(divLevel, children(content)),
+        and(divLevel, xmlChildren(content)),
         ([level, ts]) => [{
             node: 'chapter-title',
             title: ts,

@@ -2,7 +2,7 @@ import { KnownTag } from 'booka-common';
 import { EpubConverterHooks, MetadataRecord } from './epubBookParser';
 import { ignoreTags, EpubNodeParser, buildRef } from './nodeParser';
 import { ParserDiagnoser } from '../log';
-import { xmlName, xmlNameAttrs, children, textNode, whitespaces } from '../xmlParser';
+import { xmlName, xmlNameAttrs, xmlChildren, textNode, whitespaces } from '../xmlParser';
 import {
     and, translate, seq, maybe, envParser,
 } from '../combinators';
@@ -54,7 +54,7 @@ function footnote(): EpubNodeParser {
             el => el.attributes.id || null,
         );
         const footnoteMarker = translate(
-            and(xmlName('p'), children(footnoteId)),
+            and(xmlName('p'), xmlChildren(footnoteId)),
             ([_, id]) => id,
         );
 
@@ -80,7 +80,7 @@ function footnote(): EpubNodeParser {
         const footnoteP = xmlNameAttrs('p', { class: 'foot' });
 
         const footnoteContainer = translate(
-            and(footnoteP, children(footnoteContent)),
+            and(footnoteP, xmlChildren(footnoteContent)),
             ([_, [title, content]]) => content,
         );
 

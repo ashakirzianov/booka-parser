@@ -1,5 +1,5 @@
 import { ChapterTitle, RawBookNode, AttributeName } from 'booka-common';
-import { XmlTree, path, children } from '../xmlParser';
+import { XmlTree, path, xmlChildren } from '../xmlParser';
 import {
     choice, makeStream, success, emptyStream, SuccessStreamParser,
     successValue, fail,
@@ -20,7 +20,7 @@ export type SectionsParser = SuccessStreamParser<EpubSection, RawBookNode[], Sec
 export const sectionsParser: SectionsParser = input => {
     const allParsers = input.env.hooks.concat(standardParsers);
     const nodeParser = choice(...allParsers);
-    const bodyParser = children(fullParser(nodeParser));
+    const bodyParser = xmlChildren(fullParser(nodeParser));
     const documentParser = path(['html', 'body'], bodyParser);
 
     const result: RawBookNode[] = [];

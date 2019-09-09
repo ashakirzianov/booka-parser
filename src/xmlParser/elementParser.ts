@@ -1,7 +1,7 @@
 import {
     and, projectLast, headParser, HeadFn, successValue, fail,
 } from '../combinators';
-import { children, TreeParser, textNode } from './treeParser';
+import { xmlChildren, TreeParser, textNode } from './treeParser';
 import { XmlTreeElement, isElementTree, XmlTree, XmlAttributes } from './xmlTree';
 import { ConstraintMap, checkObject, Constraint, checkValue } from '../constraint';
 
@@ -50,15 +50,15 @@ export function xmlNameAttrs(name: Constraint<string>, attrs: ConstraintMap<XmlA
 
 export function xmlNameAttrsChildren<T, E = any>(name: Constraint<string>, attrs: ConstraintMap<XmlAttributes>, childrenParser: TreeParser<T, E>) {
     return projectLast(
-        and(xmlName(name), xmlAttributes(attrs), children(childrenParser))
+        and(xmlName(name), xmlAttributes(attrs), xmlChildren(childrenParser))
     );
 }
 
 export function xmlNameChildren<T, E = any>(name: Constraint<string>, childrenParser: TreeParser<T, E>) {
     return projectLast(
-        and(xmlName(name), children(childrenParser))
+        and(xmlName(name), xmlChildren(childrenParser))
     );
 }
 
 export const extractText = (parser: TreeParser) =>
-    projectLast(and(parser, children(textNode())));
+    projectLast(and(parser, xmlChildren(textNode())));

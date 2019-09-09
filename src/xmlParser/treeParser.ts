@@ -44,7 +44,7 @@ export function beforeWhitespaces<T, E>(parser: TreeParser<T, E>): TreeParser<T>
     );
 }
 
-export function children<T, E>(parser: TreeParser<T, E>): TreeParser<T, E> {
+export function xmlChildren<T, E>(parser: TreeParser<T, E>): TreeParser<T, E> {
     return input => {
         const head = input.stream[0];
         if (head === undefined) {
