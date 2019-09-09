@@ -41,10 +41,10 @@ export function children<T, E>(parser: TreeParser<T, E>): TreeParser<T, E> {
     return input => {
         const head = input.stream[0];
         if (head === undefined) {
-            return fail({ diag: 'children: empty input' });
+            return fail({ custom: 'children: empty input' });
         }
         if (!hasChildren(head)) {
-            return fail({ diag: 'children: no children' });
+            return fail({ custom: 'children: no children' });
         }
 
         const result = parser(makeStream(head.children, input.env));
@@ -60,10 +60,10 @@ export function parent<T, E>(parser: TreeParser<T, E>): TreeParser<T, E> {
     return input => {
         const head = input.stream[0];
         if (head === undefined) {
-            return fail({ diag: 'parent: empty input' });
+            return fail({ custom: 'parent: empty input' });
         }
         if (head.parent === undefined) {
-            return fail({ diag: 'parent: no parent' });
+            return fail({ custom: 'parent: no parent' });
         }
 
         const result = parser(makeStream([head.parent], input.env));
@@ -93,7 +93,7 @@ export function between<T, E>(left: TreeParser<any, E>, right: TreeParser<any, E
 
 function parsePathHelper<T, E>(pathComponents: string[], then: TreeParser<T, E>, input: Stream<XmlTree, E>): Result<Stream<XmlTree, E>, T> {
     if (pathComponents.length === 0) {
-        return fail({ diag: 'parse path: can\'t parse to empty path' });
+        return fail({ custom: 'parse path: can\'t parse to empty path' });
     }
     const pc = pathComponents[0];
 
@@ -101,7 +101,7 @@ function parsePathHelper<T, E>(pathComponents: string[], then: TreeParser<T, E>,
         ch.type === 'element' && nameEq(ch.name, pc));
     const child = input.stream[childIndex];
     if (!child) {
-        return fail({ diag: `parse path: ${pc}: can't find child` });
+        return fail({ custom: `parse path: ${pc}: can't find child` });
     }
 
     if (pathComponents.length < 2) {

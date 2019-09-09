@@ -54,7 +54,7 @@ function elemPred(): Predicate<XmlTree, XmlTreeElement> {
         if (isElementTree(nd)) {
             return predSucc(nd);
         } else {
-            return predFail({ diag: `Expected xml element, got: ${tree2String(nd)}` });
+            return predFail({ custom: `Expected xml element, got: ${tree2String(nd)}` });
         }
     };
 }
@@ -83,19 +83,19 @@ function attrPred(c: AttributeConstraint): ElementPredicate {
     if (typeof value === 'function') {
         return en => value(en.attributes[key])
             ? predSucc(en)
-            : predFail({ diag: `Unexpected attribute ${key}='${en.attributes[key]}'` });
+            : predFail({ custom: `Unexpected attribute ${key}='${en.attributes[key]}'` });
     } else if (Array.isArray(value)) {
         return en => equalsToOneOf(en.attributes[key], value)
             ? predSucc(en)
-            : predFail({ diag: `Unexpected attribute ${key}='${en.attributes[key]}', expected values: ${value}` });
+            : predFail({ custom: `Unexpected attribute ${key}='${en.attributes[key]}', expected values: ${value}` });
     } else if (value === true) {
         return en => en.attributes[key]
             ? predSucc(en)
-            : predFail({ diag: `Expected attribute ${key} to be set` });
+            : predFail({ custom: `Expected attribute ${key} to be set` });
     } else {
         return en => en.attributes[key] === value
             ? predSucc(en)
-            : predFail({ diag: `Unexpected attribute ${key}='${en.attributes[key]}', expected value: ${value}` });
+            : predFail({ custom: `Unexpected attribute ${key}='${en.attributes[key]}', expected value: ${value}` });
     }
 }
 
@@ -106,7 +106,7 @@ function noAttrsExceptPred(keys: string[]): ElementPredicate {
             .map(ue => `${ue}=${en.attributes[ue]}`);
         return extra.length === 0
             ? predSucc(en)
-            : predFail({ diag: `Unexpected attributes: ${extra}` });
+            : predFail({ custom: `Unexpected attributes: ${extra}` });
     };
 }
 

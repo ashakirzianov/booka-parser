@@ -33,11 +33,11 @@ export function headParser<In, Out, Env = undefined>(f: HeadFn<In, Out, Env>): S
     return (input: Stream<In, Env>) => {
         const head = input.stream[0];
         if (head === undefined) {
-            return fail({ diag: 'first node: empty input' });
+            return fail('empty-stream');
         }
         const result = f(head, input.env);
         return result === null
-            ? fail({ diag: 'first node: func returned null' })
+            ? fail('reject-head')
             : success(result, nextStream(input));
     };
 }
@@ -45,20 +45,20 @@ export function headParser<In, Out, Env = undefined>(f: HeadFn<In, Out, Env>): S
 export function end<T = any>(): StreamParser<T, undefined> {
     return input => input.stream.length === 0
         ? success(undefined, input)
-        : fail({ diag: `Expected end of input, got: '${input}` });
+        : fail({ custom: `Expected end of input`, rest: input });
 }
 
 export function not<T, E>(parser: StreamParser<T, any, E>): StreamParser<T, T, E> {
     return input => {
         const head = input.stream[0];
         if (head === undefined) {
-            return fail({ diag: 'not: empty input' });
+            return fail('empty-stream');
         }
 
         const result = parser(input);
         return !result.success
             ? success(head, nextStream(input))
-            : fail({ diag: 'not: parser succeed' });
+            : fail('not-parser-succ');
     };
 }
 
@@ -74,7 +74,7 @@ export function predicate<TI, TO, TE = any>(pred: Predicate<TI, TO>): StreamPars
     return input => {
         const head = input.stream[0];
         if (!head) {
-            return fail({ diag: 'pred: empty input' });
+            return fail('empty-stream');
         }
 
         const result = pred(head);

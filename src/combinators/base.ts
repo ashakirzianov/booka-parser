@@ -21,9 +21,8 @@ export function fail(reason: ParserDiagnostic): Fail {
 
 export function success<TIn, TOut>(value: TOut, next: TIn, diagnostic?: ParserDiagnostic): Success<TIn, TOut> {
     return {
-        value, next,
+        value, next, diagnostic,
         success: true,
-        diagnostic: diagnostic || [],
     };
 }
 
@@ -154,7 +153,7 @@ export function guard<TI, TO>(parser: Parser<TI, TO>, f: (x: TO) => boolean): Pa
             const guarded = f(result.value);
             return guarded
                 ? result
-                : fail({ diag: 'guard: failed' });
+                : fail('guard-failed');
         } else {
             return result;
         }
@@ -193,7 +192,7 @@ export function translateAndWarn<TI, From, To>(parser: Parser<TI, From>, f: Warn
 
         const translated = f(from.value);
         if (translated === null) {
-            return fail({ diag: 'translate: result rejected by transform function' });
+            return fail('translate-reject');
         } else if (isWarnPair(translated)) {
             return success(translated.result, from.next, compoundDiagnostic([translated.diagnostic, from.diagnostic]));
         } else {
@@ -271,9 +270,8 @@ export function tagged<TIn, TOut>(parser: Parser<TIn, TOut>, f: (x: TIn) => stri
         return result.success
             ? result
             : fail({
-                diag: 'tag',
-                inside: result.diagnostic,
-                tag: f(input),
+                context: f(input),
+                diagnostic: result.diagnostic,
             });
     };
 }
