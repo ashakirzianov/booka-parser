@@ -28,7 +28,8 @@ async function exec() {
     for (const epubPath of epubs) {
         const result = await parseEpubAtPath(epubPath);
         if (!result.success) {
-            console.log(`Couldn't parse epub: '${epubPath}'`);
+            logRed(`Couldn't parse epub: '${epubPath}'`);
+            console.log(result.diagnostic);
             continue;
         }
         console.log(`---- ${epubPath}:`);
@@ -39,7 +40,7 @@ async function exec() {
             console.log(`Book length: ${bookText && bookText.length} symbols`);
         }
         if (!isEmptyDiagnostic(result.diagnostic)) {
-            console.log('\x1b[31mDiagnostics:\x1b[0m');
+            logRed('Diagnostics:');
             console.log(inspect(result.diagnostic, false, null, true));
         }
     }
@@ -57,4 +58,8 @@ async function listFiles(path: string) {
 
 function isEpub(path: string): boolean {
     return extname(path) === '.epub';
+}
+
+function logRed(message: string) {
+    console.log(`\x1b[31m${message}\x1b[0m`);
 }

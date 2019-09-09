@@ -2,11 +2,13 @@ import { ParserDiagnostic, compoundDiagnostic } from './diagnostics';
 
 export type Parser<TIn, TOut> = (input: TIn) => Result<TIn, TOut>;
 export type SuccessParser<TIn, TOut> = (input: TIn) => Success<TIn, TOut>;
-export type Success<In, Out> = {
-    value: Out,
-    next: In,
+export type SuccessValue<Out> = {
     success: true,
+    value: Out,
     diagnostic: ParserDiagnostic,
+};
+export type Success<In, Out> = SuccessValue<Out> & {
+    next: In,
 };
 export type Fail = {
     success: false,
@@ -14,8 +16,9 @@ export type Fail = {
 };
 
 export type Result<In, Out> = Success<In, Out> | Fail;
+export type ResultValue<Out> = SuccessValue<Out> | Fail;
 
-export function fail(reason: ParserDiagnostic): Fail {
+export function fail(reason?: ParserDiagnostic): Fail {
     return { success: false, diagnostic: reason };
 }
 
@@ -23,6 +26,12 @@ export function success<TIn, TOut>(value: TOut, next: TIn, diagnostic?: ParserDi
     return {
         value, next, diagnostic,
         success: true,
+    };
+}
+
+export function successValue<Out>(value: Out, diagnostic?: ParserDiagnostic): SuccessValue<Out> {
+    return {
+        success: true, value, diagnostic,
     };
 }
 

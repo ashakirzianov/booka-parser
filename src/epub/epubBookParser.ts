@@ -57,7 +57,7 @@ export const epubBookParser: EpubBookParser = async input => {
         }));
 
         if (!rawNodeResult.success) {
-            return fail({ custom: 'custom', diags: ds.all() });
+            return fail({ custom: 'custom', diags: ds.all(), inside: rawNodeResult.diagnostic });
         }
         const volume = rawNodeResult.value;
         const book: Book = {
@@ -73,8 +73,8 @@ export const epubBookParser: EpubBookParser = async input => {
             book: book,
             diagnostics: ds.all(),
         }, input);
-    } catch {
-        return fail({ custom: 'custom', diags: ds.all() });
+    } catch (err) {
+        return fail({ custom: 'custom', diags: ds.all(), err });
     }
 };
 

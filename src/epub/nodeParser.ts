@@ -5,13 +5,10 @@ import {
     XmlAttributes, elementNode,
 } from '../xmlParser';
 import {
-    SuccessParser, Stream, some, HeadFn, yieldOne, headParser, success,
+    SuccessParser, Stream, some, HeadFn, yieldOne, headParser, success, successValue, fail,
 } from '../combinators';
 import { Constraint, ConstraintMap, checkValue, checkObject } from '../constraint';
 import { equalsToOneOf, flatten } from '../utils';
-
-// TODO: remove
-export type TreeToNodes<T extends XmlTree = XmlTree> = (x: T, env: EpubNodeParserEnv) => (RawBookNode[] | null);
 
 export type EpubNodeParser<T = RawBookNode[]> = TreeParser<T, EpubNodeParserEnv>;
 export type FullEpubParser = SuccessParser<Stream<XmlTree, EpubNodeParserEnv>, RawBookNode[]>;
@@ -26,16 +23,16 @@ export const headNode = (fn: HeadFn<XmlTree, RawBookNode[], EpubNodeParserEnv>) 
 export function constrainElement<N extends string>(
     nameConstraint: Constraint<string, N>,
     attrsConstraint: ConstraintMap<XmlAttributes>,
-    fn: TreeToNodes<XmlTreeElement>,
+    fn: HeadFn<XmlTreeElement, RawBookNode[], EpubNodeParserEnv>,
 ): EpubNodeParser {
     return headParser((node, env) => {
         if (!isElementTree(node)) {
-            return null;
+            return fail();
         }
 
         const nameCheck = checkValue(node.name, nameConstraint);
         if (!nameCheck) {
-            return null;
+            return fail();
         }
 
         const attrCheck = checkObject(node.attributes, attrsConstraint);
@@ -50,25 +47,23 @@ export function constrainElement<N extends string>(
         }
 
         const result = fn(node, env);
-        return result
-            ? result
-            : null;
+        return result;
     });
 }
 
 export function ignoreClass(className: string): EpubNodeParser {
     return elementNode<RawBookNode[], EpubNodeParserEnv>(el =>
         el.attributes.class === className
-            ? [{ node: 'ignore' }]
-            : null
+            ? successValue([])
+            : fail()
     );
 }
 
 export function ignoreTags(tags: string[]): EpubNodeParser {
     return elementNode<RawBookNode[], EpubNodeParserEnv>(el =>
         equalsToOneOf(el.name, tags)
-            ? [{ node: 'ignore' }]
-            : null
+            ? successValue([])
+            : fail()
     );
 }
 

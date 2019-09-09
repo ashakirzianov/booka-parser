@@ -1,4 +1,4 @@
-import { Parser, success, fail, SuccessParser } from './base';
+import { Parser, success, fail, SuccessParser, ResultValue } from './base';
 
 export type Stream<T, E = undefined> = {
     stream: T[],
@@ -26,7 +26,7 @@ export function emptyStream<E>(env: E): Stream<any, E> {
     return makeStream([], env);
 }
 
-export type HeadFn<In, Out, Env> = (head: In, env: Env) => (Out | null);
+export type HeadFn<In, Out, Env> = (head: In, env: Env) => ResultValue<Out>;
 export function headParser<In, Out, Env = any>(f: HeadFn<In, Out, Env>): StreamParser<In, Out, Env> {
     return (input: Stream<In, Env>) => {
         const head = input.stream[0];
@@ -34,9 +34,9 @@ export function headParser<In, Out, Env = any>(f: HeadFn<In, Out, Env>): StreamP
             return fail('empty-stream');
         }
         const result = f(head, input.env);
-        return result === null
-            ? fail('reject-head')
-            : success(result, nextStream(input));
+        return result.success
+            ? success(result.value, nextStream(input))
+            : result;
     };
 }
 

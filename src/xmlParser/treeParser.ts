@@ -2,7 +2,7 @@ import { XmlTree, hasChildren } from './xmlTree';
 import { caseInsensitiveEq, isWhitespaces } from '../utils';
 import {
     Result, success, fail, seq, some, translate,
-    StreamParser, headParser, makeStream, nextStream, not, Stream,
+    StreamParser, headParser, makeStream, nextStream, not, Stream, successValue,
 } from '../combinators';
 
 export type TreeParser<Out = XmlTree, Env = undefined> = StreamParser<XmlTree, Out, Env>;
@@ -14,11 +14,18 @@ export function nameEq(n1: string, n2: string): boolean {
 export function textNode<T, E = any>(f: (text: string) => T | null): TreeParser<T, E>;
 export function textNode<E = any>(): TreeParser<string, E>;
 export function textNode<T, E>(f?: (text: string) => T | null): TreeParser<T | string, E> {
-    return headParser((n: XmlTree) =>
-        n.type === 'text'
-            ? (f ? f(n.text) : n.text)
-            : null
-    );
+    return headParser((n: XmlTree) => {
+        if (n.type === 'text') {
+            if (f) {
+                const result = f(n.text);
+                return result !== null ? successValue(n.text) : fail({ custom: 'xml-text-rejected' });
+            } else {
+                return successValue(n.text);
+            }
+        } else {
+            return fail({ custom: 'expected-xml- text' });
+        }
+    });
 }
 
 export const whitespaces = textNode<boolean, any>(text => isWhitespaces(text) ? true : null);

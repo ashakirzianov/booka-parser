@@ -4,7 +4,7 @@ import { ignoreTags, EpubNodeParser, buildRef } from './nodeParser';
 import { ParserDiagnoser } from '../log';
 import { xmlName, xmlNameAttrs, children, textNode, whitespaces } from '../xmlParser';
 import {
-    and, translate, seq, maybe, envParser, yieldOne,
+    and, translate, seq, maybe, envParser,
 } from '../combinators';
 
 export const gutenbergHooks: EpubConverterHooks = {

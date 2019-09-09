@@ -1,6 +1,9 @@
 import { ChapterTitle, RawBookNode, AttributeName } from 'booka-common';
 import { XmlTree, path, children } from '../xmlParser';
-import { choice, makeStream, success, emptyStream, SuccessStreamParser } from '../combinators';
+import {
+    choice, makeStream, success, emptyStream, SuccessStreamParser,
+    successValue, fail,
+} from '../combinators';
 import { isWhitespaces } from '../utils';
 import { ParserDiagnoser } from '../log';
 import {
@@ -44,16 +47,16 @@ export const sectionsParser: SectionsParser = input => {
 
 const text = headNode(node => {
     if (node.type !== 'text') {
-        return null;
+        return fail({ custom: 'expected-xml-text' });
     }
     // Skip whitespace nodes
     if (node.text.startsWith('\n') && isWhitespaces(node.text)) {
-        return [];
+        return successValue([]);
     } else {
-        return [{
+        return successValue([{
             node: 'span',
             span: node.text,
-        }];
+        }]);
     }
 });
 
@@ -72,19 +75,19 @@ const a = constrainElement(
     },
     (el, env) => {
         if (el.attributes.href !== undefined) {
-            return [{
+            return successValue([{
                 node: 'ref',
                 to: el.attributes.href,
                 content: buildContainerNode(el.children, env),
-            }];
+            }]);
         } else if (el.attributes.id !== undefined) {
-            return [{
+            return successValue([{
                 node: 'compound-raw',
                 ref: buildRef(env.filePath, el.attributes.id),
                 nodes: [buildContainerNode(el.children, env)],
-            }];
+            }]);
         } else {
-            return [];
+            return successValue([]);
         }
     });
 
@@ -97,14 +100,13 @@ const pph = constrainElement(
     },
     (el, env) => {
         const container = buildContainerNode(el.children, env);
-        const result: RawBookNode[] = el.attributes.id
-            ? [{
+        return el.attributes.id
+            ? successValue([{
                 node: 'compound-raw',
                 ref: buildRef(env.filePath, el.attributes.id),
                 nodes: [container],
-            }]
-            : [container];
-        return result;
+            }])
+            : successValue([container]);
     });
 
 const img = constrainElement(
@@ -113,29 +115,29 @@ const img = constrainElement(
     (el, env) => {
         const src = el.attributes['src'];
         if (src) {
-            return [{
+            return successValue([{
                 node: 'image-ref',
                 imageId: src,
-            }];
+            }]);
         } else {
             env.ds.add({
                 diag: 'img-must-have-src',
                 node: el,
             });
-            return [];
+            return successValue([]);
         }
     });
 
 const image = constrainElement('image', {}, (el, env) => {
     const xlinkHref = el.attributes['xlink:href'];
     if (xlinkHref) {
-        return [{
+        return successValue([{
             node: 'image-ref',
             imageId: xlinkHref,
-        }];
+        }]);
     } else {
         env.ds.add({ diag: 'image-must-have-xlinkhref', node: el });
-        return [];
+        return successValue([]);
     }
 });
 
@@ -148,34 +150,32 @@ const header = constrainElement(
         if (title.length === 0) {
             env.ds.add({ diag: 'no-title', node: el });
         }
-        return [{
+        return successValue([{
             node: 'chapter-title',
             title: title,
             level: 4 - level,
-        }];
+        }]);
     });
 
 const br = constrainElement(
     'br', {},
-    () => [{ node: 'span', span: '\n' }],
+    () => successValue([{ node: 'span', span: '\n' }]),
 );
 
 const svg = constrainElement(
     'svg',
     { viewBox: null, xmlns: null, class: null },
-    () => []
+    () => successValue([])
 );
 
 const ignore = constrainElement(
     ['sup', 'sub', 'ul', 'li', 'br'], // TODO: do not ignore 'br'
     {},
-    (el, env) => {
-        return [];
-    });
+    () => successValue([]),
+);
 
-const skip = headNode((node, env) => {
-    env.ds.add({ diag: 'unexpected-node', node });
-    return [];
+const skip = headNode(node => {
+    return successValue([], { custom: 'unexpected-node', node });
 });
 
 const standardParsers = [
@@ -231,10 +231,10 @@ function extractTitle(nodes: XmlTree[], ds: ParserDiagnoser): ChapterTitle {
 
 function attributeParser(tagNames: string[], attrs: AttributeName[]) {
     return constrainElement(tagNames, { class: null }, (el, env) => {
-        return [{
+        return successValue([{
             node: 'attr',
             attributes: attrs,
             content: buildContainerNode(el.children, env),
-        }];
+        }]);
     });
 }

@@ -1,18 +1,19 @@
 import {
-    and, projectLast, headParser,
+    and, projectLast, headParser, HeadFn, successValue, fail,
 } from '../combinators';
 import { children, TreeParser, textNode } from './treeParser';
 import { XmlTreeElement, isElementTree, XmlTree, XmlAttributes } from './xmlTree';
 import { ConstraintMap, checkObject, Constraint, checkValue } from '../constraint';
 
 // TODO: remove ?
-export function elementNode<O, E>(f: (el: XmlTreeElement, env: E) => O | null) {
-    return headParser(
-        (n: XmlTree, env: E) =>
-            isElementTree(n)
-                ? f(n, env)
-                : null
-    );
+export function elementNode<O, E>(f: HeadFn<XmlTreeElement, O, E>) {
+    return headParser((n: XmlTree, env: E) => {
+        if (isElementTree(n)) {
+            return f(n, env);
+        } else {
+            return fail({ custom: 'expected-xml-element' });
+        }
+    });
 }
 
 export function xmlName<E = any>(name: Constraint<string>): TreeParser<XmlTreeElement, E> {
@@ -20,10 +21,10 @@ export function xmlName<E = any>(name: Constraint<string>): TreeParser<XmlTreeEl
         if (tree.type === 'element') {
             const check = checkValue(tree.name, name);
             return check
-                ? tree
-                : null;
+                ? successValue(tree)
+                : fail({ custom: 'name-check', name, value: tree.name });
         } else {
-            return null;
+            return fail({ custom: 'expected-xml-element' });
         }
     }
     );
@@ -34,11 +35,12 @@ export function xmlAttributes<E = any>(attrs: ConstraintMap<XmlAttributes>): Tre
         if (tree.type === 'element') {
             const checks = checkObject(tree.attributes, attrs);
             if (checks.length === 0) {
-                return tree;
+                return successValue(tree);
+            } else {
+                return fail({ custom: 'expected-attrs', checks, tree });
             }
-            // TODO: log check results
         }
-        return null;
+        return fail({ custom: 'expected-xml-element' });
     });
 }
 

@@ -1,4 +1,5 @@
 import { KnownTag } from 'booka-common';
+import { fail, successValue } from '../combinators';
 import { isTextTree, isElementTree, XmlTreeWithChildren } from '../xmlParser';
 import { ParserDiagnoser } from '../log';
 import { EpubConverterHooks, MetadataRecord } from './epubBookParser';
@@ -60,7 +61,7 @@ function titleElement() {
 
     return headNode(el => {
         if (!isElementTree(el) || el.name !== 'div') {
-            return null;
+            return fail();
         }
 
         const className = el.attributes.class;
@@ -73,15 +74,15 @@ function titleElement() {
             if (!isNaN(level)) {
                 const title = extractTextLines(el);
                 if (title) {
-                    return [{
+                    return successValue([{
                         node: 'chapter-title',
                         level: 1 - level,
                         title,
-                    }];
+                    }]);
                 }
             }
         }
 
-        return null;
+        return fail();
     });
 }

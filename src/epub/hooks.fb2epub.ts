@@ -7,7 +7,7 @@ import {
     nameEq, XmlTree, xmlNameAttrs, xmlNameAttrsChildren, xmlAttributes, xmlNameChildren,
 } from '../xmlParser';
 import {
-    some, translate, choice, seq, and, headParser, envParser,
+    some, translate, choice, seq, and, headParser, envParser, successValue, fail,
 } from '../combinators';
 import { flatten } from '../utils';
 import { ignoreClass, EpubNodeParser, buildRef } from './nodeParser';
@@ -92,7 +92,7 @@ function titlePage(): EpubNodeParser {
         } as RawBookNode),
     );
     const ignore = headParser(
-        (x: XmlTree) => ({ node: 'ignore' } as RawBookNode),
+        (x: XmlTree) => successValue({ node: 'ignore' } as RawBookNode),
     );
 
     const parser = xmlNameAttrsChildren(
@@ -112,11 +112,11 @@ function divTitle(): EpubNodeParser {
             const level = parseInt(levelString, 10);
 
             return isNaN(level)
-                ? null
-                : level;
+                ? fail()
+                : successValue(level);
         }
 
-        return null;
+        return fail();
     });
     const h = whitespaced(xmlNameChildren(n => n.startsWith('h'), textNode()));
     const content = some(h);
