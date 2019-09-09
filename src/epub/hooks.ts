@@ -1,4 +1,4 @@
-import { EpubConverterOptionsTable } from './epubConverter.types';
+import { EpubConverterOptionsTable } from './epubConverter';
 import { fictionBookEditorHooks } from './hooks.fictionBookEditor';
 import { fb2epubHooks } from './hooks.fb2epub';
 import { gutenbergHooks } from './hooks.gutenberg';

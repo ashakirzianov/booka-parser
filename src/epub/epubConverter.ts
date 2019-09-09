@@ -1,27 +1,47 @@
 import { Book, KnownTag, RawBookNode } from 'booka-common';
 import { AsyncIter, equalsToOneOf } from '../utils';
+import { ParserDiagnostic, ParserDiagnoser, diagnoser } from '../log';
+import { makeStream, AsyncParser, success, fail } from '../combinators';
 import { rawNodesParser } from '../rawNodesParser';
-import { diagnoser } from '../log';
-import { EpubBook } from './epubBook';
-import { EpubConverterParameters, EpubConverter, EpubConverterResult } from './epubConverter.types';
+import { EpubBook, EpubKind } from './epubBook';
 import { sectionsParser } from './sectionParser';
 import { parseMeta } from './metaParser';
-import { makeStream } from '../combinators';
+import { EpubNodeParser } from './nodeParser';
 
-export function createConverter(params: EpubConverterParameters): EpubConverter {
-    return {
-        convertEpub: epub => convertEpub(epub, params),
-    };
-}
+export type EpubConverterResult = {
+    book: Book,
+    diagnostics: ParserDiagnostic[],
+};
+export type EpubConverterInput = {
+    epub: EpubBook,
+    options: EpubConverterOptionsTable,
+};
+// TODO: remove ?
+export type EpubConverterOptionsTable = {
+    [key in EpubKind]: EpubConverterHooks;
+};
 
-async function convertEpub(epub: EpubBook, params: EpubConverterParameters): Promise<EpubConverterResult> {
+export type MetadataRecord = {
+    key: string,
+    value: any,
+};
+export type MetadataHook = (meta: MetadataRecord, ds: ParserDiagnoser) => KnownTag[] | undefined;
+export type EpubConverterHooks = {
+    nodeHooks: EpubNodeParser[],
+    metadataHooks: MetadataHook[],
+};
+
+export type EpubBookParser = AsyncParser<EpubConverterInput, EpubConverterResult>;
+
+export const epubBookParser: EpubBookParser = async input => {
+    const { epub, options } = input;
     const ds = diagnoser({ context: 'epub', kind: epub.kind });
     try {
         if (epub.kind === 'unknown') {
             ds.add({ diag: 'unknown-kind' });
         }
 
-        const hooks = params.options[epub.kind];
+        const hooks = options[epub.kind];
         const tags = parseMeta(epub.metadata, hooks.metadataHooks, ds);
         const sections = await AsyncIter.toArray(epub.sections());
         const sectionsParserResult = sectionsParser(makeStream(sections, {
@@ -37,10 +57,7 @@ async function convertEpub(epub: EpubBook, params: EpubConverterParameters): Pro
         }));
 
         if (!rawNodeResult.success) {
-            return {
-                success: false,
-                diagnostics: ds.all(),
-            };
+            return fail(ds.all().toString());
         }
         const volume = rawNodeResult.value;
         const book: Book = {
@@ -52,19 +69,14 @@ async function convertEpub(epub: EpubBook, params: EpubConverterParameters): Pro
             tags: tags,
         };
 
-        return {
-            success: true,
+        return success({
             book: book,
-            kind: epub.kind,
             diagnostics: ds.all(),
-        };
+        }, input);
     } catch {
-        return {
-            success: false,
-            diagnostics: ds.all(),
-        };
+        return fail(ds.all().toString());
     }
-}
+};
 
 function buildMetaNodesFromTags(tags: KnownTag[]): RawBookNode[] {
     const filtered = tags.filter(t => equalsToOneOf(t.tag, ['author', 'title', 'cover-ref']));

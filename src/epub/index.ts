@@ -1,27 +1,25 @@
 import { epubParser } from './epubParser';
-import { createConverter } from './epubConverter';
+import { epubBookParser } from './epubConverter';
 import { converterHooks } from './hooks';
 import { xmlStringParser } from '../xmlParser';
-import { EpubConverterResult } from './epubConverter.types';
 
-export { EpubConverterResult, MetadataRecord } from './epubConverter.types';
+export { MetadataRecord, EpubConverterResult } from './epubConverter';
 export { EpubKind } from './epubBook';
 
-export async function parsePath(path: string): Promise<EpubConverterResult> {
+// TODO: properly handle diagnostics
+export async function parsePath(path: string) {
     const bookResult = await epubParser({
         filePath: path,
         stringParser: xmlStringParser,
     });
     if (!bookResult.success) {
-        return {
-            success: false,
-            diagnostics: [], // TODO: add proper diagnostics
-        };
+        return bookResult;
     }
-    const converter = createConverter({
+
+    const result = epubBookParser({
+        epub: bookResult.value,
         options: converterHooks,
     });
-    const result = converter.convertEpub(bookResult.value);
 
     return result;
 }

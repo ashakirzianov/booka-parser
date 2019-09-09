@@ -1,7 +1,7 @@
 import { KnownTag } from 'booka-common';
 import { EpubMetadata } from './epubBook';
 import { flatten } from '../utils';
-import { MetadataHook, MetadataRecord } from './epubConverter.types';
+import { MetadataHook, MetadataRecord } from './epubConverter';
 import { ParserDiagnoser } from '../log';
 
 export function parseMeta(meta: EpubMetadata, hooks: MetadataHook[], ds: ParserDiagnoser): KnownTag[] {

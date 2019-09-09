@@ -33,13 +33,13 @@ async function exec() {
         console.log(`---- ${epubPath}:`);
         if (reportMeta) {
             console.log('Tags:');
-            console.log(result.book.tags);
-            const bookText = extractNodeText(result.book.volume);
+            console.log(result.value.book.tags);
+            const bookText = extractNodeText(result.value.book.volume);
             console.log(`Book length: ${bookText && bookText.length} symbols`);
         }
-        if (result.diagnostics.length > 0) {
+        if (typeof result.message === 'string' && result.message.length > 0) {
             console.log('\x1b[31mDiagnostics:\x1b[0m');
-            console.log(inspect(result.diagnostics, false, null, true));
+            console.log(inspect(result.message, false, null, true));
         }
     }
 }

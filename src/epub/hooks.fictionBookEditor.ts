@@ -1,7 +1,7 @@
 import { KnownTag } from 'booka-common';
 import { isTextTree, isElementTree, XmlTreeWithChildren } from '../xmlParser';
 import { ParserDiagnoser } from '../log';
-import { EpubConverterHooks, MetadataRecord } from './epubConverter.types';
+import { EpubConverterHooks, MetadataRecord } from './epubConverter';
 import { headNode } from './nodeParser';
 
 export const fictionBookEditorHooks: EpubConverterHooks = {
