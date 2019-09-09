@@ -79,9 +79,9 @@ export function predicate<TI, TO, TE = any>(pred: Predicate<TI, TO>): StreamPars
 
         const result = pred(head);
         if (result.success) {
-            return success(result.value, nextStream(input), result.message);
+            return success(result.value, nextStream(input), result.diagnostic);
         } else {
-            return fail(result.message);
+            return fail(result.diagnostic);
         }
     };
 }

@@ -3,24 +3,24 @@ import { equalsToOneOf, keys } from '../utils';
 
 export type PredicateResultSuccess<T> = {
     success: true,
-    message: ParserDiagnostic,
+    diagnostic: ParserDiagnostic,
     value: T,
 };
 export type PredicateResultFail = {
     success: false,
-    message: ParserDiagnostic,
+    diagnostic: ParserDiagnostic,
 };
 export type PredicateResult<T> = PredicateResultSuccess<T> | PredicateResultFail;
-export function predSucc<T>(value: T, message?: ParserDiagnostic): PredicateResultSuccess<T> {
+export function predSucc<T>(value: T, diagnostic?: ParserDiagnostic): PredicateResultSuccess<T> {
     return {
         success: true,
-        value, message: message || [],
+        value, diagnostic: diagnostic || [],
     };
 }
-export function predFail(message: ParserDiagnostic): PredicateResultFail {
+export function predFail(diagnostic: ParserDiagnostic): PredicateResultFail {
     return {
         success: false,
-        message,
+        diagnostic,
     };
 }
 
@@ -92,17 +92,17 @@ export function andPred<TI>(...preds: Array<Predicate<TI, any>>): Predicate<TI, 
         return truePred;
     }
     return (input: TI) => {
-        const messages: ParserDiagnostic[] = [];
+        const diagnostics: ParserDiagnostic[] = [];
         for (const p of preds) {
             const result = p(input);
             if (!result.success) {
-                return predFail(result.message);
+                return predFail(result.diagnostic);
             } else {
-                messages.push(result.message);
+                diagnostics.push(result.diagnostic);
             }
         }
 
-        return predSucc(input, compoundDiagnostic(messages));
+        return predSucc(input, compoundDiagnostic(diagnostics));
     };
 }
 
@@ -111,7 +111,7 @@ export function expectPred<TI>(pred: Predicate<TI, any>): Predicate<TI> {
         const result = pred(i);
         return result.success
             ? result
-            : predSucc(i, result.message);
+            : predSucc(i, result.diagnostic);
     };
 }
 

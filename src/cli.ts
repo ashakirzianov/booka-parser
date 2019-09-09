@@ -37,9 +37,9 @@ async function exec() {
             const bookText = extractNodeText(result.value.volume);
             console.log(`Book length: ${bookText && bookText.length} symbols`);
         }
-        if (Array.isArray(result.message) && result.message.length > 0) {
+        if (Array.isArray(result.diagnostic) && result.diagnostic.length > 0) {
             console.log('\x1b[31mDiagnostics:\x1b[0m');
-            console.log(inspect(result.message, false, null, true));
+            console.log(inspect(result.diagnostic, false, null, true));
         }
     }
 }

@@ -79,7 +79,7 @@ export function fullParser(parser: EpubNodeParser): FullEpubParser {
             input.env.ds.add({ diag: 'extra-nodes-tail', nodes: result.next.stream });
         }
 
-        return success(flatten(result.value), result.next, result.message);
+        return success(flatten(result.value), result.next, result.diagnostic);
     };
 }
 

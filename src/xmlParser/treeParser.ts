@@ -49,7 +49,7 @@ export function children<T, E>(parser: TreeParser<T, E>): TreeParser<T, E> {
 
         const result = parser(makeStream(head.children, input.env));
         if (result.success) {
-            return success(result.value, nextStream(input), result.message);
+            return success(result.value, nextStream(input), result.diagnostic);
         } else {
             return result;
         }
@@ -68,7 +68,7 @@ export function parent<T, E>(parser: TreeParser<T, E>): TreeParser<T, E> {
 
         const result = parser(makeStream([head.parent], input.env));
         if (result.success) {
-            return success(result.value, nextStream(input), result.message);
+            return success(result.value, nextStream(input), result.diagnostic);
         } else {
             return result;
         }

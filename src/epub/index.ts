@@ -26,6 +26,6 @@ export const epubFullParser: FullEpubParser = async input => {
     });
 
     return result.success
-        ? success(result.value.book, input, result.message)
+        ? success(result.value.book, input, result.diagnostic)
         : result;
 };
