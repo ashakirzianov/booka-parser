@@ -1,4 +1,4 @@
-import { Parser, success, fail } from './base';
+import { Parser, success, fail, SuccessParser } from './base';
 // TODO: remove
 import { Predicate } from './predicate';
 
@@ -8,6 +8,7 @@ export type Stream<T, E = undefined> = {
 };
 export type StreamParser<TIn, TOut = TIn, TEnv = undefined> =
     Parser<Stream<TIn, TEnv>, TOut>;
+export type SuccessStreamParser<I, O, E> = SuccessParser<Stream<I, E>, O>;
 
 export function makeStream<I>(arr: I[]): Stream<I>;
 export function makeStream<I, E>(arr: I[], env: E): Stream<I, E>;
@@ -22,6 +23,9 @@ export function nextStream<T, E>(input: Stream<T, E>): Stream<T, E> {
         stream: input.stream.slice(1),
         env: input.env,
     };
+}
+export function emptyStream<E>(env: E): Stream<any, E> {
+    return makeStream([], env);
 }
 
 export type HeadFn<In, Out, Env> = (head: In, env: Env) => (Out | null);

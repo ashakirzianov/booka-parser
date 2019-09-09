@@ -4,8 +4,9 @@ import { buildVolume } from '../buildVolume';
 import { diagnoser } from '../log';
 import { EpubBook } from './epubParser.types';
 import { EpubConverterParameters, EpubConverter, EpubConverterResult } from './epubConverter.types';
-import { parseSections } from './sectionParser';
+import { sectionsParser } from './sectionParser';
 import { parseMeta } from './metaParser';
+import { makeStream } from '../combinators';
 
 export function createConverter(params: EpubConverterParameters): EpubConverter {
     return {
@@ -23,7 +24,11 @@ async function convertEpub(epub: EpubBook, params: EpubConverterParameters): Pro
         const hooks = params.options[epub.kind];
         const tags = parseMeta(epub.metadata, hooks.metadataHooks, ds);
         const sections = await AsyncIter.toArray(epub.sections());
-        const rawNodes = parseSections(sections, hooks.nodeHooks, ds);
+        const sectionsParserResult = sectionsParser(makeStream(sections, {
+            hooks: hooks.nodeHooks,
+            ds: ds,
+        }));
+        const rawNodes = sectionsParserResult.value;
         const metaNodes = buildMetaNodesFromTags(tags);
         const allNodes = rawNodes.concat(metaNodes);
 

@@ -1,6 +1,6 @@
 import { ChapterTitle, RawBookNode, AttributeName } from 'booka-common';
 import { XmlTree, path, children } from '../xmlParser';
-import { choice, makeStream } from '../combinators';
+import { choice, makeStream, success, emptyStream, SuccessStreamParser } from '../combinators';
 import { isWhitespaces } from '../utils';
 import { ParserDiagnoser } from '../log';
 import {
@@ -8,39 +8,39 @@ import {
 } from './nodeParser';
 import { EpubSection } from './epubParser.types';
 
-export function parseSections(sections: EpubSection[], hooks: EpubNodeParser[], ds: ParserDiagnoser) {
-    const allParsers = hooks.concat(standardParsers);
-    const singleParser = choice(...allParsers);
-    const sectionParser = buildSectionParser(singleParser);
+export type SectionsParserEnv = {
+    ds: ParserDiagnoser,
+    hooks: EpubNodeParser[],
+};
+export type SectionsParser = SuccessStreamParser<EpubSection, RawBookNode[], SectionsParserEnv>;
+
+export const sectionsParser: SectionsParser = input => {
+    const allParsers = input.env.hooks.concat(standardParsers);
+    const nodeParser = choice(...allParsers);
+    const bodyParser = children(fullParser(nodeParser));
+    const documentParser = path(['html', 'body'], bodyParser);
 
     const result: RawBookNode[] = [];
-    for (const section of sections) {
+    for (const section of input.stream) {
         const env: EpubNodeParserEnv = {
-            ds: ds,
+            ds: input.env.ds,
             filePath: section.filePath,
-            recursive: singleParser,
+            recursive: nodeParser,
         };
         const nodes = section.content.type === 'document'
             ? section.content.children
             : [section.content];
         const stream = makeStream(nodes, env);
-        const sectionResult = sectionParser(stream);
+        const sectionResult = documentParser(stream);
         if (sectionResult.success) {
             result.push(...sectionResult.value);
         } else {
-            ds.add({ diag: 'couldnt-parse-section', filePath: section.filePath });
+            input.env.ds.add({ diag: 'couldnt-parse-section', filePath: section.filePath });
         }
     }
 
-    return result;
-}
-
-function buildSectionParser(parser: EpubNodeParser) {
-    const bodyParser = children(fullParser(parser));
-    const resultParser = path(['html', 'body'], bodyParser);
-
-    return resultParser;
-}
+    return success(result, emptyStream(input.env));
+};
 
 const text = headNode(node => {
     if (node.type !== 'text') {
