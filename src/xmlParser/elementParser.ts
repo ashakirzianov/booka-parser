@@ -54,7 +54,7 @@ function elemPred(): Predicate<XmlTree, XmlTreeElement> {
         if (isElementTree(nd)) {
             return predSucc(nd);
         } else {
-            return predFail(`Expected xml element, got: ${tree2String(nd)}`);
+            return predFail({ diag: `Expected xml element, got: ${tree2String(nd)}` });
         }
     };
 }
@@ -83,19 +83,19 @@ function attrPred(c: AttributeConstraint): ElementPredicate {
     if (typeof value === 'function') {
         return en => value(en.attributes[key])
             ? predSucc(en)
-            : predFail(`Unexpected attribute ${key}='${en.attributes[key]}'`);
+            : predFail({ diag: `Unexpected attribute ${key}='${en.attributes[key]}'` });
     } else if (Array.isArray(value)) {
         return en => equalsToOneOf(en.attributes[key], value)
             ? predSucc(en)
-            : predFail(`Unexpected attribute ${key}='${en.attributes[key]}', expected values: ${value}`);
+            : predFail({ diag: `Unexpected attribute ${key}='${en.attributes[key]}', expected values: ${value}` });
     } else if (value === true) {
         return en => en.attributes[key]
             ? predSucc(en)
-            : predFail(`Expected attribute ${key} to be set`);
+            : predFail({ diag: `Expected attribute ${key} to be set` });
     } else {
         return en => en.attributes[key] === value
             ? predSucc(en)
-            : predFail(`Unexpected attribute ${key}='${en.attributes[key]}', expected value: ${value}`);
+            : predFail({ diag: `Unexpected attribute ${key}='${en.attributes[key]}', expected value: ${value}` });
     }
 }
 
@@ -106,7 +106,7 @@ function noAttrsExceptPred(keys: string[]): ElementPredicate {
             .map(ue => `${ue}=${en.attributes[ue]}`);
         return extra.length === 0
             ? predSucc(en)
-            : predFail(`Unexpected attributes: ${extra}`);
+            : predFail({ diag: `Unexpected attributes: ${extra}` });
     };
 }
 

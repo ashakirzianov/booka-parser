@@ -1,23 +1,23 @@
-import { Message, compoundMessage } from './base';
+import { ParserDiagnostic, compoundDiagnostic } from './diagnostics';
 import { equalsToOneOf, keys } from '../utils';
 
 export type PredicateResultSuccess<T> = {
     success: true,
-    message: Message,
+    message: ParserDiagnostic,
     value: T,
 };
 export type PredicateResultFail = {
     success: false,
-    message: Message,
+    message: ParserDiagnostic,
 };
 export type PredicateResult<T> = PredicateResultSuccess<T> | PredicateResultFail;
-export function predSucc<T>(value: T, message?: Message): PredicateResultSuccess<T> {
+export function predSucc<T>(value: T, message?: ParserDiagnostic): PredicateResultSuccess<T> {
     return {
         success: true,
-        value, message,
+        value, message: message || [],
     };
 }
-export function predFail(message: Message): PredicateResultFail {
+export function predFail(message: ParserDiagnostic): PredicateResultFail {
     return {
         success: false,
         message,
@@ -39,7 +39,7 @@ export function keyValuePred<T>() {
                 const inspected: any = input !== undefined ? input[c.key] : undefined;
                 return equalsToOneOf(inspected, arr)
                     ? predSucc(input)
-                    : predFail(`'${input}.${c.key}=${inspected}', expected to be one of [${c.value}]`);
+                    : predFail({ diag: `'${input}.${c.key}=${inspected}', expected to be one of [${c.value}]` });
             };
         } else if (typeof c.value === 'function') {
             const value = c.value as (x: TV) => boolean;
@@ -48,14 +48,14 @@ export function keyValuePred<T>() {
                 const result = value(inspected);
                 return result
                     ? predSucc(input)
-                    : predFail(`Unexpected ${input}.${c.key}=${inspected}`);
+                    : predFail({ diag: `Unexpected ${input}.${c.key}=${inspected}` });
             };
         } else {
             return (input: any) => {
                 const inspected: any = input !== undefined ? input[c.key] : undefined;
                 return inspected === c.value
                     ? predSucc(input)
-                    : predFail(`'${input}.${c.key}=${inspected}', expected to be '${c.value}'`);
+                    : predFail({ diag: `'${input}.${c.key}=${inspected}', expected to be '${c.value}'` });
             };
         }
     };
@@ -92,7 +92,7 @@ export function andPred<TI>(...preds: Array<Predicate<TI, any>>): Predicate<TI, 
         return truePred;
     }
     return (input: TI) => {
-        const messages: Message[] = [];
+        const messages: ParserDiagnostic[] = [];
         for (const p of preds) {
             const result = p(input);
             if (!result.success) {
@@ -102,7 +102,7 @@ export function andPred<TI>(...preds: Array<Predicate<TI, any>>): Predicate<TI, 
             }
         }
 
-        return predSucc(input, compoundMessage(messages));
+        return predSucc(input, compoundDiagnostic(messages));
     };
 }
 
