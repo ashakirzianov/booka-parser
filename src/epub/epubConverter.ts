@@ -1,6 +1,6 @@
 import { Book, KnownTag, RawBookNode } from 'booka-common';
 import { AsyncIter, equalsToOneOf } from '../utils';
-import { buildVolume } from '../buildVolume';
+import { rawNodesParser } from '../buildVolume';
 import { diagnoser } from '../log';
 import { EpubBook } from './epubBook';
 import { EpubConverterParameters, EpubConverter, EpubConverterResult } from './epubConverter.types';
@@ -32,10 +32,17 @@ async function convertEpub(epub: EpubBook, params: EpubConverterParameters): Pro
         const metaNodes = buildMetaNodesFromTags(tags);
         const allNodes = rawNodes.concat(metaNodes);
 
-        const volume = await buildVolume(allNodes, {
-            ds,
-            resolveImageRef: epub.imageResolver,
-        });
+        const rawNodeResult = await rawNodesParser(makeStream(allNodes, {
+            ds, resolveImageRef: epub.imageResolver,
+        }));
+
+        if (!rawNodeResult.success) {
+            return {
+                success: false,
+                diagnostics: ds.all(),
+            };
+        }
+        const volume = rawNodeResult.value;
         const book: Book = {
             volume,
             source: {

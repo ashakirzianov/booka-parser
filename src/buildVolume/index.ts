@@ -1,1 +1,1 @@
-export * from './buildVolume';
+export * from './parser';

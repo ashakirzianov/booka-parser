@@ -7,14 +7,17 @@ import { ParserDiagnoser } from '../log';
 import { spanFromRawNode } from './common';
 import { resolveReferences } from './resolveReferences';
 import { flattenNodes } from './flattenNodes';
+import { AsyncStreamParser, success, emptyStream } from '../combinators';
 
-export type BuildVolumeEnv = {
+export type RawNodesParserEnv = {
     ds: ParserDiagnoser,
     resolveImageRef: (ref: string) => Promise<Buffer | undefined>,
 };
-export async function buildVolume(rawNodes: RawBookNode[], env: BuildVolumeEnv): Promise<VolumeNode> {
-    const meta = await collectMeta(rawNodes, env);
-    const resolved = resolveReferences(rawNodes, env.ds);
+export type RawNodesParser = AsyncStreamParser<RawBookNode, VolumeNode, RawNodesParserEnv>;
+
+export const rawNodesParser: RawNodesParser = async ({ stream, env }) => {
+    const meta = await collectMeta(stream, env);
+    const resolved = resolveReferences(stream, env.ds);
     const preprocessed = flattenNodes(resolved, env.ds);
     const nodes = await buildChapters(preprocessed, env);
 
@@ -22,14 +25,16 @@ export async function buildVolume(rawNodes: RawBookNode[], env: BuildVolumeEnv):
         env.ds.add({ diag: 'empty-book-title' });
     }
 
-    return {
+    const volume: VolumeNode = {
         node: 'volume',
         nodes,
         meta: meta,
     };
-}
 
-async function collectMeta(rawNodes: RawBookNode[], env: BuildVolumeEnv): Promise<VolumeMeta> {
+    return success(volume, emptyStream(env));
+};
+
+async function collectMeta(rawNodes: RawBookNode[], env: RawNodesParserEnv): Promise<VolumeMeta> {
     const tags = rawNodes
         .filter((n): n is TagNode => n.node === 'tag')
         .map(n => n.tag);
@@ -49,7 +54,7 @@ async function collectMeta(rawNodes: RawBookNode[], env: BuildVolumeEnv): Promis
     };
 }
 
-async function buildChapters(rawNodes: RawBookNode[], env: BuildVolumeEnv) {
+async function buildChapters(rawNodes: RawBookNode[], env: RawNodesParserEnv) {
     const { nodes, next } = await buildChaptersImpl(rawNodes, undefined, env);
 
     if (next.length !== 0) {
@@ -63,7 +68,7 @@ type BuildChaptersResult = {
     nodes: BookContentNode[],
     next: RawBookNode[],
 };
-async function buildChaptersImpl(rawNodes: RawBookNode[], level: number | undefined, env: BuildVolumeEnv): Promise<BuildChaptersResult> {
+async function buildChaptersImpl(rawNodes: RawBookNode[], level: number | undefined, env: RawNodesParserEnv): Promise<BuildChaptersResult> {
     if (rawNodes.length === 0) {
         return { nodes: [], next: [] };
     }
@@ -98,7 +103,7 @@ async function buildChaptersImpl(rawNodes: RawBookNode[], level: number | undefi
     }
 }
 
-async function resolveRawNode(rawNode: RawBookNode, env: BuildVolumeEnv): Promise<BookContentNode | undefined> {
+async function resolveRawNode(rawNode: RawBookNode, env: RawNodesParserEnv): Promise<BookContentNode | undefined> {
     switch (rawNode.node) {
         case 'image-ref':
             const imageBuffer = await env.resolveImageRef(rawNode.imageId);
