@@ -1,9 +1,9 @@
 import { epubParser } from './epubFileParser';
-import { epubBookParser } from './epubConverter';
+import { epubBookParser } from './epubBookParser';
 import { converterHooks } from './hooks';
 import { xmlStringParser } from '../xmlParser';
 
-export { MetadataRecord, EpubConverterResult } from './epubConverter';
+export { MetadataRecord, EpubBookParserResult as EpubConverterResult } from './epubBookParser';
 export { EpubKind } from './epubBook';
 
 // TODO: properly handle diagnostics

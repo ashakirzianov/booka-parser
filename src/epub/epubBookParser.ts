@@ -8,16 +8,16 @@ import { sectionsParser } from './sectionParser';
 import { parseMeta } from './metaParser';
 import { EpubNodeParser } from './nodeParser';
 
-export type EpubConverterResult = {
+export type EpubBookParserResult = {
     book: Book,
     diagnostics: ParserDiagnostic[],
 };
-export type EpubConverterInput = {
+export type EpubBookParserInput = {
     epub: EpubBook,
-    options: EpubConverterOptionsTable,
+    options: EpubBookParserOptionsTable,
 };
 // TODO: remove ?
-export type EpubConverterOptionsTable = {
+export type EpubBookParserOptionsTable = {
     [key in EpubKind]: EpubConverterHooks;
 };
 
@@ -31,7 +31,7 @@ export type EpubConverterHooks = {
     metadataHooks: MetadataHook[],
 };
 
-export type EpubBookParser = AsyncParser<EpubConverterInput, EpubConverterResult>;
+export type EpubBookParser = AsyncParser<EpubBookParserInput, EpubBookParserResult>;
 
 export const epubBookParser: EpubBookParser = async input => {
     const { epub, options } = input;

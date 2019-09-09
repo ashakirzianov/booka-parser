@@ -1,7 +1,7 @@
 import { KnownTag, RawBookNode, IgnoreNode } from 'booka-common';
 import {
     EpubConverterHooks, MetadataRecord,
-} from './epubConverter';
+} from './epubBookParser';
 import {
     nameChildren, textNode, nameAttrsChildren,
     nameAttrs, children, whitespaced, attrs,
