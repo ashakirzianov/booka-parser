@@ -4,66 +4,54 @@ import {
 } from './epubBook';
 import { XmlStringParser } from '../xmlParser';
 import { last } from '../utils';
+import { AsyncParser, success } from '../combinators';
 
-export type EpubParser = {
-    parseFile: (filePath: string) => Promise<EpubBook>,
+export type EpubParserInput = {
+    filePath: string,
+    stringParser: XmlStringParser,
 };
+export type EpubParser = AsyncParser<EpubParserInput, EpubBook>;
 
-export function createEpubParser(xmlStringParser: XmlStringParser): EpubParser {
-    return {
-        async parseFile(filePath): Promise<EpubBook> {
-            const epub = await FixedEpub.createAsync(filePath) as FixedEpub;
+export const epubParser: EpubParser = async input => {
+    const epub = await FixedEpub.createAsync(input.filePath) as FixedEpub;
 
-            const kind = identifyKind(epub);
-            return {
-                kind: kind,
-                metadata: extractMetadata(epub),
-                imageResolver: async href => {
-                    // const root = 'OPS/';
-                    // const path = root + href;
-                    // return new Promise((res, rej) => {
-                    //     epub.readFile(path, undefined, (err: any, data: any) => {
-                    //         if (err) {
-                    //             rej(err);
-                    //         } else {
-                    //             res({
-                    //                 buffer: data,
-                    //             });
-                    //         }
-                    //     });
-                    // });
+    const kind = identifyKind(epub);
+    const book: EpubBook = {
+        kind: kind,
+        metadata: extractMetadata(epub),
+        imageResolver: async href => {
 
-                    const idItem = epub.listImage().find(item => item.href && item.href.endsWith(href));
-                    if (!idItem || !idItem.id) {
-                        return undefined;
+            const idItem = epub.listImage().find(item => item.href && item.href.endsWith(href));
+            if (!idItem || !idItem.id) {
+                return undefined;
+            }
+            const [buffer, mimeType] = await epub.getImageAsync(idItem.id);
+            return buffer;
+        },
+        sections: async function* () {
+            for (const el of epub.flow) {
+                if (el.id && el.href) {
+                    // TODO: find better solution
+                    const href = last(el.href.split('/'));
+                    const chapter = await epub.chapterForId(el.id);
+                    const xmlResult = input.stringParser(chapter);
+
+                    // TODO: report parsing issues
+                    if (xmlResult.success) {
+                        const section: EpubSection = {
+                            id: el.id,
+                            filePath: href,
+                            content: xmlResult.value,
+                        };
+                        yield section;
                     }
-                    const [buffer, mimeType] = await epub.getImageAsync(idItem.id);
-                    return buffer;
-                },
-                sections: async function* () {
-                    for (const el of epub.flow) {
-                        if (el.id && el.href) {
-                            // TODO: find better solution
-                            const href = last(el.href.split('/'));
-                            const chapter = await epub.chapterForId(el.id);
-                            const xmlResult = xmlStringParser(chapter);
-
-                            // TODO: report parsing issues
-                            if (xmlResult.success) {
-                                const section: EpubSection = {
-                                    id: el.id,
-                                    filePath: href,
-                                    content: xmlResult.value,
-                                };
-                                yield section;
-                            }
-                        }
-                    }
-                },
-            };
+                }
+            }
         },
     };
-}
+
+    return success(book, input);
+};
 
 class FixedEpub extends EPub {
     static libPromise = Promise;
