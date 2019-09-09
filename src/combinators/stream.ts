@@ -1,4 +1,4 @@
-import { Parser, success, fail } from './parserCombinators';
+import { Parser, success, fail } from './base';
 // TODO: remove
 import { Predicate } from './predicate';
 

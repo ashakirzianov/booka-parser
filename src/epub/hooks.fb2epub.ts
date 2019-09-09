@@ -3,11 +3,13 @@ import {
     EpubConverterHooks, MetadataRecord,
 } from './epubConverter.types';
 import {
-    nameChildren, textNode, nameAttrsChildren, some,
-    translate, nameAttrs, choice,
-    seq, children, and, whitespaced, attrs,
-    attrsChildren, extractText, isElementTree, nameEq, headParser, XmlTree, envParser,
+    nameChildren, textNode, nameAttrsChildren,
+    nameAttrs, children, whitespaced, attrs,
+    attrsChildren, extractText, isElementTree, nameEq, XmlTree,
 } from '../xml';
+import {
+    some, translate, choice, seq, and, headParser, envParser,
+} from '../combinators';
 import { flatten } from '../utils';
 import { ignoreClass, EpubNodeParser, buildRef } from './nodeParser';
 import { ParserDiagnoser } from '../log';

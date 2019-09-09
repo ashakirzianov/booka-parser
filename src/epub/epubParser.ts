@@ -1,7 +1,8 @@
-import { EPub, SYMBOL_RAW_DATA } from 'epub2';
+import { EPub } from 'epub2';
 import { EpubParser, EpubBook, EpubSection, EpubKind, EpubKindResolver, resolveEpubKind, EpubMetadata } from './epubParser.types';
-import { XmlTreeDocument, Parser } from '../xml';
+import { XmlTreeDocument } from '../xml';
 import { last } from '../utils';
+import { Parser } from '../combinators';
 
 export function createEpubParser(xmlStringParser: Parser<string, XmlTreeDocument>): EpubParser {
     return {

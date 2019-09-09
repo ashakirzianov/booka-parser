@@ -1,6 +1,6 @@
 import * as parseXmlLib from '@rgrove/parse-xml';
 import { assertNever, isWhitespaces } from '../utils';
-import { Result, success } from './parserCombinators';
+import { Result, success } from '../combinators';
 
 export type XmlAttributes = {
     [key: string]: string | undefined,

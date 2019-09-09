@@ -1,4 +1,4 @@
-import { Message, compoundMessage } from './parserCombinators';
+import { Message, compoundMessage } from './base';
 import { equalsToOneOf, keys } from '../utils';
 
 export type PredicateResultSuccess<T> = {

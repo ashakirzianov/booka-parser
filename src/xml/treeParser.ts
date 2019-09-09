@@ -2,8 +2,8 @@ import { XmlTree, hasChildren } from './xmlTree';
 import { caseInsensitiveEq, isWhitespaces } from '../utils';
 import {
     Result, success, fail, seq, some, translate,
-} from './parserCombinators';
-import { StreamParser, headParser, makeStream, nextStream, not, Stream } from './streamParser';
+    StreamParser, headParser, makeStream, nextStream, not, Stream,
+} from '../combinators';
 
 export type TreeParser<Out = XmlTree, Env = undefined> = StreamParser<XmlTree, Out, Env>;
 

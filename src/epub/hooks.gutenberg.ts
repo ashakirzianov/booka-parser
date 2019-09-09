@@ -1,8 +1,11 @@
 import { KnownTag } from 'booka-common';
 import { EpubConverterHooks, MetadataRecord } from './epubConverter.types';
-import { ignoreTags, EpubNodeParser, buildRef, logWhileParsing } from './nodeParser';
+import { ignoreTags, EpubNodeParser, buildRef } from './nodeParser';
 import { ParserDiagnoser } from '../log';
-import { name, and, children, nameAttrs, translate, textNode, seq, maybe, envParser, yieldOne, whitespaces } from '../xml';
+import { name, children, nameAttrs, textNode, whitespaces } from '../xml';
+import {
+    and, translate, seq, maybe, envParser, yieldOne,
+} from '../combinators';
 
 export const gutenbergHooks: EpubConverterHooks = {
     nodeHooks: [

@@ -2,7 +2,7 @@ import { expectSuccess } from '../utils';
 import { path } from './treeParser';
 import { name } from './elementParser';
 import { xmlElement } from './xmlTree';
-import { makeStream } from './streamParser';
+import { makeStream } from '../combinators';
 
 it('pathParser', () => {
     const nodes = [xmlElement('root', [

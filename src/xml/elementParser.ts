@@ -1,14 +1,12 @@
 import { filterUndefined, equalsToOneOf } from '../utils';
 import {
-    andPred, ConstraintValue, Predicate, predSucc, predFail, keyValuePred, expectPred,
-} from './predicate';
-import {
-    tagged,
+    andPred, ConstraintValue, Predicate, predSucc, predFail,
+    keyValuePred, expectPred, tagged,
     projectFirst, and, expected, projectLast, translate,
-} from './parserCombinators';
+    headParser, predicate,
+} from '../combinators';
 import { children, TreeParser, textNode } from './treeParser';
 import { XmlTreeElement, isElementTree, tree2String, XmlTree } from './xmlTree';
-import { headParser, predicate } from './streamParser';
 
 export function elementNode<O, E>(f: (el: XmlTreeElement, env: E) => O | null) {
     return headParser(

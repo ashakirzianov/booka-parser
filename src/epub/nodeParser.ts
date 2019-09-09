@@ -2,15 +2,11 @@ import { RawBookNode } from 'booka-common';
 import { ParserDiagnoser } from '../log';
 import {
     XmlTree, XmlTreeElement, isElementTree, TreeParser,
-    XmlAttributes, makeStream, headParser, success,
-    elementNode,
-    fail,
-    SuccessParser,
-    Stream,
-    some,
-    HeadFn,
-    yieldOne,
+    XmlAttributes, elementNode,
 } from '../xml';
+import {
+    SuccessParser, Stream, some, HeadFn, yieldOne, headParser, success,
+} from '../combinators';
 import { Constraint, ConstraintMap, checkValue, checkObject } from '../constraint';
 import { equalsToOneOf, flatten } from '../utils';
 

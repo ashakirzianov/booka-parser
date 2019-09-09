@@ -1,7 +1,6 @@
 import { ChapterTitle, RawBookNode, AttributeName } from 'booka-common';
-import {
-    XmlTree, makeStream, path, children, choice,
-} from '../xml';
+import { XmlTree, path, children } from '../xml';
+import { choice, makeStream } from '../combinators';
 import { isWhitespaces } from '../utils';
 import { ParserDiagnoser } from '../log';
 import {
