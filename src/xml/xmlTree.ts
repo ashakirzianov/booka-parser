@@ -1,5 +1,6 @@
 import * as parseXmlLib from '@rgrove/parse-xml';
 import { assertNever, isWhitespaces } from '../utils';
+import { Result, success } from './parserCombinators';
 
 export type XmlAttributes = {
     [key: string]: string | undefined,
@@ -51,20 +52,13 @@ export function isDocumentTree(tree: XmlTree): tree is XmlTreeDocument {
     return tree.type === 'document';
 }
 
-export function string2tree(xmlString: string): XmlTreeDocument | undefined {
+export function xmlStringParser(xmlString: string): Result<string, XmlTreeDocument> {
     try {
-        return parseXmlLib(xmlString, { preserveComments: false });
+        const tree = parseXmlLib(xmlString, { preserveComments: false });
+        return success(tree, '');
     } catch (e) {
-        return undefined; // TODO: report parsing errors
+        return fail(e);
     }
-}
-
-export function parsePartialXml(xml: string) {
-    const documentString = `<?xml version="1.0" encoding="UTF-8"?>${xml}`;
-    const document = string2tree(documentString);
-    return document
-        ? document.children[0]
-        : undefined;
 }
 
 export function xmlText(text: string, parent?: XmlTreeWithChildren): XmlTreeText {

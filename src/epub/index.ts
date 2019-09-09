@@ -1,13 +1,13 @@
 import { createEpubParser } from './epubParser';
 import { createConverter } from './epubConverter';
 import { converterHooks } from './hooks';
-import { string2tree } from '../xml';
+import { xmlStringParser } from '../xml';
 
 export { EpubConverterResult } from './epubConverter.types';
 export { Image } from './epubParser.types';
 
 export async function parsePath(path: string) {
-    const parser = createEpubParser(string2tree);
+    const parser = createEpubParser(xmlStringParser);
     const converter = createConverter({
         options: converterHooks,
     });
