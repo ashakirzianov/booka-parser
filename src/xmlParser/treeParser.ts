@@ -1,9 +1,10 @@
-import { XmlTree, hasChildren } from './xmlTree';
+import { XmlTree, hasChildren, XmlAttributes, XmlTreeElement, isElementTree } from './xmlTree';
 import { caseInsensitiveEq, isWhitespaces } from '../utils';
 import {
     Result, success, fail, seq, some, translate,
-    StreamParser, headParser, makeStream, nextStream, not, Stream, successValue,
+    StreamParser, headParser, makeStream, nextStream, not, Stream, successValue, projectLast, and, HeadFn,
 } from '../combinators';
+import { Constraint, ConstraintMap, checkObject, checkValue } from '../constraint';
 
 export type TreeParser<Out = XmlTree, Env = undefined> = StreamParser<XmlTree, Out, Env>;
 
@@ -28,21 +29,63 @@ export function textNode<T, E>(f?: (text: string) => T | null): TreeParser<T | s
     });
 }
 
-export const whitespaces = textNode<boolean, any>(text => isWhitespaces(text) ? true : null);
+// TODO: remove ?
+export function elementNode<O, E>(f: HeadFn<XmlTreeElement, O, E>) {
+    return headParser((n: XmlTree, env: E) => {
+        if (isElementTree(n)) {
+            return f(n, env);
+        } else {
+            return fail({ custom: 'expected-xml-element' });
+        }
+    });
+}
 
-export function whitespaced<T, E>(parser: TreeParser<T, E>): TreeParser<T, E> {
-    return translate(
-        seq(whitespaces, parser),
-        ([_, result]) => result,
+export function xmlName<E = any>(name: Constraint<string>): TreeParser<XmlTreeElement, E> {
+    return headParser(tree => {
+        if (tree.type === 'element') {
+            const check = checkValue(tree.name, name);
+            return check
+                ? successValue(tree)
+                : fail({ custom: 'name-check', name, value: tree.name });
+        } else {
+            return fail({ custom: 'expected-xml-element' });
+        }
+    }
     );
 }
 
-export function beforeWhitespaces<T, E>(parser: TreeParser<T, E>): TreeParser<T> {
-    return translate(
-        seq(parser, whitespaces),
-        ([result, _]) => result,
+export function xmlAttributes<E = any>(attrs: ConstraintMap<XmlAttributes>): TreeParser<XmlTreeElement, E> {
+    return headParser(tree => {
+        if (tree.type === 'element') {
+            const checks = checkObject(tree.attributes, attrs);
+            if (checks.length === 0) {
+                return successValue(tree);
+            } else {
+                return fail({ custom: 'expected-attrs', checks, tree });
+            }
+        }
+        return fail({ custom: 'expected-xml-element' });
+    });
+}
+
+export function xmlNameAttrs(name: Constraint<string>, attrs: ConstraintMap<XmlAttributes>) {
+    return projectLast(and(xmlName(name), xmlAttributes(attrs)));
+}
+
+export function xmlNameAttrsChildren<T, E = any>(name: Constraint<string>, attrs: ConstraintMap<XmlAttributes>, childrenParser: TreeParser<T, E>) {
+    return projectLast(
+        and(xmlName(name), xmlAttributes(attrs), xmlChildren(childrenParser))
     );
 }
+
+export function xmlNameChildren<T, E = any>(name: Constraint<string>, childrenParser: TreeParser<T, E>) {
+    return projectLast(
+        and(xmlName(name), xmlChildren(childrenParser))
+    );
+}
+
+export const extractText = (parser: TreeParser) =>
+    projectLast(and(parser, xmlChildren(textNode())));
 
 export function xmlChildren<T, E>(parser: TreeParser<T, E>): TreeParser<T, E> {
     return input => {
@@ -125,4 +168,22 @@ function parsePathHelper<T, E>(pathComponents: string[], then: TreeParser<T, E>,
 
 export function path<T, E>(paths: string[], then: TreeParser<T, E>): TreeParser<T, E> {
     return input => parsePathHelper(paths, then, input);
+}
+
+// Whitespaces:
+
+export const whitespaces = textNode<boolean, any>(text => isWhitespaces(text) ? true : null);
+
+export function whitespaced<T, E>(parser: TreeParser<T, E>): TreeParser<T, E> {
+    return translate(
+        seq(whitespaces, parser),
+        ([_, result]) => result,
+    );
+}
+
+export function beforeWhitespaces<T, E>(parser: TreeParser<T, E>): TreeParser<T> {
+    return translate(
+        seq(parser, whitespaces),
+        ([result, _]) => result,
+    );
 }
