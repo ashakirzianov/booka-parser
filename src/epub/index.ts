@@ -1,4 +1,4 @@
-import { epubParser } from './epubParser';
+import { epubParser } from './epubFileParser';
 import { epubBookParser } from './epubConverter';
 import { converterHooks } from './hooks';
 import { xmlStringParser } from '../xmlParser';
