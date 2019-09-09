@@ -1,6 +1,6 @@
 import { Book, KnownTag, RawBookNode } from 'booka-common';
 import { AsyncIter, equalsToOneOf } from '../utils';
-import { rawNodesParser } from '../buildVolume';
+import { rawNodesParser } from '../rawNodesParser';
 import { diagnoser } from '../log';
 import { EpubBook } from './epubBook';
 import { EpubConverterParameters, EpubConverter, EpubConverterResult } from './epubConverter.types';
