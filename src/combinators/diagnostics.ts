@@ -42,7 +42,7 @@ export function isEmptyDiagnostic(diag: ParserDiagnostic): boolean {
     } else if (isContext(diag)) {
         return isEmptyDiagnostic(diag.diagnostic);
     } else {
-        return diag.severity !== undefined && diag.severity !== 'error';
+        return diag.severity === 'info';
     }
 }
 

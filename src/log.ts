@@ -51,17 +51,3 @@ type Diag<K extends string> = {
     context?: string,
 };
 type XmlDiag<K extends string> = Diag<K> & { node: XmlTree };
-
-export type LogLevel = 'info' | 'important' | 'warn';
-
-export type Logger = {
-    [k in LogLevel]: (message: string) => void;
-};
-
-export function logger(): Logger {
-    return {
-        warn: () => undefined,
-        info: () => undefined,
-        important: () => undefined,
-    };
-}

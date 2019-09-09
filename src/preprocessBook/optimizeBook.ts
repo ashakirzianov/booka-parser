@@ -5,7 +5,6 @@ import {
     isSimpleSpan, isAttributedSpan, isFootnoteSpan, isCompoundSpan, isSemanticSpan, Book,
 } from 'booka-common';
 import { assertNever } from '../utils';
-import { logger } from '../log';
 
 export function optimizeBook(book: Book): Book {
     const volume = optimizeVolume(book.volume);
@@ -20,12 +19,6 @@ function optimizeVolume(volume: VolumeNode): VolumeNode {
         ...volume,
         nodes: optimizeNodes(volume.nodes),
     };
-
-    const before = JSON.stringify(volume).length;
-    const after = JSON.stringify(optimized).length;
-    const won = Math.floor((before - after) / before * 100);
-    const length = Math.floor(after / 1000);
-    logger().info(`Optimized by ${won}%, length: ${length}kCh`);
 
     return optimized;
 }
@@ -53,15 +46,6 @@ function optimizeNode(node: BookContentNode): BookContentNode {
 function optimizeParagraph(p: ParagraphNode): BookContentNode {
     const optimized = optimizeSpan(p.span);
 
-    // Handle case of single string attributed with 'line'
-    // (this is same as just a string paragraph)
-    // if (isAttributed(optimized)) {
-    //     if (optimized.content.length === 1) {
-    //         if (!optimized.attrs || (optimized.attrs.length === 1 && optimized.attrs[0] === 'line')) {
-    //             return createParagraph(optimized.content[0]);
-    //         }
-    //     }
-    // }
     return {
         node: 'paragraph',
         span: optimized,
