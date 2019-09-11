@@ -1,11 +1,10 @@
-import { ChapterTitle, RawBookNode, AttributeName } from 'booka-common';
+import { RawBookNode, AttributeName } from 'booka-common';
 import { XmlTree, path, xmlChildren, xmlElementParser } from '../xmlParser';
 import {
     choice, makeStream, success, emptyStream, SuccessStreamParser,
-    successValue, fail, headParser, envParser, translate, some, reparse, expected, StreamParser, Stream,
+    successValue, fail, headParser, envParser, translate, some, expected, empty,
 } from '../combinators';
 import { isWhitespaces, flatten } from '../utils';
-import { ParserDiagnoser } from '../log';
 import {
     EpubNodeParserEnv, EpubNodeParser, fullParser, buildRef,
 } from './epubNodeParser';
@@ -122,7 +121,7 @@ const pph: EpubNodeParser = xmlElementParser(
 const img: EpubNodeParser = xmlElementParser(
     'img',
     { src: null, alt: null, class: null },
-    null,
+    empty(),
     ([el], env) => {
         const src = el.attributes['src'];
         if (src) {
@@ -138,7 +137,7 @@ const img: EpubNodeParser = xmlElementParser(
 const image: EpubNodeParser = xmlElementParser(
     'image',
     {},
-    null,
+    empty(),
     ([el], env) => {
         const xlinkHref = el.attributes['xlink:href'];
         if (xlinkHref) {
@@ -176,21 +175,21 @@ const header: EpubNodeParser = xmlElementParser(
 const br: EpubNodeParser = xmlElementParser(
     'br',
     {},
-    null,
+    expected(empty(), undefined),
     () => successValue([{ node: 'span', span: '\n' }]),
 );
 
 const svg: EpubNodeParser = xmlElementParser(
     'svg',
     { viewBox: null, xmlns: null, class: null },
-    null,
+    expected(empty(), undefined),
     () => successValue([])
 );
 
 const ignore: EpubNodeParser = xmlElementParser(
     ['sup', 'sub', 'ul', 'li', 'br'], // TODO: do not ignore 'br'
     {},
-    null,
+    expected(empty(), undefined),
     () => successValue([]),
 );
 

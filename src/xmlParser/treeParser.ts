@@ -23,24 +23,26 @@ export function elementNode<O, E>(f: HeadFn<XmlTreeElement, O, E>) {
 export function xmlElementParser<R, Ch, E = any>(
     name: Constraint<string>,
     expectedAttributes: ConstraintMap<XmlAttributes>,
-    children: TreeParser<Ch, E> | null,
+    children: TreeParser<Ch, E>,
     projection: HeadFn<[XmlTreeElement, Ch], R, E>,
 ): TreeParser<R, E> {
     return input => {
-        const parser = children
-            ? projectLast(and(xmlName(name), expected(xmlAttributes(expectedAttributes), undefined), xmlChildren(children)))
-            : projectLast(and(xmlName(name), expected(xmlAttributes(expectedAttributes), undefined)));
-        const elementResult = parser(input);
-        if (!elementResult.success) {
-            return elementResult;
+        const elParser = projectLast(and(
+            xmlName(name),
+            expected(xmlAttributes(expectedAttributes), undefined),
+            xmlChildren(children),
+        ));
+        const elResult = elParser(input);
+        if (!elResult.success) {
+            return elResult;
         }
         const head = input.stream[0];
         if (!head) {
             return fail('empty-stream');
         }
 
-        const proj = projection([head as XmlTreeElement, elementResult.value as Ch], input.env);
-        const diag = compoundDiagnostic([proj.diagnostic, elementResult.diagnostic]);
+        const proj = projection([head as XmlTreeElement, elResult.value], input.env);
+        const diag = compoundDiagnostic([proj.diagnostic, elResult.diagnostic]);
         return proj.success
             ? success(proj.value, nextStream(input), diag)
             : fail(diag);
