@@ -1,48 +1,49 @@
 import { assignAttributes, RawBookNode, Span } from 'booka-common';
 import { filterUndefined, assertNever } from '../utils';
-import { ParserDiagnoser } from '../log';
+import { ResultValue, successValue, compoundDiagnostic, fail } from '../combinators';
 
 export function spanFromRawNode(
     rawNode: RawBookNode,
-    ds: ParserDiagnoser,
     titles?: string[], // TODO: find better solution
-): Span | undefined {
+): ResultValue<Span> {
     switch (rawNode.node) {
         case 'span':
-            return rawNode.span;
+            return successValue(rawNode.span);
         case 'attr':
-            const attrSpan = spanFromRawNode(rawNode.content, ds, titles);
-            if (attrSpan !== undefined) {
-                return assignAttributes(...rawNode.attributes)(attrSpan);
+            const attrSpan = spanFromRawNode(rawNode.content, titles);
+            if (attrSpan.success) {
+                return successValue(assignAttributes(...rawNode.attributes)(attrSpan.value), attrSpan.diagnostic);
             } else {
-                ds.add({ diag: 'couldnt-build-span', node: rawNode, context: 'attr' });
-                return undefined;
+                return fail({ custom: 'couldnt-build-span', node: rawNode, context: 'attr' });
             }
         case 'compound-raw':
-            const spans = filterUndefined(rawNode.nodes.map(c => spanFromRawNode(c, ds, titles)));
-            return {
+            const insideResults = rawNode.nodes
+                .map(c => spanFromRawNode(c, titles));
+            const spans = filterUndefined(
+                insideResults
+                    .map(r => r.success ? r.value : undefined)
+            );
+            return successValue({
                 span: 'compound',
                 spans: spans,
-            };
+            }, compoundDiagnostic(insideResults.map(r => r.diagnostic)));
         case 'ignore':
-            return undefined;
+            return fail();
         case 'chapter-title':
             if (titles) {
                 titles.push(...rawNode.title);
+                return fail();
             } else {
-                ds.add({ diag: 'unexpected-title', node: rawNode, context: 'span' });
+                return fail({ custom: 'unexpected-title', node: rawNode, context: 'span' });
             }
-            return undefined;
         case 'image-data':
         case 'image-ref':
         case 'image-url':
         case 'tag':
         case 'ref':
-            ds.add({ diag: 'unexpected-raw-node', node: rawNode, context: 'span' });
-            return undefined;
+            return fail({ custom: 'unexpected-raw-node', node: rawNode, context: 'span' });
         default:
-            ds.add({ diag: 'unexpected-raw-node', node: rawNode, context: 'span' });
             assertNever(rawNode);
-            return undefined;
+            return fail({ custom: 'unexpected-raw-node', node: rawNode, context: 'span' });
     }
 }

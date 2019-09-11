@@ -1,20 +1,23 @@
 import { RawBookNode, FootnoteSpan, SpanNode } from 'booka-common';
-import { ParserDiagnoser } from '../log';
 import { spanFromRawNode } from './common';
+import {
+    SuccessValue, ParserDiagnostic, successValue, compoundDiagnostic,
+} from '../combinators';
 
-export function resolveReferences(nodes: RawBookNode[], ds: ParserDiagnoser): RawBookNode[] {
-    const { rest, footnotes } = swipe1(nodes, [], [], ds);
-    const result = swipe2(rest, footnotes, ds);
+export function resolveReferences(nodes: RawBookNode[]): SuccessValue<RawBookNode[]> {
+    const r1 = swipe1(nodes, [], []);
+    const r2 = swipe2(r1.value.rest, r1.value.footnotes);
 
-    return result;
+    return r2;
 }
 
-function swipe1(nodes: RawBookNode[], refs: string[], ids: string[], ds: ParserDiagnoser): {
+function swipe1(nodes: RawBookNode[], refs: string[], ids: string[]): SuccessValue<{
     rest: RawBookNode[],
     footnotes: RawBookNode[],
-} {
+}> {
     const footnotes: RawBookNode[] = [];
     const rest: RawBookNode[] = [];
+    const diags: ParserDiagnostic[] = [];
     for (const node of nodes) {
         let nodeToInsert: RawBookNode | undefined = node;
         if (node.ref) {
@@ -31,25 +34,27 @@ function swipe1(nodes: RawBookNode[], refs: string[], ids: string[], ds: ParserD
                 break;
             case 'compound-raw':
                 {
-                    const inside = swipe1(node.nodes, refs, ids, ds);
-                    footnotes.push(...inside.footnotes);
+                    const inside = swipe1(node.nodes, refs, ids);
+                    footnotes.push(...inside.value.footnotes);
                     nodeToInsert = {
                         ...node,
-                        nodes: inside.rest,
+                        nodes: inside.value.rest,
                     };
+                    diags.push(inside.diagnostic);
                 }
                 break;
             case 'attr':
                 {
-                    const inside = swipe1([node.content], refs, ids, ds);
-                    footnotes.push(...inside.footnotes);
+                    const inside = swipe1([node.content], refs, ids);
+                    footnotes.push(...inside.value.footnotes);
                     nodeToInsert = {
                         ...node,
                         content: {
                             node: 'compound-raw',
-                            nodes: inside.rest,
+                            nodes: inside.value.rest,
                         },
                     };
+                    diags.push(inside.diagnostic);
                 }
                 break;
         }
@@ -65,54 +70,64 @@ function swipe1(nodes: RawBookNode[], refs: string[], ids: string[], ds: ParserD
 
     }
 
-    return { rest, footnotes };
+    return successValue({ rest, footnotes }, compoundDiagnostic(diags));
 }
 
-function swipe2(nodes: RawBookNode[], footnotes: RawBookNode[], ds: ParserDiagnoser): RawBookNode[] {
+function swipe2(nodes: RawBookNode[], footnotes: RawBookNode[]): SuccessValue<RawBookNode[]> {
     const result: RawBookNode[] = [];
+    const diags: ParserDiagnostic[] = [];
     for (const node of nodes) {
-        if (node.node === 'ref') {
-            const content = spanFromRawNode(node.content, ds);
-            if (!content) {
-                ds.add({ diag: 'couldnt-build-span', node, context: 'footnote' });
-            }
-            const footnoteNode = footnotes.find(f => f.ref === node.to);
-            // Resolve footnote from footnote:
-            const resolved = footnoteNode && swipe2([footnoteNode], footnotes, ds);
-            const titles = [] as string[];
-            const footnote = resolved && spanFromRawNode(resolved[0], ds, titles);
-            if (footnote) {
-                const footnoteSpan: FootnoteSpan = {
-                    span: 'note',
-                    content: content || '*',
-                    footnote: footnote,
-                    title: [],
-                    id: node.to,
-                };
-                const spanNode: SpanNode = {
-                    node: 'span',
-                    span: footnoteSpan,
-                };
-                result.push(spanNode);
-            } else {
-                ds.add({ diag: 'couldnt-resolve-ref', id: node.to, context: 'footnote' });
-            }
-        } else if (node.node === 'compound-raw') {
-            const inside = swipe2(node.nodes, footnotes, ds);
-            result.push({
-                ...node,
-                nodes: inside,
-            });
-        } else if (node.node === 'attr') {
-            const inside = swipe2([node.content], footnotes, ds);
-            result.push({
-                ...node,
-                content: inside[0],
-            });
-        } else {
-            result.push(node);
-        }
+        const r = swipe2node(node, footnotes);
+        result.push(...r.value);
+        diags.push(r.diagnostic);
     }
 
-    return result;
+    return successValue(result, compoundDiagnostic(diags));
+}
+
+function swipe2node(node: RawBookNode, footnotes: RawBookNode[]): SuccessValue<RawBookNode[]> {
+    if (node.node === 'ref') {
+        const content = spanFromRawNode(node.content);
+        if (!content.success) {
+            return successValue([], { custom: 'couldnt-build-span', node, context: 'footnote' });
+        }
+        const footnoteNode = footnotes.find(f => f.ref === node.to);
+        if (!footnoteNode) {
+            return successValue([], { custom: 'couldnt-resolve-footnote', node });
+        }
+        // Resolve footnote from footnote:
+        const resolved = swipe2node(footnoteNode, footnotes);
+        const titles = [] as string[];
+        const footnote = spanFromRawNode(resolved.value[0], titles);
+        if (!footnote.success) {
+            return successValue([], { custom: 'couldnt-build-footnote', nodes: resolved.value });
+        }
+        const footnoteSpan: FootnoteSpan = {
+            span: 'note',
+            content: content.success ? content.value : '*',
+            footnote: footnote.value,
+            title: [],
+            id: node.to,
+        };
+        const spanNode: SpanNode = {
+            node: 'span',
+            span: footnoteSpan,
+        };
+        const diag = compoundDiagnostic([content.diagnostic, resolved.diagnostic, footnote.diagnostic]);
+        return successValue([spanNode], diag);
+    } else if (node.node === 'compound-raw') {
+        const inside = swipe2(node.nodes, footnotes);
+        return successValue([{
+            ...node,
+            nodes: inside.value,
+        }]);
+    } else if (node.node === 'attr') {
+        const inside = swipe2([node.content], footnotes);
+        return successValue([{
+            ...node,
+            content: inside.value[0],
+        }]);
+    } else {
+        return successValue([node]);
+    }
 }

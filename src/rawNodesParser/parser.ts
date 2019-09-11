@@ -3,11 +3,11 @@ import {
     RawBookNode, TagNode, tagValue,
 } from 'booka-common';
 import { filterUndefined } from '../utils';
-import { ParserDiagnoser } from '../log';
 import { spanFromRawNode } from './common';
 import { resolveReferences } from './resolveReferences';
 import { flattenNodes } from './flattenNodes';
-import { AsyncStreamParser, success, emptyStream } from '../combinators';
+import { AsyncStreamParser, success, emptyStream, ParserDiagnostic } from '../combinators';
+import { ParserDiagnoser } from '../log';
 
 export type RawNodesParserEnv = {
     ds: ParserDiagnoser,
@@ -16,13 +16,15 @@ export type RawNodesParserEnv = {
 export type RawNodesParser = AsyncStreamParser<RawBookNode, VolumeNode, RawNodesParserEnv>;
 
 export const rawNodesParser: RawNodesParser = async ({ stream, env }) => {
+    const diags: ParserDiagnostic[] = [];
     const meta = await collectMeta(stream, env);
-    const resolved = resolveReferences(stream, env.ds);
-    const preprocessed = flattenNodes(resolved, env.ds);
+    const resolved = resolveReferences(stream);
+    diags.push(resolved.value as any);
+    const preprocessed = flattenNodes(resolved.value, env.ds);
     const nodes = await buildChapters(preprocessed, env);
 
     if (meta.title === undefined) {
-        env.ds.add({ diag: 'empty-book-title' });
+        diags.push({ custom: 'empty-book-title' });
     }
 
     const volume: VolumeNode = {
@@ -103,6 +105,7 @@ async function buildChaptersImpl(rawNodes: RawBookNode[], level: number | undefi
     }
 }
 
+// TODO: propagate diags
 async function resolveRawNode(rawNode: RawBookNode, env: RawNodesParserEnv): Promise<BookContentNode | undefined> {
     switch (rawNode.node) {
         case 'image-ref':
@@ -120,18 +123,21 @@ async function resolveRawNode(rawNode: RawBookNode, env: RawNodesParserEnv): Pro
         case 'span':
         case 'attr':
         case 'ref':
-            const span = spanFromRawNode(rawNode, env.ds);
-            if (span) {
+            const span = spanFromRawNode(rawNode);
+            if (span.success) {
                 return {
                     node: 'paragraph',
-                    span: span,
+                    span: span.value,
                 };
             } else {
                 return undefined;
             }
         case 'compound-raw':
-            const spans = filterUndefined(rawNode.nodes
-                .map(c => spanFromRawNode(c, env.ds)));
+            const spans = filterUndefined(
+                rawNode.nodes
+                    .map(c => spanFromRawNode(c))
+                    .map(r => r.success ? r.value : undefined)
+            );
             return {
                 node: 'paragraph',
                 span: {
