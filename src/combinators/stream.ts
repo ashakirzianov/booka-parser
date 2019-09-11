@@ -35,7 +35,10 @@ export function headParser<In, Out, Env = any>(f: HeadFn<In, Out, Env>): StreamP
         }
         const result = f(head, input.env);
         return result.success
-            ? yieldOne(result.value, nextStream(input))
+            ? {
+                ...result,
+                next: nextStream(input),
+            }
             : result;
     };
 }
@@ -71,6 +74,7 @@ export function envParser<I, O, E>(f: (env: E) => StreamParser<I, O, E>): Stream
 export function fullParser<I, O, E>(parser: StreamParser<I, O, E>): SuccessStreamParser<I, O[], E> {
     return input => {
         const result = some(parser)(input);
+        // if (result.next && result.next.stream.length > 0) {
         if (result.next) {
             return {
                 ...result,

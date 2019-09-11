@@ -28,7 +28,7 @@ export function compoundDiagnostic(diags: ParserDiagnostic[]): ParserDiagnostic 
     const result = filterUndefined(diags);
     return result.length === 0 ? undefined
         : result.length === 1 ? result[0]
-            : { diagnostics: diags };
+            : { diagnostics: result };
 }
 
 export function isEmptyDiagnostic(diag: ParserDiagnostic): boolean {
