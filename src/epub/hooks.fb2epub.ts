@@ -10,7 +10,7 @@ import {
     some, translate, choice, seq, and, headParser, envParser, successValue, fail,
 } from '../combinators';
 import { flatten } from '../utils';
-import { ignoreClass, EpubNodeParser, buildRef } from './nodeParser';
+import { ignoreClass, EpubNodeParser, buildRef } from './epubNodeParser';
 import { ParserDiagnoser } from '../log';
 
 export const fb2epubHooks: EpubConverterHooks = {

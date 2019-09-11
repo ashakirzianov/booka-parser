@@ -3,7 +3,7 @@ import { fail, successValue, headParser } from '../combinators';
 import { isTextTree, isElementTree, XmlTreeWithChildren } from '../xmlParser';
 import { ParserDiagnoser } from '../log';
 import { EpubConverterHooks, MetadataRecord } from './epubBookParser';
-import { EpubNodeParser } from './nodeParser';
+import { EpubNodeParser } from './epubNodeParser';
 
 export const fictionBookEditorHooks: EpubConverterHooks = {
     nodeHooks: [

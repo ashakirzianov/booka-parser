@@ -8,7 +8,7 @@ import { isWhitespaces } from '../utils';
 import { ParserDiagnoser } from '../log';
 import {
     EpubNodeParserEnv, EpubNodeParser, fullParser, buildRef,
-} from './nodeParser';
+} from './epubNodeParser';
 import { EpubSection } from './epubBook';
 
 export type SectionsParserEnv = {

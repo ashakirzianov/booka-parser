@@ -6,7 +6,7 @@ import { rawNodesParser } from '../rawNodesParser';
 import { EpubBook, EpubKind } from './epubBook';
 import { sectionsParser } from './sectionParser';
 import { parseMeta } from './metaParser';
-import { EpubNodeParser } from './nodeParser';
+import { EpubNodeParser } from './epubNodeParser';
 
 export type EpubBookParserResult = {
     book: Book,

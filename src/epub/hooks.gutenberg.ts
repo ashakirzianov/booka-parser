@@ -1,6 +1,6 @@
 import { KnownTag } from 'booka-common';
 import { EpubConverterHooks, MetadataRecord } from './epubBookParser';
-import { ignoreTags, EpubNodeParser, buildRef } from './nodeParser';
+import { ignoreTags, EpubNodeParser, buildRef } from './epubNodeParser';
 import { ParserDiagnoser } from '../log';
 import { xmlName, xmlNameAttrs, xmlChildren, textNode, whitespaces } from '../xmlParser';
 import {
