@@ -12,7 +12,7 @@ export type EpubParserInput = {
 };
 export type EpubParser = AsyncParser<EpubParserInput, EpubBook>;
 
-export const epubParser: EpubParser = async input => {
+export const epubFileParser: EpubParser = async input => {
     const epub = await FixedEpub.createAsync(input.filePath) as FixedEpub;
 
     const kind = identifyKind(epub);

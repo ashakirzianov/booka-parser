@@ -2,7 +2,7 @@
 // tslint:disable: no-console
 import * as fs from 'fs';
 import { extname, join } from 'path';
-import { parseEpubAtPath } from '.';
+import { parseEpub } from '.';
 import { promisify, inspect } from 'util';
 import { extractNodeText } from 'booka-common';
 import { isEmptyDiagnostic } from './combinators/diagnostics';
@@ -26,7 +26,7 @@ async function exec() {
     const epubs = files.filter(isEpub);
     console.log(epubs);
     for (const epubPath of epubs) {
-        const result = await parseEpubAtPath(epubPath);
+        const result = await parseEpub({ filePath: epubPath });
         if (!result.success) {
             logRed(`Couldn't parse epub: '${epubPath}'`);
             console.log(result.diagnostic);
