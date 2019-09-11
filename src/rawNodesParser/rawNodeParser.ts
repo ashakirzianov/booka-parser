@@ -6,11 +6,12 @@ import { filterUndefined } from '../utils';
 import { spanFromRawNode } from './common';
 import { resolveReferences } from './resolveReferences';
 import { flattenNodes } from './flattenNodes';
-import { AsyncStreamParser, success, emptyStream, ParserDiagnostic } from '../combinators';
-import { ParserDiagnoser } from '../log';
+import {
+    AsyncStreamParser, success, emptyStream, ParserDiagnostic,
+    compoundDiagnostic, ResultValue, successValue, SuccessValue,
+} from '../combinators';
 
 export type RawNodesParserEnv = {
-    ds: ParserDiagnoser,
     resolveImageRef: (ref: string) => Promise<Buffer | undefined>,
 };
 export type RawNodesParser = AsyncStreamParser<RawBookNode, VolumeNode, RawNodesParserEnv>;
@@ -22,6 +23,7 @@ export const rawNodesParser: RawNodesParser = async ({ stream, env }) => {
     diags.push(resolved.diagnostic);
     const preprocessed = flattenNodes(resolved.value);
     const nodes = await buildChapters(preprocessed, env);
+    diags.push(nodes.diagnostic);
 
     if (meta.title === undefined) {
         diags.push({ custom: 'empty-book-title' });
@@ -29,11 +31,11 @@ export const rawNodesParser: RawNodesParser = async ({ stream, env }) => {
 
     const volume: VolumeNode = {
         node: 'volume',
-        nodes,
+        nodes: nodes.value,
         meta: meta,
     };
 
-    return success(volume, emptyStream(env));
+    return success(volume, emptyStream(env), compoundDiagnostic(diags));
 };
 
 async function collectMeta(rawNodes: RawBookNode[], env: RawNodesParserEnv): Promise<VolumeMeta> {
@@ -56,23 +58,24 @@ async function collectMeta(rawNodes: RawBookNode[], env: RawNodesParserEnv): Pro
     };
 }
 
-async function buildChapters(rawNodes: RawBookNode[], env: RawNodesParserEnv) {
-    const { nodes, next } = await buildChaptersImpl(rawNodes, undefined, env);
+async function buildChapters(rawNodes: RawBookNode[], env: RawNodesParserEnv): Promise<SuccessValue<BookContentNode[]>> {
+    const { nodes, next, diag } = await buildChaptersImpl(rawNodes, undefined, env);
 
-    if (next.length !== 0) {
-        env.ds.add({ diag: 'extra-nodes-tail', nodes: rawNodes });
-    }
+    const tailDiag = next.length !== 0
+        ? { custom: 'extra-nodes-tail', nodes: rawNodes }
+        : undefined;
 
-    return nodes;
+    return successValue(nodes, compoundDiagnostic([diag, tailDiag]));
 }
 
 type BuildChaptersResult = {
     nodes: BookContentNode[],
     next: RawBookNode[],
+    diag: ParserDiagnostic,
 };
 async function buildChaptersImpl(rawNodes: RawBookNode[], level: number | undefined, env: RawNodesParserEnv): Promise<BuildChaptersResult> {
     if (rawNodes.length === 0) {
-        return { nodes: [], next: [] };
+        return { nodes: [], next: [], diag: undefined };
     }
     const headNode = rawNodes[0];
     if (headNode.node === 'chapter-title') {
@@ -88,65 +91,71 @@ async function buildChaptersImpl(rawNodes: RawBookNode[], level: number | undefi
             return {
                 nodes: [chapter as BookContentNode].concat(after.nodes),
                 next: after.next,
+                diag: after.diag,
             };
         } else {
             return {
                 nodes: [],
                 next: rawNodes,
+                diag: undefined,
             };
         }
     } else {
         const node = await resolveRawNode(headNode, env);
         const after = await buildChaptersImpl(rawNodes.slice(1), level, env);
         return {
-            nodes: node ? [node].concat(after.nodes) : after.nodes,
+            nodes: node.success
+                ? [node.value, ...after.nodes]
+                : after.nodes,
             next: after.next,
+            diag: compoundDiagnostic([after.diag, node.diagnostic]),
         };
     }
 }
 
 // TODO: propagate diags
-async function resolveRawNode(rawNode: RawBookNode, env: RawNodesParserEnv): Promise<BookContentNode | undefined> {
+async function resolveRawNode(rawNode: RawBookNode, env: RawNodesParserEnv): Promise<ResultValue<BookContentNode>> {
     switch (rawNode.node) {
         case 'image-ref':
             const imageBuffer = await env.resolveImageRef(rawNode.imageId);
             if (imageBuffer) {
-                return {
+                return successValue({
                     node: 'image-data',
                     id: rawNode.imageId,
                     data: imageBuffer,
-                };
+                });
             } else {
-                env.ds.add({ diag: 'couldnt-resolve-ref', id: rawNode.imageId, context: 'image-node' });
-                return undefined;
+                fail({ custom: 'couldnt-resolve-ref', id: rawNode.imageId, context: 'image-node' });
             }
         case 'span':
         case 'attr':
         case 'ref':
             const span = spanFromRawNode(rawNode);
             if (span.success) {
-                return {
+                return successValue({
                     node: 'paragraph',
                     span: span.value,
-                };
+                });
             } else {
-                return undefined;
+                return span;
             }
         case 'compound-raw':
+            // TODO: propagate diags
+            const rs = rawNode.nodes
+                .map(c => spanFromRawNode(c));
             const spans = filterUndefined(
-                rawNode.nodes
-                    .map(c => spanFromRawNode(c))
+                rs
                     .map(r => r.success ? r.value : undefined)
             );
-            return {
+            const ds = rs.map(r => r.diagnostic);
+            return successValue({
                 node: 'paragraph',
                 span: {
                     span: 'compound',
                     spans: spans,
                 },
-            };
+            }, compoundDiagnostic(ds));
         default:
-            env.ds.add({ diag: 'unexpected-raw-node', node: rawNode, context: 'node' });
-            return undefined;
+            return fail({ custom: 'unexpected-raw-node', node: rawNode, context: 'node' });
     }
 }
