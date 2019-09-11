@@ -1,13 +1,11 @@
 import { RawBookNode } from 'booka-common';
-import { ParserDiagnoser } from '../log';
 import {
     XmlTree, TreeParser, elementNode,
 } from '../xmlParser';
 import {
-    SuccessParser, Stream, some, yieldOne, success, successValue, fail,
+    SuccessParser, Stream, yieldOne, successValue, fail,
 } from '../combinators';
-import { equalsToOneOf, flatten } from '../utils';
-import { compoundDiagnostic } from '../combinators/diagnostics';
+import { equalsToOneOf } from '../utils';
 
 export type EpubNodeParser<T = RawBookNode[]> = TreeParser<T, EpubNodeParserEnv>;
 export type FullEpubParser = SuccessParser<Stream<XmlTree, EpubNodeParserEnv>, RawBookNode[]>;

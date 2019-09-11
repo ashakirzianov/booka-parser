@@ -1,5 +1,4 @@
 import { RawBookNode, RawContainerNode } from 'booka-common';
-import { ParserDiagnoser } from '../log';
 
 export function flattenNodes(rawNodes: RawBookNode[]): RawBookNode[] {
     const result: RawBookNode[] = [];
