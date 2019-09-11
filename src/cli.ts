@@ -41,7 +41,7 @@ async function exec() {
         }
         if (!isEmptyDiagnostic(result.diagnostic)) {
             logRed('Diagnostics:');
-            console.log(inspect(result.diagnostic, false, null, true));
+            console.log(inspect(result.diagnostic, false, 6, true));
         }
     }
 }

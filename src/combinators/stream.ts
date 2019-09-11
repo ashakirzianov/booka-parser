@@ -74,8 +74,7 @@ export function envParser<I, O, E>(f: (env: E) => StreamParser<I, O, E>): Stream
 export function fullParser<I, O, E>(parser: StreamParser<I, O, E>): SuccessStreamParser<I, O[], E> {
     return input => {
         const result = some(parser)(input);
-        // if (result.next && result.next.stream.length > 0) {
-        if (result.next) {
+        if (result.next && result.next.stream.length > 0) {
             return {
                 ...result,
                 diagnostic: compoundDiagnostic([result.diagnostic, {

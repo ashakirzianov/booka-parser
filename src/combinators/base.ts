@@ -308,10 +308,12 @@ export function diagnosticContext<In, Out>(parser: Parser<In, Out>, context: any
         const result = parser(input);
         return {
             ...result,
-            diagnostic: {
-                context,
-                diagnostic: result.diagnostic,
-            },
+            diagnostic: result.diagnostic
+                ? {
+                    context,
+                    diagnostic: result.diagnostic,
+                }
+                : undefined,
         };
     };
 }

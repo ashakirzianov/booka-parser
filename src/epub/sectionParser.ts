@@ -118,7 +118,7 @@ const pph: EpubNodeParser = xmlElementParser(
 const img: EpubNodeParser = xmlElementParser(
     'img',
     { src: null, alt: null, class: null },
-    empty(),
+    expected(empty(), undefined, i => ({ diag: 'expected-eoi', nodes: i })),
     ([el], env) => {
         const src = el.attributes['src'];
         if (src) {
@@ -134,7 +134,7 @@ const img: EpubNodeParser = xmlElementParser(
 const image: EpubNodeParser = xmlElementParser(
     'image',
     {},
-    empty(),
+    expected(empty(), undefined, i => ({ diag: 'expected-eoi', nodes: i })),
     ([el], env) => {
         const xlinkHref = el.attributes['xlink:href'];
         if (xlinkHref) {
@@ -172,21 +172,21 @@ const header: EpubNodeParser = xmlElementParser(
 const br: EpubNodeParser = xmlElementParser(
     'br',
     {},
-    expected(empty(), undefined),
+    expected(empty(), undefined, i => ({ diag: 'expected-eoi', nodes: i })),
     () => yieldLast([{ node: 'span', span: '\n' }]),
 );
 
 const svg: EpubNodeParser = xmlElementParser(
     'svg',
     { viewBox: null, xmlns: null, class: null },
-    expected(empty(), undefined),
+    () => yieldLast(undefined),
     () => yieldLast([])
 );
 
 const ignore: EpubNodeParser = xmlElementParser(
     ['sup', 'sub', 'ul', 'li', 'br'], // TODO: do not ignore 'br'
     {},
-    expected(empty(), undefined),
+    (expected(empty(), undefined, i => ({ diag: 'expected-eoi', nodes: i }))),
     () => yieldLast([]),
 );
 
