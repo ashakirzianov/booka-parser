@@ -26,7 +26,7 @@ function metaHook(): MetadataRecordParser {
                         success: true,
                         value: [],
                         diagnostic: {
-                            custom: 'bad-meta',
+                            diag: 'bad-meta',
                             meta: { key, value },
                         },
                     };

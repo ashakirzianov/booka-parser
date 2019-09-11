@@ -7,10 +7,6 @@ export type Severity =
     ;
 
 export type EmptyParserDiagnostic = undefined;
-export type BasicParserDiagnostic =
-    | 'guard-failed' | 'translate-reject' | 'empty-input'
-    | 'empty-stream' | 'reject-head' | 'expected-end' | 'not-parser-succ'
-    ;
 export type CompoundParserDiagnostic = {
     diagnostics: ParserDiagnostic[],
 };
@@ -19,13 +15,13 @@ export type ContextParserDiagnostic = {
     diagnostic: ParserDiagnostic,
 };
 export type CustomParserDiagnostic = {
-    custom: string,
+    diag: string,
     severity?: Severity,
     [key: string]: any,
 };
 
 export type ParserDiagnostic =
-    | BasicParserDiagnostic | CompoundParserDiagnostic | ContextParserDiagnostic
+    | CompoundParserDiagnostic | ContextParserDiagnostic
     | CustomParserDiagnostic | EmptyParserDiagnostic;
 
 export function compoundDiagnostic(diags: ParserDiagnostic[]): ParserDiagnostic {
@@ -38,8 +34,6 @@ export function compoundDiagnostic(diags: ParserDiagnostic[]): ParserDiagnostic 
 export function isEmptyDiagnostic(diag: ParserDiagnostic): boolean {
     if (diag === undefined) {
         return true;
-    } else if (typeof diag === 'string') {
-        return false;
     } else if (isCompound(diag)) {
         return diag.diagnostics.every(isEmptyDiagnostic);
     } else if (isContext(diag)) {

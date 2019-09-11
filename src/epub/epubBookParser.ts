@@ -1,8 +1,7 @@
 import { Book, KnownTag, RawBookNode } from 'booka-common';
 import { equalsToOneOf } from '../utils';
 import {
-    makeStream, yieldLast, StreamParser, andAsync, AsyncFullParser,
-    translateAsync, pipeAsync,
+    makeStream, yieldLast, StreamParser, andAsync, AsyncFullParser, pipeAsync,
 } from '../combinators';
 import { rawNodesParser } from '../rawNodesParser';
 import { EpubBook, EpubKind } from './epubBook';
@@ -31,7 +30,7 @@ export type MetadataRecordParser = StreamParser<[string, any], KnownTag[]>;
 
 const diagnoseKind: EpubBookParser<EpubBook> = async input =>
     input.epub.kind === 'unknown'
-        ? yieldLast(input.epub, { custom: 'unknown-kind' })
+        ? yieldLast(input.epub, { diag: 'unknown-kind' })
         : yieldLast(input.epub);
 
 export const epubBookParser: EpubBookParser = pipeAsync(

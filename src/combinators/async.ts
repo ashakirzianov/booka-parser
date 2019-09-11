@@ -36,6 +36,8 @@ export function andAsync<T>(...ps: Array<AsyncParser<T, any>>): AsyncParser<T, a
     };
 }
 
+export function translateAsync<TI, From, To>(parser: AsyncFullParser<TI, From>, f: (from: From) => To): AsyncFullParser<TI, To>;
+export function translateAsync<TI, From, To>(parser: AsyncParser<TI, From>, f: (from: From) => To): AsyncParser<TI, To>;
 export function translateAsync<TI, From, To>(parser: AsyncParser<TI, From>, f: (from: From) => To): AsyncParser<TI, To> {
     return async input => {
         const from = await parser(input);
@@ -48,17 +50,39 @@ export function translateAsync<TI, From, To>(parser: AsyncParser<TI, From>, f: (
     };
 }
 
-export function pipeAsync<T1, T2, TR>(p1: AsyncFullParser<T1, T2>, p2: AsyncFullParser<T2, TR>): AsyncFullParser<T1, TR> {
+export function pipeAsync<T1, T2, TR>(p1: AsyncFullParser<T1, T2>, p2: AsyncFullParser<T2, TR>): AsyncFullParser<T1, TR>;
+export function pipeAsync<T1, T2, T3, TR>(
+    p1: AsyncFullParser<T1, T2>,
+    p2: AsyncFullParser<T2, T3>,
+    p3: AsyncFullParser<T3, TR>
+): AsyncFullParser<T1, TR>;
+export function pipeAsync(...ps: Array<AsyncFullParser<any, any>>): AsyncFullParser<any, any> {
     return async input => {
-        const r1 = await p1(input);
-        if (!r1.success) {
-            return r1;
+        const diags: ParserDiagnostic[] = [];
+        let currInput = input;
+        let r: any = undefined;
+        for (const p of ps) {
+            r = await p(currInput);
+            diags.push(r.diagnostic);
+            if (!r.success) {
+                return {
+                    ...r,
+                    diagnostic: compoundDiagnostic(diags),
+                };
+            }
+            currInput = r.value;
         }
 
-        const r2 = await p2(r1.value);
         return {
-            ...r2,
-            diagnostic: compoundDiagnostic([r1.diagnostic, r2.diagnostic]),
+            ...r,
+            diagnostic: compoundDiagnostic(diags),
         };
+    };
+}
+
+export function alwaysYieldAsync<In, Out>(f: (input: In) => Promise<Out>): AsyncParser<In, Out> {
+    return async input => {
+        const result = await f(input);
+        return yieldOne(result, input);
     };
 }

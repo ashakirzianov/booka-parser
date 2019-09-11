@@ -31,7 +31,7 @@ export function headParser<In, Out, Env = any>(f: HeadFn<In, Out, Env>): StreamP
     return (input: Stream<In, Env>) => {
         const head = input.stream[0];
         if (head === undefined) {
-            return reject('empty-stream');
+            return reject();
         }
         const result = f(head, input.env);
         return result.success
@@ -43,20 +43,20 @@ export function headParser<In, Out, Env = any>(f: HeadFn<In, Out, Env>): StreamP
 export function empty<T = any, E = any>(): StreamParser<T, undefined, E> {
     return input => input.stream === undefined || input.stream.length === 0
         ? yieldOne(undefined, input)
-        : reject({ custom: `Expected end of input`, rest: input });
+        : reject({ diag: `Expected end of input`, rest: input });
 }
 
 export function not<T, E>(parser: StreamParser<T, any, E>): StreamParser<T, T, E> {
     return input => {
         const head = input.stream[0];
         if (head === undefined) {
-            return reject('empty-stream');
+            return reject();
         }
 
         const result = parser(input);
         return !result.success
             ? yieldOne(head, nextStream(input))
-            : reject('not-parser-succ');
+            : reject();
     };
 }
 
@@ -72,7 +72,7 @@ export function fullParser<I, O, E>(parser: StreamParser<I, O, E>): SuccessStrea
     return input => {
         const result = some(parser)(input);
         const tailDiag = result.next
-            ? { custom: 'extra-nodes-tail', nodes: result.next.stream }
+            ? { diag: 'extra-nodes-tail', nodes: result.next.stream }
             : undefined;
 
         return yieldOne(

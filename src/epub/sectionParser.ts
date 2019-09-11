@@ -20,7 +20,7 @@ export const sectionsParser: EpubBookParser<RawBookNode[]> = async input => {
     const insideParser = flattenResult(fullParser(nodeParser));
     const bodyParser = xmlChildren(insideParser);
     const documentParser = path(['html', 'body'], bodyParser);
-    const withDiags = expected(documentParser, [], s => ({ custom: 'couldnt-parse-document', tree: s }));
+    const withDiags = expected(documentParser, [], s => ({ diag: 'couldnt-parse-document', tree: s }));
 
     const parser: StreamParser<EpubSection, RawBookNode[]> = translate(
         some(headParser(s => {
@@ -50,7 +50,7 @@ const container = envParser((env: EpubNodeParserEnv) => {
 
 const text: EpubNodeParser = headParser(node => {
     if (node.type !== 'text') {
-        return reject({ custom: 'expected-xml-text' });
+        return reject({ diag: 'expected-xml-text' });
     }
     // Skip whitespace nodes
     if (node.text.startsWith('\n') && isWhitespaces(node.text)) {
@@ -126,7 +126,7 @@ const img: EpubNodeParser = xmlElementParser(
                 imageId: src,
             }]);
         } else {
-            return yieldLast([], { custom: 'img-must-have-src', node: el });
+            return yieldLast([], { diag: 'img-must-have-src', node: el });
         }
     });
 
@@ -142,7 +142,7 @@ const image: EpubNodeParser = xmlElementParser(
                 imageId: xlinkHref,
             }]);
         } else {
-            return yieldLast([], { custom: 'image-must-have-xlinkhref', node: el });
+            return yieldLast([], { diag: 'image-must-have-xlinkhref', node: el });
         }
     });
 
@@ -150,7 +150,7 @@ const headerTitleParser: EpubNodeParser<string[]> = input => {
     const result = extractTitle(input.stream);
 
     const emptyTitleDiag = result.lines.length === 0
-        ? { custom: 'no-title', nodes: input.stream }
+        ? { diag: 'no-title', nodes: input.stream }
         : undefined;
     return yieldLast(result.lines, compoundDiagnostic([...result.diags, emptyTitleDiag]));
 };
@@ -190,7 +190,7 @@ const ignore: EpubNodeParser = xmlElementParser(
 );
 
 const skip: EpubNodeParser = headParser(node => {
-    return yieldLast([], { custom: 'unexpected-node', node });
+    return yieldLast([], { diag: 'unexpected-node', node });
 });
 
 const standardParsers = [
@@ -222,12 +222,12 @@ function extractTitle(nodes: XmlTree[]) {
                     case 'br':
                         break;
                     default:
-                        diags.push({ custom: 'unexpected-node', node, context: 'title' });
+                        diags.push({ diag: 'unexpected-node', node, context: 'title' });
                         break;
                 }
                 break;
             default:
-                diags.push({ custom: 'unexpected-node', node, context: 'title' });
+                diags.push({ diag: 'unexpected-node', node, context: 'title' });
                 break;
         }
     }

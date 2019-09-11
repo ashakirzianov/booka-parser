@@ -73,7 +73,7 @@ export function seq<TI>(...ps: Array<Parser<TI, any>>): Parser<TI, any[]> {
         const diagnostics: ParserDiagnostic[] = [];
         for (let i = 0; i < ps.length; i++) {
             if (currentInput === undefined) {
-                return reject('empty-input');
+                return reject();
             }
             const result = ps[i](currentInput);
             if (!result.success) {
@@ -171,7 +171,7 @@ export function guard<TI, TO>(parser: Parser<TI, TO>, f: (x: TO) => boolean): Pa
             const guarded = f(result.value);
             return guarded
                 ? result
-                : reject('guard-failed');
+                : reject();
         } else {
             return result;
         }
@@ -210,7 +210,7 @@ export function translateAndWarn<TI, From, To>(parser: Parser<TI, From>, f: Warn
 
         const translated = f(from.value);
         if (translated === null) {
-            return reject('translate-reject');
+            return reject();
         } else if (isWarnPair(translated)) {
             return yieldOne(translated.result, from.next, compoundDiagnostic([translated.diagnostic, from.diagnostic]));
         } else {
@@ -302,7 +302,7 @@ export function alwaysYield<In, Out>(f: (x: In) => Out): Parser<In, Out> {
 export function endOfInput(): Parser<any, undefined> {
     return input => input === undefined
         ? { success: true, value: undefined }
-        : { success: false, diagnostic: 'expected-end' };
+        : { success: false };
 }
 
 export function expectEnd<In, Out>(parser: Parser<In, Out>): FullParser<In, Out> {
@@ -318,7 +318,6 @@ export function expectEnd<In, Out>(parser: Parser<In, Out>): FullParser<In, Out>
             : {
                 ...result,
                 next: undefined,
-                diagnostic: compoundDiagnostic([result.diagnostic, 'expected-end']),
             };
     };
 }

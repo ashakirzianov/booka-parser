@@ -33,7 +33,7 @@ function metaHook(): MetadataRecordParser {
                     }
                 }
 
-                return yieldLast([], { custom: 'bad-meta', meta: { key, value } });
+                return yieldLast([], { diag: 'bad-meta', meta: { key, value } });
             default:
                 return reject();
         }

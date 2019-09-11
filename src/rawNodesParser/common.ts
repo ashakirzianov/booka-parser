@@ -17,7 +17,7 @@ export function spanFromRawNode(
                     attrSpan.diagnostic,
                 );
             } else {
-                return reject({ custom: 'couldnt-build-span', node: rawNode, context: 'attr' });
+                return reject({ diag: 'couldnt-build-span', node: rawNode, context: 'attr' });
             }
         case 'compound-raw':
             const insideResults = rawNode.nodes
@@ -39,16 +39,16 @@ export function spanFromRawNode(
                 titles.push(...rawNode.title);
                 return reject();
             } else {
-                return reject({ custom: 'unexpected-title', node: rawNode, context: 'span' });
+                return reject({ diag: 'unexpected-title', node: rawNode, context: 'span' });
             }
         case 'image-data':
         case 'image-ref':
         case 'image-url':
         case 'tag':
         case 'ref':
-            return reject({ custom: 'unexpected-raw-node', node: rawNode, context: 'span' });
+            return reject({ diag: 'unexpected-raw-node', node: rawNode, context: 'span' });
         default:
             assertNever(rawNode);
-            return reject({ custom: 'unexpected-raw-node', node: rawNode, context: 'span' });
+            return reject({ diag: 'unexpected-raw-node', node: rawNode, context: 'span' });
     }
 }

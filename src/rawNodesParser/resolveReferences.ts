@@ -89,18 +89,18 @@ function swipe2node(node: RawBookNode, footnotes: RawBookNode[]): SuccessLast<Ra
     if (node.node === 'ref') {
         const content = spanFromRawNode(node.content);
         if (!content.success) {
-            return yieldLast([], { custom: 'couldnt-build-span', node, context: 'footnote' });
+            return yieldLast([], { diag: 'couldnt-build-span', node, context: 'footnote' });
         }
         const footnoteNode = footnotes.find(f => f.ref === node.to);
         if (!footnoteNode) {
-            return yieldLast([], { custom: 'couldnt-resolve-footnote', node });
+            return yieldLast([], { diag: 'couldnt-resolve-footnote', node });
         }
         // Resolve footnote from footnote:
         const resolved = swipe2node(footnoteNode, footnotes);
         const titles = [] as string[];
         const footnote = spanFromRawNode(resolved.value[0], titles);
         if (!footnote.success) {
-            return yieldLast([], { custom: 'couldnt-build-footnote', nodes: resolved.value });
+            return yieldLast([], { diag: 'couldnt-build-footnote', nodes: resolved.value });
         }
         const footnoteSpan: FootnoteSpan = {
             span: 'note',

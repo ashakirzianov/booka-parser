@@ -6,11 +6,11 @@ import { XmlStringParser } from '../xmlParser';
 import { last } from '../utils';
 import { AsyncParser, yieldLast } from '../combinators';
 
-export type EpubParserInput = {
+export type EpubFileParserInput = {
     filePath: string,
     stringParser: XmlStringParser,
 };
-export type EpubParser = AsyncParser<EpubParserInput, EpubBook>;
+export type EpubParser = AsyncParser<EpubFileParserInput, EpubBook>;
 
 export const epubFileParser: EpubParser = async input => {
     const epub = await FixedEpub.createAsync(input.filePath) as FixedEpub;

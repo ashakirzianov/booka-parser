@@ -26,7 +26,7 @@ export const rawNodesParser: RawNodesParser = async ({ stream, env }) => {
     diags.push(nodes.diagnostic);
 
     if (meta.title === undefined) {
-        diags.push({ custom: 'empty-book-title' });
+        diags.push({ diag: 'empty-book-title' });
     }
 
     const volume: VolumeNode = {
@@ -62,7 +62,7 @@ async function buildChapters(rawNodes: RawBookNode[], env: RawNodesParserEnv): P
     const { nodes, next, diag } = await buildChaptersImpl(rawNodes, undefined, env);
 
     const tailDiag = next.length !== 0
-        ? { custom: 'extra-nodes-tail', nodes: rawNodes }
+        ? { diag: 'extra-nodes-tail', nodes: rawNodes }
         : undefined;
 
     return yieldLast(nodes, compoundDiagnostic([diag, tailDiag]));

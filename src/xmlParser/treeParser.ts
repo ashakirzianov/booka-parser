@@ -15,7 +15,7 @@ export function elementNode<O, E>(f: HeadFn<XmlTreeElement, O, E>) {
         if (isElementTree(n)) {
             return f(n, env);
         } else {
-            return reject({ custom: 'expected-xml-element' });
+            return reject({ diag: 'expected-xml-element' });
         }
     });
 }
@@ -38,7 +38,7 @@ export function xmlElementParser<R, Ch, E = any>(
         }
         const head = input.stream[0];
         if (!head) {
-            return reject('empty-stream');
+            return reject();
         }
 
         const proj = projection([head as XmlTreeElement, elResult.value], input.env);
@@ -55,9 +55,9 @@ export function xmlName<E = any>(name: Constraint<string>): TreeParser<XmlTreeEl
             const check = checkValue(tree.name, name);
             return check
                 ? yieldLast(tree)
-                : reject({ custom: 'name-check', name, value: tree.name });
+                : reject({ diag: 'name-check', name, value: tree.name });
         } else {
-            return reject({ custom: 'expected-xml-element' });
+            return reject({ diag: 'expected-xml-element' });
         }
     }
     );
@@ -70,10 +70,10 @@ export function xmlAttributes<E = any>(attrs: ConstraintMap<XmlAttributes>): Tre
             if (checks.length === 0) {
                 return yieldLast(tree);
             } else {
-                return reject({ custom: 'expected-attrs', checks, tree });
+                return reject({ diag: 'expected-attrs', checks, tree });
             }
         }
-        return reject({ custom: 'expected-xml-element' });
+        return reject({ diag: 'expected-xml-element' });
     });
 }
 
@@ -97,10 +97,10 @@ export function xmlChildren<T, E>(parser: TreeParser<T, E>): TreeParser<T, E> {
     return input => {
         const head = input.stream[0];
         if (head === undefined) {
-            return reject({ custom: 'children: empty input' });
+            return reject({ diag: 'children: empty input' });
         }
         if (!hasChildren(head)) {
-            return reject({ custom: 'children: no children' });
+            return reject({ diag: 'children: no children' });
         }
 
         const result = parser(makeStream(head.children, input.env));
@@ -116,10 +116,10 @@ export function xmlParent<T, E>(parser: TreeParser<T, E>): TreeParser<T, E> {
     return input => {
         const head = input.stream[0];
         if (head === undefined) {
-            return reject({ custom: 'parent: empty input' });
+            return reject({ diag: 'parent: empty input' });
         }
         if (head.parent === undefined) {
-            return reject({ custom: 'parent: no parent' });
+            return reject({ diag: 'parent: no parent' });
         }
 
         const result = parser(makeStream([head.parent], input.env));
@@ -149,7 +149,7 @@ export function between<T, E>(left: TreeParser<any, E>, right: TreeParser<any, E
 
 function parsePathHelper<T, E>(pathComponents: string[], then: TreeParser<T, E>, input: Stream<XmlTree, E>): Result<Stream<XmlTree, E>, T> {
     if (pathComponents.length === 0) {
-        return reject({ custom: 'parse path: can\'t parse to empty path' });
+        return reject({ diag: 'parse path: can\'t parse to empty path' });
     }
     const pc = pathComponents[0];
 
@@ -157,7 +157,7 @@ function parsePathHelper<T, E>(pathComponents: string[], then: TreeParser<T, E>,
         ch.type === 'element' && nameEq(ch.name, pc));
     const child = input.stream[childIndex];
     if (!child) {
-        return reject({ custom: `parse path: ${pc}: can't find child` });
+        return reject({ diag: `parse path: ${pc}: can't find child` });
     }
 
     if (pathComponents.length < 2) {
@@ -192,12 +192,12 @@ export function textNode<T, E>(f?: (text: string) => T | null): TreeParser<T | s
         if (n.type === 'text') {
             if (f) {
                 const result = f(n.text);
-                return result !== null ? yieldLast(n.text) : reject({ custom: 'xml-text-rejected' });
+                return result !== null ? yieldLast(n.text) : reject({ diag: 'xml-text-rejected' });
             } else {
                 return yieldLast(n.text);
             }
         } else {
-            return reject({ custom: 'expected-xml- text' });
+            return reject({ diag: 'expected-xml- text' });
         }
     });
 }
