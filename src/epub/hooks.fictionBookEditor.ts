@@ -12,7 +12,7 @@ export const fictionBookEditorHooks: EpubConverterHooks = {
 };
 
 function metaHook(): MetadataRecordParser {
-    return headParser(({ key, value }) => {
+    return headParser(([key, value]) => {
         switch (key) {
             case 'FB2.book-info.translator':
                 return successValue([{ tag: 'translator', value }]);

@@ -11,8 +11,7 @@ export const metadataParser: EpubBookParser<KnownTag[]> = async input => {
     const singleParser = choice(...allParsers);
     const full = flattenResult(fullParser(singleParser));
     const records = Object
-        .entries(input.epub.metadata)
-        .map(([key, value]) => ({ key, value }));
+        .entries(input.epub.metadata);
     const metaStream = makeStream(records);
     const result = full(metaStream);
     return result.success
@@ -20,7 +19,7 @@ export const metadataParser: EpubBookParser<KnownTag[]> = async input => {
         : result;
 };
 
-const defaultMetadataParser: MetadataRecordParser = headParser(({ key, value }) => {
+const defaultMetadataParser: MetadataRecordParser = headParser(([key, value]) => {
     switch (key) {
         case 'title':
             return successValue([{ tag: 'title', value }]);

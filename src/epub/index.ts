@@ -5,7 +5,6 @@ import { converterHooks } from './hooks';
 import { xmlStringParser } from '../xmlParser';
 import { AsyncParser, success } from '../combinators';
 
-export { MetadataRecord } from './epubBookParser';
 export { EpubKind } from './epubBook';
 
 export type FullEpubParser = AsyncParser<{ path: string }, Book>;

@@ -19,7 +19,7 @@ export const gutenbergHooks: EpubConverterHooks = {
 };
 
 function metaHook(): MetadataRecordParser {
-    return headParser(({ key, value }) => {
+    return headParser(([key, value]) => {
         switch (key) {
             case 'dc:identifier':
                 const id = value['#'];

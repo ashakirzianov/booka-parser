@@ -17,12 +17,7 @@ export type EpubBookParserInput = {
     },
 };
 
-// TODO: remove ?
-export type MetadataRecord = {
-    key: string,
-    value: any,
-};
-export type MetadataRecordParser = StreamParser<MetadataRecord, KnownTag[]>;
+export type MetadataRecordParser = StreamParser<[string, any], KnownTag[]>;
 export type EpubConverterHooks = {
     nodeHooks: EpubNodeParser[],
     metadataHooks: MetadataRecordParser[],

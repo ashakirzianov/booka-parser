@@ -26,7 +26,7 @@ export const fb2epubHooks: EpubConverterHooks = {
 };
 
 function metaHook(): MetadataRecordParser {
-    return headParser(({ key, value }) => {
+    return headParser(([key, value]) => {
         switch (key) {
             case 'calibre:timestamp':
             case 'calibre:title_sort':
