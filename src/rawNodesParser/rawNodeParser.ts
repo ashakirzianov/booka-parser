@@ -19,8 +19,8 @@ export const rawNodesParser: RawNodesParser = async ({ stream, env }) => {
     const diags: ParserDiagnostic[] = [];
     const meta = await collectMeta(stream, env);
     const resolved = resolveReferences(stream);
-    diags.push(resolved.value as any);
-    const preprocessed = flattenNodes(resolved.value, env.ds);
+    diags.push(resolved.diagnostic);
+    const preprocessed = flattenNodes(resolved.value);
     const nodes = await buildChapters(preprocessed, env);
 
     if (meta.title === undefined) {

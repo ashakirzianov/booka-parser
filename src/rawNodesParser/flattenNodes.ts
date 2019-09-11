@@ -1,14 +1,14 @@
 import { RawBookNode, RawContainerNode } from 'booka-common';
 import { ParserDiagnoser } from '../log';
 
-export function flattenNodes(rawNodes: RawBookNode[], ds: ParserDiagnoser): RawBookNode[] {
+export function flattenNodes(rawNodes: RawBookNode[]): RawBookNode[] {
     const result: RawBookNode[] = [];
     for (const node of rawNodes) {
         switch (node.node) {
             case 'compound-raw':
                 const preprocessed: RawContainerNode = {
                     ...node,
-                    nodes: flattenNodes(node.nodes, ds),
+                    nodes: flattenNodes(node.nodes),
                 };
                 if (shouldBeFlatten(preprocessed)) {
                     result.push(...preprocessed.nodes);
