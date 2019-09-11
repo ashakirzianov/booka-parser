@@ -3,6 +3,7 @@ import { MetadataRecordParser, EpubBookParser } from './epubBookParser';
 import {
     headParser, yieldOne, makeStream, choice, flattenResult,
     fullParser,
+    yieldLast,
 } from '../combinators';
 
 export const metadataParser: EpubBookParser<KnownTag[]> = async input => {
@@ -22,29 +23,29 @@ export const metadataParser: EpubBookParser<KnownTag[]> = async input => {
 const defaultMetadataParser: MetadataRecordParser = headParser(([key, value]) => {
     switch (key) {
         case 'title':
-            return yieldOne([{ tag: 'title', value }]);
+            return yieldLast([{ tag: 'title', value }]);
         case 'creator':
-            return yieldOne([{ tag: 'author', value }]);
+            return yieldLast([{ tag: 'author', value }]);
         case 'cover':
-            return yieldOne([{ tag: 'cover-ref', value }]);
+            return yieldLast([{ tag: 'cover-ref', value }]);
         case 'subject':
-            return yieldOne([{ tag: 'subject', value }]);
+            return yieldLast([{ tag: 'subject', value }]);
         case 'language':
-            return yieldOne([{ tag: 'language', value }]);
+            return yieldLast([{ tag: 'language', value }]);
         case 'publisher':
-            return yieldOne([{ tag: 'publisher', value }]);
+            return yieldLast([{ tag: 'publisher', value }]);
         case 'description':
-            return yieldOne([{ tag: 'description', value }]);
+            return yieldLast([{ tag: 'description', value }]);
         case 'series':
-            return yieldOne([{ tag: 'series', value }]);
+            return yieldLast([{ tag: 'series', value }]);
         case 'ISBN':
-            return yieldOne([{ tag: 'ISBN', value }]);
+            return yieldLast([{ tag: 'ISBN', value }]);
         case 'dc:rights':
-            return yieldOne([{ tag: 'rights', value }]);
+            return yieldLast([{ tag: 'rights', value }]);
         case 'creatorFileAs':
         case 'date':
         case 'dc:identifier':
-            return yieldOne([] as KnownTag[]);
+            return yieldLast([] as KnownTag[]);
         default:
             return fail();
     }

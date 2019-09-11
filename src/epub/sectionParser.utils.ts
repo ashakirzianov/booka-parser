@@ -1,13 +1,13 @@
 import { RawBookNode } from 'booka-common';
 import { XmlTree, elementNode } from '../xmlParser';
-import { Stream, alwaysYield, yieldOne, reject } from '../combinators';
+import { Stream, alwaysYield, reject, yieldLast } from '../combinators';
 import { equalsToOneOf } from '../utils';
 import { EpubNodeParserEnv, EpubNodeParser } from './epubBookParser';
 
 export function ignoreClass(className: string): EpubNodeParser {
     return elementNode<RawBookNode[], EpubNodeParserEnv>(el =>
         el.attributes.class === className
-            ? yieldOne([])
+            ? yieldLast([])
             : reject()
     );
 }
@@ -15,7 +15,7 @@ export function ignoreClass(className: string): EpubNodeParser {
 export function ignoreTags(tags: string[]): EpubNodeParser {
     return elementNode<RawBookNode[], EpubNodeParserEnv>(el =>
         equalsToOneOf(el.name, tags)
-            ? yieldOne([])
+            ? yieldLast([])
             : reject()
     );
 }

@@ -2,7 +2,7 @@ import { XmlTree, hasChildren, XmlAttributes, XmlTreeElement, isElementTree } fr
 import { caseInsensitiveEq, isWhitespaces } from '../utils';
 import {
     Result, yieldOne, reject, seq, some, translate,
-    StreamParser, headParser, makeStream, nextStream, not, Stream, projectLast, and, HeadFn, expected,
+    StreamParser, headParser, makeStream, nextStream, not, Stream, projectLast, and, HeadFn, expected, yieldLast,
 } from '../combinators';
 import { Constraint, ConstraintMap, checkObject, checkValue } from '../constraint';
 import { compoundDiagnostic } from '../combinators/diagnostics';
@@ -54,7 +54,7 @@ export function xmlName<E = any>(name: Constraint<string>): TreeParser<XmlTreeEl
         if (tree.type === 'element') {
             const check = checkValue(tree.name, name);
             return check
-                ? yieldOne(tree)
+                ? yieldLast(tree)
                 : reject({ custom: 'name-check', name, value: tree.name });
         } else {
             return reject({ custom: 'expected-xml-element' });
@@ -68,7 +68,7 @@ export function xmlAttributes<E = any>(attrs: ConstraintMap<XmlAttributes>): Tre
         if (tree.type === 'element') {
             const checks = checkObject(tree.attributes, attrs);
             if (checks.length === 0) {
-                return yieldOne(tree);
+                return yieldLast(tree);
             } else {
                 return reject({ custom: 'expected-attrs', checks, tree });
             }
@@ -192,9 +192,9 @@ export function textNode<T, E>(f?: (text: string) => T | null): TreeParser<T | s
         if (n.type === 'text') {
             if (f) {
                 const result = f(n.text);
-                return result !== null ? yieldOne(n.text) : reject({ custom: 'xml-text-rejected' });
+                return result !== null ? yieldLast(n.text) : reject({ custom: 'xml-text-rejected' });
             } else {
-                return yieldOne(n.text);
+                return yieldLast(n.text);
             }
         } else {
             return reject({ custom: 'expected-xml- text' });

@@ -24,9 +24,14 @@ export function reject(reason?: ParserDiagnostic): Fail {
     return { success: false, diagnostic: reason };
 }
 
-export function yieldOne<TIn, TOut>(value: TOut): SuccessLast<TOut>;
-export function yieldOne<TIn, TOut>(value: TOut, next: TIn | undefined, diagnostic?: ParserDiagnostic): SuccessNext<TIn, TOut>;
-export function yieldOne<TIn, TOut>(value: TOut, next?: TIn, diagnostic?: ParserDiagnostic): SuccessNext<TIn, TOut> {
+export function yieldLast<Out>(value: Out, diagnostic?: ParserDiagnostic): SuccessLast<Out> {
+    return {
+        success: true,
+        value, diagnostic,
+    };
+}
+
+export function yieldOne<TIn, TOut>(value: TOut, next: TIn, diagnostic?: ParserDiagnostic): SuccessNext<TIn, TOut> {
     return {
         value, next, diagnostic,
         success: true,
