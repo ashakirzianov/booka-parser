@@ -159,7 +159,6 @@ export function maybe<TIn, TOut>(parser: Parser<TIn, TOut>): SuccessParser<TIn, 
     };
 }
 
-// TODO: implement proper reason reporting
 export function oneOrMore<TI, T>(parser: Parser<TI, T>): Parser<TI, T[]> {
     return guard(some(parser), nodes => nodes.length > 0);
 }
@@ -171,7 +170,7 @@ export function guard<TI, TO>(parser: Parser<TI, TO>, f: (x: TO) => boolean): Pa
             const guarded = f(result.value);
             return guarded
                 ? result
-                : reject();
+                : reject(result.diagnostic);
         } else {
             return result;
         }
@@ -223,36 +222,16 @@ export function flattenResult<I, O>(parser: Parser<I, O[][]>): Parser<I, O[]> {
     return translate(parser, flatten);
 }
 
-export function reparse<T, U, V>(parser: Parser<T, U>, reparser: Parser<U, V>): Parser<T, V> {
-    return input => {
-        const result = parser(input);
-
-        if (result.success) {
-            const reresult = reparser(result.value);
-            // TODO: add diagnostic from result
-            if (reresult.success) {
-                return yieldOne(
-                    reresult.value,
-                    result.next,
-                    compoundDiagnostic([result.diagnostic, reresult.diagnostic]),
-                );
-            } else {
-                return reresult;
-            }
-        } else {
-            return result;
-        }
-    };
-}
-
 export type DeclaredParser<TIn, TOut> = {
     (input: TIn): Result<TIn, TOut>,
     implementation: (input: TIn) => Result<TIn, TOut>,
 };
 export function declare<TIn, TOut>(): DeclaredParser<TIn, TOut> {
     const declared = (input: TIn) => {
-        // TODO: consider throw in no implementation provided
-        return (declared as any).implementation(input);
+        const impl = (declared as any).implementation;
+        return impl
+            ? impl(input)
+            : reject({ diag: 'no-implementation' });
     };
 
     return declared as DeclaredParser<TIn, TOut>;

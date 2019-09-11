@@ -1,5 +1,3 @@
-// TODO: check why TypeScript type inference doesn't work properly
-// if we use AsyncIterator<AsyncIterator<T>>
 export type AsyncIterType<T> = AsyncIterableIterator<T>;
 
 export const AsyncIter = {

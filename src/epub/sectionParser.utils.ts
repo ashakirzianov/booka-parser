@@ -1,19 +1,18 @@
-import { RawBookNode } from 'booka-common';
-import { XmlTree, elementNode } from '../xmlParser';
-import { Stream, alwaysYield, reject, yieldLast } from '../combinators';
+import { XmlTree } from '../xmlParser';
+import { Stream, alwaysYield, reject, yieldLast, headParser } from '../combinators';
 import { equalsToOneOf } from '../utils';
 import { EpubNodeParserEnv, EpubNodeParser } from './epubBookParser';
 
 export function ignoreClass(className: string): EpubNodeParser {
-    return elementNode<RawBookNode[], EpubNodeParserEnv>(el =>
-        el.attributes.class === className
+    return headParser(el =>
+        el.type === 'element' && el.attributes.class === className
             ? yieldLast([])
             : reject()
     );
 }
 
 export function ignoreTags(tags: string[]): EpubNodeParser {
-    return elementNode<RawBookNode[], EpubNodeParserEnv>(el =>
+    return headParser(el =>
         equalsToOneOf(el.name, tags)
             ? yieldLast([])
             : reject()

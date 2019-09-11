@@ -10,8 +10,7 @@ import { EpubSection } from './epubBook';
 import { ParserDiagnostic, compoundDiagnostic } from '../combinators/diagnostics';
 import { EpubNodeParser, EpubNodeParserEnv, EpubBookParser } from './epubBookParser';
 
-// TODO: make normal 'StreamParser'
-export type SectionsParser = SuccessStreamParser<EpubSection, RawBookNode[], undefined>;
+export type SectionsParser = StreamParser<EpubSection, RawBookNode[], undefined>;
 
 export const sectionsParser: EpubBookParser<RawBookNode[]> = async input => {
     const hooks = input.options[input.epub.kind].nodeHooks;
@@ -94,8 +93,7 @@ const a: EpubNodeParser = xmlElementParser(
                 nodes: [ch],
             } as RawBookNode]);
         } else {
-            // TODO: add diagnostic
-            return yieldLast([]);
+            return yieldLast([], { diag: 'bad-anchor', a: el });
         }
     });
 

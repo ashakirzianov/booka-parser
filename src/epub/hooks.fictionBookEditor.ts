@@ -77,7 +77,6 @@ function titleElement(): EpubNodeParser {
                 ? '0'
                 : className.substr('title'.length);
             const level = parseInt(levelStr, 10);
-            // TODO: add diagnostics here ?
             if (!isNaN(level)) {
                 const title = extractTextLines(el);
                 if (title) {

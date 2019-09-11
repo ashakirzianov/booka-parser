@@ -9,17 +9,6 @@ import { compoundDiagnostic } from '../combinators/diagnostics';
 
 export type TreeParser<Out = XmlTree, Env = undefined> = StreamParser<XmlTree, Out, Env>;
 
-// TODO: remove ?
-export function elementNode<O, E>(f: HeadFn<XmlTreeElement, O, E>) {
-    return headParser((n: XmlTree, env: E) => {
-        if (isElementTree(n)) {
-            return f(n, env);
-        } else {
-            return reject({ diag: 'expected-xml-element' });
-        }
-    });
-}
-
 export function xmlElementParser<R, Ch, E = any>(
     name: Constraint<string>,
     expectedAttributes: ConstraintMap<XmlAttributes>,

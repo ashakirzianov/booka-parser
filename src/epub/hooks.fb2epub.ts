@@ -43,7 +43,7 @@ function footnoteSection(): EpubNodeParser {
     return envParser(env => {
         const divId = translate(
             xmlNameAttrs('div', { class: 'section2', id: id => id !== undefined }),
-            el => el.attributes.id,
+            el => el.attributes.id!,
         );
         const h = whitespaced(xmlNameChildren(n => n.startsWith('h'), textNode()));
         const title = whitespaced(xmlNameAttrsChildren(
@@ -63,7 +63,7 @@ function footnoteSection(): EpubNodeParser {
                 xmlChildren(seq(title, some(choice(back, rec)))),
             ),
             ([id, [tls, bs]]) => {
-                const ref = id && buildRef(env.filePath, id); // TODO: report missing id
+                const ref = buildRef(env.filePath, id);
                 return [{
                     node: 'compound-raw',
                     ref: ref,

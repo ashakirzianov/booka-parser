@@ -12,7 +12,6 @@ export type EpubMetadata = {
     [key: string]: string | string[] | undefined;
 };
 
-// TODO: rethink this
 export type EpubKind =
     | 'fb2epub' | 'fictionBookEditor' | 'gutenberg'
     | 'unknown'
