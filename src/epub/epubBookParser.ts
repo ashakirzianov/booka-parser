@@ -1,7 +1,9 @@
 import { Book, KnownTag, RawBookNode } from 'booka-common';
 import { AsyncIter, equalsToOneOf } from '../utils';
-import { ParserDiagnostic, ParserDiagnoser, diagnoser } from '../log';
-import { makeStream, AsyncParser, success, fail, StreamParser } from '../combinators';
+import {
+    makeStream, AsyncParser, success, StreamParser,
+    ParserDiagnostic,
+} from '../combinators';
 import { rawNodesParser } from '../rawNodesParser';
 import { EpubBook, EpubKind } from './epubBook';
 import { sectionsParser } from './sectionParser';
@@ -35,9 +37,9 @@ export type EpubBookParser<R = EpubBookParserResult> = AsyncParser<EpubBookParse
 
 export const epubBookParser: EpubBookParser = async input => {
     const { epub, options } = input;
-    const ds = diagnoser({ context: 'epub', kind: epub.kind });
+    const diags: ParserDiagnostic[] = [];
     if (epub.kind === 'unknown') {
-        ds.add({ diag: 'unknown-kind' });
+        diags.push({ custom: 'unknown-kind' });
     }
 
     const hooks = options[epub.kind];
@@ -52,11 +54,11 @@ export const epubBookParser: EpubBookParser = async input => {
     const allNodes = rawNodes.concat(metaNodes);
 
     const rawNodeResult = await rawNodesParser(makeStream(allNodes, {
-        ds, resolveImageRef: epub.imageResolver,
+        resolveImageRef: epub.imageResolver,
     }));
 
     if (!rawNodeResult.success) {
-        return fail({ custom: 'custom', diags: ds.all(), inside: rawNodeResult.diagnostic });
+        return rawNodeResult;
     }
     const volume = rawNodeResult.value;
     const book: Book = {
@@ -70,7 +72,7 @@ export const epubBookParser: EpubBookParser = async input => {
 
     return success({
         book: book,
-        diagnostics: ds.all(),
+        diagnostics: [],
     }, input);
 };
 
