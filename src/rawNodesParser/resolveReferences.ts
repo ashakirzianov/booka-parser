@@ -1,7 +1,7 @@
 import { RawBookNode, FootnoteSpan, SpanNode } from 'booka-common';
 import { spanFromRawNode } from './common';
 import {
-    SuccessLast, ParserDiagnostic, success, compoundDiagnostic,
+    SuccessLast, ParserDiagnostic, yieldOne, compoundDiagnostic,
 } from '../combinators';
 
 export function resolveReferences(nodes: RawBookNode[]): SuccessLast<RawBookNode[]> {
@@ -70,7 +70,7 @@ function swipe1(nodes: RawBookNode[], refs: string[], ids: string[]): SuccessLas
 
     }
 
-    return success({ rest, footnotes }, undefined, compoundDiagnostic(diags));
+    return yieldOne({ rest, footnotes }, undefined, compoundDiagnostic(diags));
 }
 
 function swipe2(nodes: RawBookNode[], footnotes: RawBookNode[]): SuccessLast<RawBookNode[]> {
@@ -82,25 +82,25 @@ function swipe2(nodes: RawBookNode[], footnotes: RawBookNode[]): SuccessLast<Raw
         diags.push(r.diagnostic);
     }
 
-    return success(result, undefined, compoundDiagnostic(diags));
+    return yieldOne(result, undefined, compoundDiagnostic(diags));
 }
 
 function swipe2node(node: RawBookNode, footnotes: RawBookNode[]): SuccessLast<RawBookNode[]> {
     if (node.node === 'ref') {
         const content = spanFromRawNode(node.content);
         if (!content.success) {
-            return success([], undefined, { custom: 'couldnt-build-span', node, context: 'footnote' });
+            return yieldOne([], undefined, { custom: 'couldnt-build-span', node, context: 'footnote' });
         }
         const footnoteNode = footnotes.find(f => f.ref === node.to);
         if (!footnoteNode) {
-            return success([], undefined, { custom: 'couldnt-resolve-footnote', node });
+            return yieldOne([], undefined, { custom: 'couldnt-resolve-footnote', node });
         }
         // Resolve footnote from footnote:
         const resolved = swipe2node(footnoteNode, footnotes);
         const titles = [] as string[];
         const footnote = spanFromRawNode(resolved.value[0], titles);
         if (!footnote.success) {
-            return success([], undefined, { custom: 'couldnt-build-footnote', nodes: resolved.value });
+            return yieldOne([], undefined, { custom: 'couldnt-build-footnote', nodes: resolved.value });
         }
         const footnoteSpan: FootnoteSpan = {
             span: 'note',
@@ -114,20 +114,20 @@ function swipe2node(node: RawBookNode, footnotes: RawBookNode[]): SuccessLast<Ra
             span: footnoteSpan,
         };
         const diag = compoundDiagnostic([content.diagnostic, resolved.diagnostic, footnote.diagnostic]);
-        return success([spanNode], undefined, diag);
+        return yieldOne([spanNode], undefined, diag);
     } else if (node.node === 'compound-raw') {
         const inside = swipe2(node.nodes, footnotes);
-        return success([{
+        return yieldOne([{
             ...node,
             nodes: inside.value,
         }]);
     } else if (node.node === 'attr') {
         const inside = swipe2([node.content], footnotes);
-        return success([{
+        return yieldOne([{
             ...node,
             content: inside.value[0],
         }]);
     } else {
-        return success([node]);
+        return yieldOne([node]);
     }
 }

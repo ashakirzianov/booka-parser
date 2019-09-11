@@ -1,4 +1,4 @@
-import { Parser, success, fail, SuccessParser, some, ResultLast } from './base';
+import { Parser, yieldOne, reject, SuccessParser, some, ResultLast } from './base';
 import { compoundDiagnostic } from './diagnostics';
 
 export type Stream<T, E = undefined> = {
@@ -31,32 +31,32 @@ export function headParser<In, Out, Env = any>(f: HeadFn<In, Out, Env>): StreamP
     return (input: Stream<In, Env>) => {
         const head = input.stream[0];
         if (head === undefined) {
-            return fail('empty-stream');
+            return reject('empty-stream');
         }
         const result = f(head, input.env);
         return result.success
-            ? success(result.value, nextStream(input))
+            ? yieldOne(result.value, nextStream(input))
             : result;
     };
 }
 
 export function empty<T = any, E = any>(): StreamParser<T, undefined, E> {
     return input => input.stream.length === 0
-        ? success(undefined, input)
-        : fail({ custom: `Expected end of input`, rest: input });
+        ? yieldOne(undefined, input)
+        : reject({ custom: `Expected end of input`, rest: input });
 }
 
 export function not<T, E>(parser: StreamParser<T, any, E>): StreamParser<T, T, E> {
     return input => {
         const head = input.stream[0];
         if (head === undefined) {
-            return fail('empty-stream');
+            return reject('empty-stream');
         }
 
         const result = parser(input);
         return !result.success
-            ? success(head, nextStream(input))
-            : fail('not-parser-succ');
+            ? yieldOne(head, nextStream(input))
+            : reject('not-parser-succ');
     };
 }
 
@@ -75,7 +75,7 @@ export function fullParser<I, O, E>(parser: StreamParser<I, O, E>): SuccessStrea
             ? { custom: 'extra-nodes-tail', nodes: result.next.stream }
             : undefined;
 
-        return success(
+        return yieldOne(
             result.value,
             result.next,
             compoundDiagnostic([result.diagnostic, tailDiag]),

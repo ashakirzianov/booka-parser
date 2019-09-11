@@ -7,7 +7,7 @@ import { spanFromRawNode } from './common';
 import { resolveReferences } from './resolveReferences';
 import { flattenNodes } from './flattenNodes';
 import {
-    AsyncStreamParser, success, ParserDiagnostic,
+    AsyncStreamParser, yieldOne, ParserDiagnostic,
     compoundDiagnostic, ResultLast, SuccessLast,
 } from '../combinators';
 
@@ -35,7 +35,7 @@ export const rawNodesParser: RawNodesParser = async ({ stream, env }) => {
         meta: meta,
     };
 
-    return success(volume, undefined, compoundDiagnostic(diags));
+    return yieldOne(volume, undefined, compoundDiagnostic(diags));
 };
 
 async function collectMeta(rawNodes: RawBookNode[], env: RawNodesParserEnv): Promise<VolumeMeta> {
@@ -65,7 +65,7 @@ async function buildChapters(rawNodes: RawBookNode[], env: RawNodesParserEnv): P
         ? { custom: 'extra-nodes-tail', nodes: rawNodes }
         : undefined;
 
-    return success(nodes, undefined, compoundDiagnostic([diag, tailDiag]));
+    return yieldOne(nodes, undefined, compoundDiagnostic([diag, tailDiag]));
 }
 
 type BuildChaptersResult = {
@@ -119,7 +119,7 @@ async function resolveRawNode(rawNode: RawBookNode, env: RawNodesParserEnv): Pro
         case 'image-ref':
             const imageBuffer = await env.resolveImageRef(rawNode.imageId);
             if (imageBuffer) {
-                return success({
+                return yieldOne({
                     node: 'image-data',
                     id: rawNode.imageId,
                     data: imageBuffer,
@@ -132,7 +132,7 @@ async function resolveRawNode(rawNode: RawBookNode, env: RawNodesParserEnv): Pro
         case 'ref':
             const span = spanFromRawNode(rawNode);
             if (span.success) {
-                return success({
+                return yieldOne({
                     node: 'paragraph',
                     span: span.value,
                 });
@@ -148,7 +148,7 @@ async function resolveRawNode(rawNode: RawBookNode, env: RawNodesParserEnv): Pro
                     .map(r => r.success ? r.value : undefined)
             );
             const ds = rs.map(r => r.diagnostic);
-            return success({
+            return yieldOne({
                 node: 'paragraph',
                 span: {
                     span: 'compound',

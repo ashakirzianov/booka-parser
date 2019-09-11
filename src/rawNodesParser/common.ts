@@ -1,6 +1,6 @@
 import { assignAttributes, RawBookNode, Span } from 'booka-common';
 import { filterUndefined, assertNever } from '../utils';
-import { ResultLast, success, compoundDiagnostic, fail } from '../combinators';
+import { ResultLast, yieldOne, compoundDiagnostic, reject } from '../combinators';
 
 export function spanFromRawNode(
     rawNode: RawBookNode,
@@ -8,17 +8,17 @@ export function spanFromRawNode(
 ): ResultLast<Span> {
     switch (rawNode.node) {
         case 'span':
-            return success(rawNode.span);
+            return yieldOne(rawNode.span);
         case 'attr':
             const attrSpan = spanFromRawNode(rawNode.content, titles);
             if (attrSpan.success) {
-                return success(
+                return yieldOne(
                     assignAttributes(...rawNode.attributes)(attrSpan.value),
                     undefined,
                     attrSpan.diagnostic,
                 );
             } else {
-                return fail({ custom: 'couldnt-build-span', node: rawNode, context: 'attr' });
+                return reject({ custom: 'couldnt-build-span', node: rawNode, context: 'attr' });
             }
         case 'compound-raw':
             const insideResults = rawNode.nodes
@@ -27,7 +27,7 @@ export function spanFromRawNode(
                 insideResults
                     .map(r => r.success ? r.value : undefined)
             );
-            return success({
+            return yieldOne({
                 span: 'compound',
                 spans: spans,
             },
@@ -35,22 +35,22 @@ export function spanFromRawNode(
                 compoundDiagnostic(insideResults.map(r => r.diagnostic)),
             );
         case 'ignore':
-            return fail();
+            return reject();
         case 'chapter-title':
             if (titles) {
                 titles.push(...rawNode.title);
-                return fail();
+                return reject();
             } else {
-                return fail({ custom: 'unexpected-title', node: rawNode, context: 'span' });
+                return reject({ custom: 'unexpected-title', node: rawNode, context: 'span' });
             }
         case 'image-data':
         case 'image-ref':
         case 'image-url':
         case 'tag':
         case 'ref':
-            return fail({ custom: 'unexpected-raw-node', node: rawNode, context: 'span' });
+            return reject({ custom: 'unexpected-raw-node', node: rawNode, context: 'span' });
         default:
             assertNever(rawNode);
-            return fail({ custom: 'unexpected-raw-node', node: rawNode, context: 'span' });
+            return reject({ custom: 'unexpected-raw-node', node: rawNode, context: 'span' });
     }
 }

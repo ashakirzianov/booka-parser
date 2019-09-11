@@ -7,7 +7,7 @@ import {
     nameEq, XmlTree, xmlNameAttrs, xmlNameAttrsChildren, xmlAttributes, xmlNameChildren,
 } from '../xmlParser';
 import {
-    some, translate, choice, seq, and, headParser, envParser, success, fail,
+    some, translate, choice, seq, and, headParser, envParser, yieldOne, reject,
 } from '../combinators';
 import { flatten } from '../utils';
 import { ignoreClass, buildRef } from './sectionParser.utils';
@@ -32,9 +32,9 @@ function metaHook(): MetadataRecordParser {
             case 'calibre:title_sort':
             case 'calibre:series':
             case 'calibre:series_index':
-                return success([]);
+                return yieldOne([]);
             default:
-                return fail();
+                return reject();
         }
     });
 }
@@ -93,7 +93,7 @@ function titlePage(): EpubNodeParser {
         } as RawBookNode),
     );
     const ignore = headParser(
-        (x: XmlTree) => success({ node: 'ignore' } as RawBookNode),
+        (x: XmlTree) => yieldOne({ node: 'ignore' } as RawBookNode),
     );
 
     const parser = xmlNameAttrsChildren(
@@ -113,11 +113,11 @@ function divTitle(): EpubNodeParser {
             const level = parseInt(levelString, 10);
 
             return isNaN(level)
-                ? fail()
-                : success(level);
+                ? reject()
+                : yieldOne(level);
         }
 
-        return fail();
+        return reject();
     });
     const h = whitespaced(xmlNameChildren(n => n.startsWith('h'), textNode()));
     const content = some(h);

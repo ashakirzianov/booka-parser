@@ -1,7 +1,7 @@
 import { XmlTree, hasChildren, XmlAttributes, XmlTreeElement, isElementTree } from './xmlTree';
 import { caseInsensitiveEq, isWhitespaces } from '../utils';
 import {
-    Result, success, fail, seq, some, translate,
+    Result, yieldOne, reject, seq, some, translate,
     StreamParser, headParser, makeStream, nextStream, not, Stream, projectLast, and, HeadFn, expected,
 } from '../combinators';
 import { Constraint, ConstraintMap, checkObject, checkValue } from '../constraint';
@@ -15,7 +15,7 @@ export function elementNode<O, E>(f: HeadFn<XmlTreeElement, O, E>) {
         if (isElementTree(n)) {
             return f(n, env);
         } else {
-            return fail({ custom: 'expected-xml-element' });
+            return reject({ custom: 'expected-xml-element' });
         }
     });
 }
@@ -38,14 +38,14 @@ export function xmlElementParser<R, Ch, E = any>(
         }
         const head = input.stream[0];
         if (!head) {
-            return fail('empty-stream');
+            return reject('empty-stream');
         }
 
         const proj = projection([head as XmlTreeElement, elResult.value], input.env);
         const diag = compoundDiagnostic([proj.diagnostic, elResult.diagnostic]);
         return proj.success
-            ? success(proj.value, nextStream(input), diag)
-            : fail(diag);
+            ? yieldOne(proj.value, nextStream(input), diag)
+            : reject(diag);
     };
 }
 
@@ -54,10 +54,10 @@ export function xmlName<E = any>(name: Constraint<string>): TreeParser<XmlTreeEl
         if (tree.type === 'element') {
             const check = checkValue(tree.name, name);
             return check
-                ? success(tree)
-                : fail({ custom: 'name-check', name, value: tree.name });
+                ? yieldOne(tree)
+                : reject({ custom: 'name-check', name, value: tree.name });
         } else {
-            return fail({ custom: 'expected-xml-element' });
+            return reject({ custom: 'expected-xml-element' });
         }
     }
     );
@@ -68,12 +68,12 @@ export function xmlAttributes<E = any>(attrs: ConstraintMap<XmlAttributes>): Tre
         if (tree.type === 'element') {
             const checks = checkObject(tree.attributes, attrs);
             if (checks.length === 0) {
-                return success(tree);
+                return yieldOne(tree);
             } else {
-                return fail({ custom: 'expected-attrs', checks, tree });
+                return reject({ custom: 'expected-attrs', checks, tree });
             }
         }
-        return fail({ custom: 'expected-xml-element' });
+        return reject({ custom: 'expected-xml-element' });
     });
 }
 
@@ -97,15 +97,15 @@ export function xmlChildren<T, E>(parser: TreeParser<T, E>): TreeParser<T, E> {
     return input => {
         const head = input.stream[0];
         if (head === undefined) {
-            return fail({ custom: 'children: empty input' });
+            return reject({ custom: 'children: empty input' });
         }
         if (!hasChildren(head)) {
-            return fail({ custom: 'children: no children' });
+            return reject({ custom: 'children: no children' });
         }
 
         const result = parser(makeStream(head.children, input.env));
         if (result.success) {
-            return success(result.value, nextStream(input), result.diagnostic);
+            return yieldOne(result.value, nextStream(input), result.diagnostic);
         } else {
             return result;
         }
@@ -116,15 +116,15 @@ export function xmlParent<T, E>(parser: TreeParser<T, E>): TreeParser<T, E> {
     return input => {
         const head = input.stream[0];
         if (head === undefined) {
-            return fail({ custom: 'parent: empty input' });
+            return reject({ custom: 'parent: empty input' });
         }
         if (head.parent === undefined) {
-            return fail({ custom: 'parent: no parent' });
+            return reject({ custom: 'parent: no parent' });
         }
 
         const result = parser(makeStream([head.parent], input.env));
         if (result.success) {
-            return success(result.value, nextStream(input), result.diagnostic);
+            return yieldOne(result.value, nextStream(input), result.diagnostic);
         } else {
             return result;
         }
@@ -149,7 +149,7 @@ export function between<T, E>(left: TreeParser<any, E>, right: TreeParser<any, E
 
 function parsePathHelper<T, E>(pathComponents: string[], then: TreeParser<T, E>, input: Stream<XmlTree, E>): Result<Stream<XmlTree, E>, T> {
     if (pathComponents.length === 0) {
-        return fail({ custom: 'parse path: can\'t parse to empty path' });
+        return reject({ custom: 'parse path: can\'t parse to empty path' });
     }
     const pc = pathComponents[0];
 
@@ -157,7 +157,7 @@ function parsePathHelper<T, E>(pathComponents: string[], then: TreeParser<T, E>,
         ch.type === 'element' && nameEq(ch.name, pc));
     const child = input.stream[childIndex];
     if (!child) {
-        return fail({ custom: `parse path: ${pc}: can't find child` });
+        return reject({ custom: `parse path: ${pc}: can't find child` });
     }
 
     if (pathComponents.length < 2) {
@@ -192,12 +192,12 @@ export function textNode<T, E>(f?: (text: string) => T | null): TreeParser<T | s
         if (n.type === 'text') {
             if (f) {
                 const result = f(n.text);
-                return result !== null ? success(n.text) : fail({ custom: 'xml-text-rejected' });
+                return result !== null ? yieldOne(n.text) : reject({ custom: 'xml-text-rejected' });
             } else {
-                return success(n.text);
+                return yieldOne(n.text);
             }
         } else {
-            return fail({ custom: 'expected-xml- text' });
+            return reject({ custom: 'expected-xml- text' });
         }
     });
 }

@@ -1,8 +1,8 @@
 import { RawBookNode, AttributeName } from 'booka-common';
 import { XmlTree, path, xmlChildren, xmlElementParser } from '../xmlParser';
 import {
-    choice, makeStream, success, SuccessStreamParser, fullParser,
-    fail, headParser, envParser, translate, some, expected, empty, flattenResult,
+    choice, makeStream, yieldOne, SuccessStreamParser, fullParser,
+    reject, headParser, envParser, translate, some, expected, empty, flattenResult,
 } from '../combinators';
 import { isWhitespaces, flatten } from '../utils';
 import { buildRef } from './sectionParser.utils';
@@ -54,13 +54,13 @@ const container = envParser((env: EpubNodeParserEnv) => {
 
 const text: EpubNodeParser = headParser(node => {
     if (node.type !== 'text') {
-        return fail({ custom: 'expected-xml-text' });
+        return reject({ custom: 'expected-xml-text' });
     }
     // Skip whitespace nodes
     if (node.text.startsWith('\n') && isWhitespaces(node.text)) {
-        return success([]);
+        return yieldOne([]);
     } else {
-        return success([{
+        return yieldOne([{
             node: 'span',
             span: node.text,
         }]);
@@ -83,20 +83,20 @@ const a: EpubNodeParser = xmlElementParser(
     container,
     ([el, ch], env) => {
         if (el.attributes.href !== undefined) {
-            return success([{
+            return yieldOne([{
                 node: 'ref',
                 to: el.attributes.href,
                 content: ch,
             }]);
         } else if (el.attributes.id !== undefined) {
-            return success([{
+            return yieldOne([{
                 node: 'compound-raw',
                 ref: buildRef(env.filePath, el.attributes.id),
                 nodes: [ch],
             } as RawBookNode]);
         } else {
             // TODO: add diagnostic
-            return success([]);
+            return yieldOne([]);
         }
     });
 
@@ -110,12 +110,12 @@ const pph: EpubNodeParser = xmlElementParser(
     container,
     ([el, ch], env) => {
         return el.attributes.id
-            ? success([{
+            ? yieldOne([{
                 node: 'compound-raw',
                 ref: buildRef(env.filePath, el.attributes.id),
                 nodes: [ch],
             }])
-            : success([ch]);
+            : yieldOne([ch]);
     });
 
 const img: EpubNodeParser = xmlElementParser(
@@ -125,12 +125,12 @@ const img: EpubNodeParser = xmlElementParser(
     ([el], env) => {
         const src = el.attributes['src'];
         if (src) {
-            return success([{
+            return yieldOne([{
                 node: 'image-ref',
                 imageId: src,
             }]);
         } else {
-            return success([], undefined, { custom: 'img-must-have-src', node: el });
+            return yieldOne([], undefined, { custom: 'img-must-have-src', node: el });
         }
     });
 
@@ -141,12 +141,12 @@ const image: EpubNodeParser = xmlElementParser(
     ([el], env) => {
         const xlinkHref = el.attributes['xlink:href'];
         if (xlinkHref) {
-            return success([{
+            return yieldOne([{
                 node: 'image-ref',
                 imageId: xlinkHref,
             }]);
         } else {
-            return success([], { custom: 'image-must-have-xlinkhref', node: el });
+            return yieldOne([], { custom: 'image-must-have-xlinkhref', node: el });
         }
     });
 
@@ -156,7 +156,7 @@ const headerTitleParser: EpubNodeParser<string[]> = input => {
     const emptyTitleDiag = result.lines.length === 0
         ? { custom: 'no-title', nodes: input.stream }
         : undefined;
-    return success(result.lines, undefined, compoundDiagnostic([...result.diags, emptyTitleDiag]));
+    return yieldOne(result.lines, undefined, compoundDiagnostic([...result.diags, emptyTitleDiag]));
 };
 
 const header: EpubNodeParser = xmlElementParser(
@@ -165,7 +165,7 @@ const header: EpubNodeParser = xmlElementParser(
     headerTitleParser,
     ([el, title], env) => {
         const level = parseInt(el.name[1], 10);
-        return success([{
+        return yieldOne([{
             node: 'chapter-title',
             title: title,
             level: 4 - level,
@@ -176,25 +176,25 @@ const br: EpubNodeParser = xmlElementParser(
     'br',
     {},
     expected(empty(), undefined),
-    () => success([{ node: 'span', span: '\n' }]),
+    () => yieldOne([{ node: 'span', span: '\n' }]),
 );
 
 const svg: EpubNodeParser = xmlElementParser(
     'svg',
     { viewBox: null, xmlns: null, class: null },
     expected(empty(), undefined),
-    () => success([])
+    () => yieldOne([])
 );
 
 const ignore: EpubNodeParser = xmlElementParser(
     ['sup', 'sub', 'ul', 'li', 'br'], // TODO: do not ignore 'br'
     {},
     expected(empty(), undefined),
-    () => success([]),
+    () => yieldOne([]),
 );
 
 const skip: EpubNodeParser = headParser(node => {
-    return success([], undefined, { custom: 'unexpected-node', node });
+    return yieldOne([], undefined, { custom: 'unexpected-node', node });
 });
 
 const standardParsers = [
@@ -245,7 +245,7 @@ function attributeParser(tagNames: string[], attrs: AttributeName[]): EpubNodePa
         { class: null },
         container,
         ([el, ch], env) => {
-            return success([{
+            return yieldOne([{
                 node: 'attr',
                 attributes: attrs,
                 content: ch,

@@ -1,7 +1,7 @@
 import { KnownTag } from 'booka-common';
 import { MetadataRecordParser, EpubBookParser } from './epubBookParser';
 import {
-    headParser, success, makeStream, choice, flattenResult,
+    headParser, yieldOne, makeStream, choice, flattenResult,
     fullParser,
 } from '../combinators';
 
@@ -15,36 +15,36 @@ export const metadataParser: EpubBookParser<KnownTag[]> = async input => {
     const metaStream = makeStream(records);
     const result = full(metaStream);
     return result.success
-        ? success(result.value, input, result.diagnostic)
+        ? yieldOne(result.value, input, result.diagnostic)
         : result;
 };
 
 const defaultMetadataParser: MetadataRecordParser = headParser(([key, value]) => {
     switch (key) {
         case 'title':
-            return success([{ tag: 'title', value }]);
+            return yieldOne([{ tag: 'title', value }]);
         case 'creator':
-            return success([{ tag: 'author', value }]);
+            return yieldOne([{ tag: 'author', value }]);
         case 'cover':
-            return success([{ tag: 'cover-ref', value }]);
+            return yieldOne([{ tag: 'cover-ref', value }]);
         case 'subject':
-            return success([{ tag: 'subject', value }]);
+            return yieldOne([{ tag: 'subject', value }]);
         case 'language':
-            return success([{ tag: 'language', value }]);
+            return yieldOne([{ tag: 'language', value }]);
         case 'publisher':
-            return success([{ tag: 'publisher', value }]);
+            return yieldOne([{ tag: 'publisher', value }]);
         case 'description':
-            return success([{ tag: 'description', value }]);
+            return yieldOne([{ tag: 'description', value }]);
         case 'series':
-            return success([{ tag: 'series', value }]);
+            return yieldOne([{ tag: 'series', value }]);
         case 'ISBN':
-            return success([{ tag: 'ISBN', value }]);
+            return yieldOne([{ tag: 'ISBN', value }]);
         case 'dc:rights':
-            return success([{ tag: 'rights', value }]);
+            return yieldOne([{ tag: 'rights', value }]);
         case 'creatorFileAs':
         case 'date':
         case 'dc:identifier':
-            return success([] as KnownTag[]);
+            return yieldOne([] as KnownTag[]);
         default:
             return fail();
     }

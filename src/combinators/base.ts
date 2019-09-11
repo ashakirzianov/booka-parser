@@ -20,13 +20,13 @@ export type Fail = {
 export type Result<In, Out> = SuccessNext<In, Out> | Fail;
 export type ResultLast<Out> = SuccessLast<Out> | Fail;
 
-export function fail(reason?: ParserDiagnostic): Fail {
+export function reject(reason?: ParserDiagnostic): Fail {
     return { success: false, diagnostic: reason };
 }
 
-export function success<TIn, TOut>(value: TOut): SuccessLast<TOut>;
-export function success<TIn, TOut>(value: TOut, next: TIn | undefined, diagnostic?: ParserDiagnostic): SuccessNext<TIn, TOut>;
-export function success<TIn, TOut>(value: TOut, next?: TIn, diagnostic?: ParserDiagnostic): SuccessNext<TIn, TOut> {
+export function yieldOne<TIn, TOut>(value: TOut): SuccessLast<TOut>;
+export function yieldOne<TIn, TOut>(value: TOut, next: TIn | undefined, diagnostic?: ParserDiagnostic): SuccessNext<TIn, TOut>;
+export function yieldOne<TIn, TOut>(value: TOut, next?: TIn, diagnostic?: ParserDiagnostic): SuccessNext<TIn, TOut> {
     return {
         value, next, diagnostic,
         success: true,
@@ -53,7 +53,7 @@ export function and<T>(...ps: Array<Parser<T, any>>): Parser<T, any[]> {
         }
 
         const diagnostic = compoundDiagnostic(diagnostics);
-        return success(results, lastInput, diagnostic);
+        return yieldOne(results, lastInput, diagnostic);
     };
 }
 
@@ -68,7 +68,7 @@ export function seq<TI>(...ps: Array<Parser<TI, any>>): Parser<TI, any[]> {
         const diagnostics: ParserDiagnostic[] = [];
         for (let i = 0; i < ps.length; i++) {
             if (currentInput === undefined) {
-                return fail('empty-input');
+                return reject('empty-input');
             }
             const result = ps[i](currentInput);
             if (!result.success) {
@@ -80,7 +80,7 @@ export function seq<TI>(...ps: Array<Parser<TI, any>>): Parser<TI, any[]> {
         }
 
         const diagnostic = compoundDiagnostic(diagnostics);
-        return success(results, currentInput, diagnostic);
+        return yieldOne(results, currentInput, diagnostic);
     };
 }
 
@@ -105,7 +105,7 @@ export function choice<TI>(...ps: Array<Parser<TI, any>>): Parser<TI, any> {
             failReasons.push(result.diagnostic);
         }
 
-        return fail(compoundDiagnostic(failReasons));
+        return reject(compoundDiagnostic(failReasons));
     };
 }
 
@@ -141,7 +141,7 @@ export function some<In, Out>(parser: Parser<In, Out>): SuccessParser<In, Out[]>
         } while (currentResult.success);
 
         const diagnostic = compoundDiagnostic(diagnostics);
-        return success(results, currentInput, diagnostic);
+        return yieldOne(results, currentInput, diagnostic);
     };
 }
 
@@ -150,7 +150,7 @@ export function maybe<TIn, TOut>(parser: Parser<TIn, TOut>): SuccessParser<TIn, 
         const result = parser(input);
         return result.success
             ? result
-            : success(undefined, input);
+            : yieldOne(undefined, input);
     };
 }
 
@@ -166,7 +166,7 @@ export function guard<TI, TO>(parser: Parser<TI, TO>, f: (x: TO) => boolean): Pa
             const guarded = f(result.value);
             return guarded
                 ? result
-                : fail('guard-failed');
+                : reject('guard-failed');
         } else {
             return result;
         }
@@ -180,7 +180,7 @@ export function translate<TI, From, To>(parser: Parser<TI, From>, f: (from: From
         const from = parser(input);
         if (from.success) {
             const translated = f(from.value);
-            return success(translated, from.next, from.diagnostic);
+            return yieldOne(translated, from.next, from.diagnostic);
         } else {
             return from;
         }
@@ -205,11 +205,11 @@ export function translateAndWarn<TI, From, To>(parser: Parser<TI, From>, f: Warn
 
         const translated = f(from.value);
         if (translated === null) {
-            return fail('translate-reject');
+            return reject('translate-reject');
         } else if (isWarnPair(translated)) {
-            return success(translated.result, from.next, compoundDiagnostic([translated.diagnostic, from.diagnostic]));
+            return yieldOne(translated.result, from.next, compoundDiagnostic([translated.diagnostic, from.diagnostic]));
         } else {
-            return success(translated, from.next, from.diagnostic);
+            return yieldOne(translated, from.next, from.diagnostic);
         }
     };
 }
@@ -226,7 +226,7 @@ export function reparse<T, U, V>(parser: Parser<T, U>, reparser: Parser<U, V>): 
             const reresult = reparser(result.value);
             // TODO: add diagnostic from result
             if (reresult.success) {
-                return success(
+                return yieldOne(
                     reresult.value,
                     result.next,
                     compoundDiagnostic([result.diagnostic, reresult.diagnostic]),
@@ -254,7 +254,7 @@ export function declare<TIn, TOut>(): DeclaredParser<TIn, TOut> {
 }
 
 export function anyParser<I>(input: I): Result<I, I> {
-    return success(input, input);
+    return yieldOne(input, input);
 }
 
 type DiagnosticOrFn<TOut> = ParserDiagnostic | ((x: TOut) => ParserDiagnostic);
@@ -269,7 +269,7 @@ export function expected<TI, TO>(parser: Parser<TI, TO>, value: TO, diagFn?: (i:
         const result = parser(input);
         return result.success
             ? result
-            : success(
+            : yieldOne(
                 value,
                 input,
                 compoundDiagnostic([result.diagnostic, diagFn && diagFn(input)]),
@@ -283,9 +283,9 @@ export function unexpected<T>(mOrF: ParserDiagnostic | ((x: T) => ParserDiagnost
 
 export function failed<T>(mOrF: ParserDiagnostic | ((x: T) => ParserDiagnostic)): Parser<T, undefined> {
     if (typeof mOrF === 'function') {
-        return input => fail(mOrF(input));
+        return input => reject(mOrF(input));
     } else {
-        return () => fail(mOrF);
+        return () => reject(mOrF);
     }
 }
 
@@ -294,15 +294,15 @@ export function tagged<TIn, TOut>(parser: Parser<TIn, TOut>, f: (x: TIn) => stri
         const result = parser(input);
         return result.success
             ? result
-            : fail({
+            : reject({
                 context: f(input),
                 diagnostic: result.diagnostic,
             });
     };
 }
 
-export function yieldOne<In, Out>(f: (x: In) => Out): Parser<In, Out> {
-    return input => success(f(input), input);
+export function alwaysYield<In, Out>(f: (x: In) => Out): Parser<In, Out> {
+    return input => yieldOne(f(input), input);
 }
 
 export function endOfInput(): Parser<any, undefined> {

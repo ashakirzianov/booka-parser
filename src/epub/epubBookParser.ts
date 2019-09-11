@@ -1,7 +1,7 @@
 import { Book, KnownTag, RawBookNode } from 'booka-common';
 import { AsyncIter, equalsToOneOf } from '../utils';
 import {
-    makeStream, AsyncParser, success, StreamParser, ParserDiagnostic,
+    makeStream, AsyncParser, yieldOne, StreamParser, ParserDiagnostic,
     compoundDiagnostic,
 } from '../combinators';
 import { rawNodesParser } from '../rawNodesParser';
@@ -10,17 +10,17 @@ import { sectionsParser } from './sectionParser';
 import { metadataParser } from './metaParser';
 import { TreeParser } from '../xmlParser';
 
+export type EpubConverterHooks = {
+    nodeHooks: EpubNodeParser[],
+    metadataHooks: MetadataRecordParser[],
+};
 export type EpubBookParserInput = {
     epub: EpubBook,
     options: {
         [key in EpubKind]: EpubConverterHooks;
     },
 };
-
-export type EpubConverterHooks = {
-    nodeHooks: EpubNodeParser[],
-    metadataHooks: MetadataRecordParser[],
-};
+export type EpubBookParser<R = Book> = AsyncParser<EpubBookParserInput, R>;
 
 export type EpubNodeParserEnv = {
     recursive: TreeParser<RawBookNode[], EpubNodeParserEnv>,
@@ -28,7 +28,6 @@ export type EpubNodeParserEnv = {
 };
 export type EpubNodeParser<T = RawBookNode[]> = TreeParser<T, EpubNodeParserEnv>;
 export type MetadataRecordParser = StreamParser<[string, any], KnownTag[]>;
-export type EpubBookParser<R = Book> = AsyncParser<EpubBookParserInput, R>;
 
 export const epubBookParser: EpubBookParser = async input => {
     const { epub, options } = input;
@@ -66,7 +65,7 @@ export const epubBookParser: EpubBookParser = async input => {
         tags: tags,
     };
 
-    return success(book, input, compoundDiagnostic(diags));
+    return yieldOne(book, input, compoundDiagnostic(diags));
 };
 
 function buildMetaNodesFromTags(tags: KnownTag[]): RawBookNode[] {
