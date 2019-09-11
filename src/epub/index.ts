@@ -5,7 +5,7 @@ import { converterHooks } from './hooks';
 import { xmlStringParser } from '../xmlParser';
 import { AsyncParser, success } from '../combinators';
 
-export { MetadataRecord, EpubBookParserResult as EpubConverterResult } from './epubBookParser';
+export { MetadataRecord } from './epubBookParser';
 export { EpubKind } from './epubBook';
 
 export type FullEpubParser = AsyncParser<{ path: string }, Book>;
@@ -27,7 +27,7 @@ export const epubFullParser: FullEpubParser = async input => {
         });
 
         return result.success
-            ? success(result.value.book, input, result.diagnostic)
+            ? success(result.value, input, result.diagnostic)
             : result;
     } catch (e) {
         return fail({ custom: 'exception', err: e });

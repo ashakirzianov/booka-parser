@@ -1,8 +1,8 @@
 import { Book, KnownTag, RawBookNode } from 'booka-common';
 import { AsyncIter, equalsToOneOf } from '../utils';
 import {
-    makeStream, AsyncParser, success, StreamParser,
-    ParserDiagnostic,
+    makeStream, AsyncParser, success, StreamParser, ParserDiagnostic,
+    compoundDiagnostic,
 } from '../combinators';
 import { rawNodesParser } from '../rawNodesParser';
 import { EpubBook, EpubKind } from './epubBook';
@@ -10,10 +10,6 @@ import { sectionsParser } from './sectionParser';
 import { metadataParser } from './metaParser';
 import { EpubNodeParser } from './epubNodeParser';
 
-export type EpubBookParserResult = {
-    book: Book,
-    diagnostics: ParserDiagnostic[],
-};
 export type EpubBookParserInput = {
     epub: EpubBook,
     options: EpubBookParserOptionsTable,
@@ -23,6 +19,7 @@ export type EpubBookParserOptionsTable = {
     [key in EpubKind]: EpubConverterHooks;
 };
 
+// TODO: remove ?
 export type MetadataRecord = {
     key: string,
     value: any,
@@ -33,7 +30,7 @@ export type EpubConverterHooks = {
     metadataHooks: MetadataRecordParser[],
 };
 
-export type EpubBookParser<R = EpubBookParserResult> = AsyncParser<EpubBookParserInput, R>;
+export type EpubBookParser<R = Book> = AsyncParser<EpubBookParserInput, R>;
 
 export const epubBookParser: EpubBookParser = async input => {
     const { epub, options } = input;
@@ -60,6 +57,7 @@ export const epubBookParser: EpubBookParser = async input => {
     if (!rawNodeResult.success) {
         return rawNodeResult;
     }
+    diags.push(rawNodeResult.diagnostic);
     const volume = rawNodeResult.value;
     const book: Book = {
         volume,
@@ -70,10 +68,7 @@ export const epubBookParser: EpubBookParser = async input => {
         tags: tags,
     };
 
-    return success({
-        book: book,
-        diagnostics: [],
-    }, input);
+    return success(book, input, compoundDiagnostic(diags));
 };
 
 function buildMetaNodesFromTags(tags: KnownTag[]): RawBookNode[] {
