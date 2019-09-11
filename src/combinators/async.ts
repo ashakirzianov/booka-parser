@@ -20,7 +20,7 @@ export function andAsync<T>(...ps: Array<AsyncParser<T, any>>): AsyncParser<T, a
     return async input => {
         const results: any[] = [];
         const diagnostics: ParserDiagnostic[] = [];
-        let lastInput: T | undefined = input;
+        let lastNext: T | undefined = input;
         for (let i = 0; i < ps.length; i++) {
             const result = await ps[i](input);
             if (!result.success) {
@@ -28,11 +28,11 @@ export function andAsync<T>(...ps: Array<AsyncParser<T, any>>): AsyncParser<T, a
             }
             results.push(result.value);
             diagnostics.push(result.diagnostic);
-            lastInput = result.next;
+            lastNext = result.next;
         }
 
         const diagnostic = compoundDiagnostic(diagnostics);
-        return yieldOne(results, lastInput, diagnostic);
+        return yieldOne(results, lastNext, diagnostic);
     };
 }
 
@@ -43,7 +43,10 @@ export function translateAsync<TI, From, To>(parser: AsyncParser<TI, From>, f: (
         const from = await parser(input);
         if (from.success) {
             const translated = f(from.value);
-            return yieldOne(translated, from.next, from.diagnostic);
+            return {
+                ...from,
+                value: translated,
+            };
         } else {
             return from;
         }
