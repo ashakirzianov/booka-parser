@@ -12,11 +12,9 @@ import { EpubNodeParser } from './epubNodeParser';
 
 export type EpubBookParserInput = {
     epub: EpubBook,
-    options: EpubBookParserOptionsTable,
-};
-// TODO: remove ?
-export type EpubBookParserOptionsTable = {
-    [key in EpubKind]: EpubConverterHooks;
+    options: {
+        [key in EpubKind]: EpubConverterHooks;
+    },
 };
 
 // TODO: remove ?
