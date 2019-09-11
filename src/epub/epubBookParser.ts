@@ -1,8 +1,8 @@
 import { Book, KnownTag, RawBookNode } from 'booka-common';
-import { AsyncIter, equalsToOneOf } from '../utils';
+import { equalsToOneOf } from '../utils';
 import {
-    makeStream, AsyncParser, yieldLast, StreamParser, ParserDiagnostic,
-    compoundDiagnostic,
+    makeStream, yieldLast, StreamParser, andAsync, AsyncFullParser,
+    translateAsync, pipeAsync,
 } from '../combinators';
 import { rawNodesParser } from '../rawNodesParser';
 import { EpubBook, EpubKind } from './epubBook';
@@ -20,7 +20,7 @@ export type EpubBookParserInput = {
         [key in EpubKind]: EpubConverterHooks;
     },
 };
-export type EpubBookParser<R = Book> = AsyncParser<EpubBookParserInput, R>;
+export type EpubBookParser<R = Book> = AsyncFullParser<EpubBookParserInput, R>;
 
 export type EpubNodeParserEnv = {
     recursive: TreeParser<RawBookNode[], EpubNodeParserEnv>,
@@ -29,44 +29,38 @@ export type EpubNodeParserEnv = {
 export type EpubNodeParser<T = RawBookNode[]> = TreeParser<T, EpubNodeParserEnv>;
 export type MetadataRecordParser = StreamParser<[string, any], KnownTag[]>;
 
-export const epubBookParser: EpubBookParser = async input => {
-    const { epub, options } = input;
-    const diags: ParserDiagnostic[] = [];
-    if (epub.kind === 'unknown') {
-        diags.push({ custom: 'unknown-kind' });
+const diagnoseKind: EpubBookParser<EpubBook> = async input =>
+    input.epub.kind === 'unknown'
+        ? yieldLast(input.epub, { custom: 'unknown-kind' })
+        : yieldLast(input.epub);
+
+export const epubBookParser: EpubBookParser = pipeAsync(
+    andAsync(diagnoseKind, metadataParser, sectionsParser),
+    async ([epub, tags, rawNodes]) => {
+        const metaNodes = buildMetaNodesFromTags(tags);
+        const allNodes = rawNodes.concat(metaNodes);
+
+        const volumeResult = await rawNodesParser(makeStream(allNodes, {
+            resolveImageRef: epub.imageResolver,
+        }));
+
+        if (!volumeResult.success) {
+            return volumeResult;
+        }
+
+        const volume = volumeResult.value;
+        const book: Book = {
+            volume,
+            source: {
+                source: 'epub',
+                kind: epub.kind,
+            },
+            tags: tags,
+        };
+
+        return yieldLast(book, volumeResult.diagnostic);
     }
-
-    const hooks = options[epub.kind];
-    const metadataResult = await metadataParser(input);
-    const tags = metadataResult.success ? metadataResult.value : [];
-    const sections = await AsyncIter.toArray(epub.sections());
-    const sectionsParserResult = sectionsParser(makeStream(sections, {
-        hooks: hooks.nodeHooks,
-    }));
-    const rawNodes = sectionsParserResult.value;
-    const metaNodes = buildMetaNodesFromTags(tags);
-    const allNodes = rawNodes.concat(metaNodes);
-
-    const rawNodeResult = await rawNodesParser(makeStream(allNodes, {
-        resolveImageRef: epub.imageResolver,
-    }));
-
-    if (!rawNodeResult.success) {
-        return rawNodeResult;
-    }
-    diags.push(rawNodeResult.diagnostic);
-    const volume = rawNodeResult.value;
-    const book: Book = {
-        volume,
-        source: {
-            source: 'epub',
-            kind: epub.kind,
-        },
-        tags: tags,
-    };
-
-    return yieldLast(book, compoundDiagnostic(diags));
-};
+);
 
 function buildMetaNodesFromTags(tags: KnownTag[]): RawBookNode[] {
     const filtered = tags.filter(t => equalsToOneOf(t.tag, ['author', 'title', 'cover-ref']));
