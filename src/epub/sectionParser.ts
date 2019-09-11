@@ -5,11 +5,10 @@ import {
     successValue, fail, headParser, envParser, translate, some, expected, empty, flattenResult,
 } from '../combinators';
 import { isWhitespaces, flatten } from '../utils';
-import {
-    EpubNodeParserEnv, EpubNodeParser, buildRef,
-} from './epubNodeParser';
+import { buildRef } from './epubNodeParser';
 import { EpubSection } from './epubBook';
 import { ParserDiagnostic, compoundDiagnostic } from '../combinators/diagnostics';
+import { EpubNodeParser, EpubNodeParserEnv } from './epubBookParser';
 
 export type SectionsParserEnv = {
     hooks: EpubNodeParser[],

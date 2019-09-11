@@ -8,7 +8,7 @@ import { rawNodesParser } from '../rawNodesParser';
 import { EpubBook, EpubKind } from './epubBook';
 import { sectionsParser } from './sectionParser';
 import { metadataParser } from './metaParser';
-import { EpubNodeParser } from './epubNodeParser';
+import { TreeParser } from '../xmlParser';
 
 export type EpubBookParserInput = {
     epub: EpubBook,
@@ -17,12 +17,17 @@ export type EpubBookParserInput = {
     },
 };
 
-export type MetadataRecordParser = StreamParser<[string, any], KnownTag[]>;
 export type EpubConverterHooks = {
     nodeHooks: EpubNodeParser[],
     metadataHooks: MetadataRecordParser[],
 };
 
+export type EpubNodeParserEnv = {
+    recursive: TreeParser<RawBookNode[], EpubNodeParserEnv>,
+    filePath: string,
+};
+export type EpubNodeParser<T = RawBookNode[]> = TreeParser<T, EpubNodeParserEnv>;
+export type MetadataRecordParser = StreamParser<[string, any], KnownTag[]>;
 export type EpubBookParser<R = Book> = AsyncParser<EpubBookParserInput, R>;
 
 export const epubBookParser: EpubBookParser = async input => {

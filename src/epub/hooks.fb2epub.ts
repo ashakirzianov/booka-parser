@@ -1,6 +1,6 @@
 import { RawBookNode, IgnoreNode } from 'booka-common';
 import {
-    EpubConverterHooks, MetadataRecordParser,
+    EpubConverterHooks, MetadataRecordParser, EpubNodeParser,
 } from './epubBookParser';
 import {
     textNode, xmlChildren, whitespaced, extractText, isElementTree,
@@ -10,7 +10,7 @@ import {
     some, translate, choice, seq, and, headParser, envParser, successValue, fail,
 } from '../combinators';
 import { flatten } from '../utils';
-import { ignoreClass, EpubNodeParser, buildRef } from './epubNodeParser';
+import { ignoreClass, buildRef } from './epubNodeParser';
 
 export const fb2epubHooks: EpubConverterHooks = {
     nodeHooks: [

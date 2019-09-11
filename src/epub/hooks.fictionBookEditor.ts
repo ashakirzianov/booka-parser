@@ -1,8 +1,7 @@
 import { KnownTag } from 'booka-common';
 import { fail, successValue, headParser } from '../combinators';
 import { isTextTree, isElementTree, XmlTreeWithChildren } from '../xmlParser';
-import { EpubConverterHooks, MetadataRecordParser } from './epubBookParser';
-import { EpubNodeParser } from './epubNodeParser';
+import { EpubConverterHooks, MetadataRecordParser, EpubNodeParser } from './epubBookParser';
 
 export const fictionBookEditorHooks: EpubConverterHooks = {
     nodeHooks: [
