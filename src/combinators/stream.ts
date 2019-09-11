@@ -41,7 +41,7 @@ export function headParser<In, Out, Env = any>(f: HeadFn<In, Out, Env>): StreamP
 }
 
 export function empty<T = any, E = any>(): StreamParser<T, undefined, E> {
-    return input => input.stream.length === 0
+    return input => input.stream === undefined || input.stream.length === 0
         ? yieldOne(undefined, input)
         : reject({ custom: `Expected end of input`, rest: input });
 }

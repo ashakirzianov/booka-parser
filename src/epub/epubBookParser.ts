@@ -1,7 +1,7 @@
 import { Book, KnownTag, RawBookNode } from 'booka-common';
 import { AsyncIter, equalsToOneOf } from '../utils';
 import {
-    makeStream, AsyncParser, yieldOne, StreamParser, ParserDiagnostic,
+    makeStream, AsyncParser, yieldLast, StreamParser, ParserDiagnostic,
     compoundDiagnostic,
 } from '../combinators';
 import { rawNodesParser } from '../rawNodesParser';
@@ -65,7 +65,7 @@ export const epubBookParser: EpubBookParser = async input => {
         tags: tags,
     };
 
-    return yieldOne(book, input, compoundDiagnostic(diags));
+    return yieldLast(book, compoundDiagnostic(diags));
 };
 
 function buildMetaNodesFromTags(tags: KnownTag[]): RawBookNode[] {

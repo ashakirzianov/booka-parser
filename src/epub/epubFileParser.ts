@@ -4,7 +4,7 @@ import {
 } from './epubBook';
 import { XmlStringParser } from '../xmlParser';
 import { last } from '../utils';
-import { AsyncParser, yieldOne } from '../combinators';
+import { AsyncParser, yieldLast } from '../combinators';
 
 export type EpubParserInput = {
     filePath: string,
@@ -50,7 +50,7 @@ export const epubFileParser: EpubParser = async input => {
         },
     };
 
-    return yieldOne(book, input);
+    return yieldLast(book);
 };
 
 class FixedEpub extends EPub {

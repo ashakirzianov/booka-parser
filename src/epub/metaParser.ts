@@ -1,9 +1,8 @@
 import { KnownTag } from 'booka-common';
 import { MetadataRecordParser, EpubBookParser } from './epubBookParser';
 import {
-    headParser, yieldOne, makeStream, choice, flattenResult,
+    headParser, yieldLast, makeStream, choice, flattenResult,
     fullParser,
-    yieldLast,
 } from '../combinators';
 
 export const metadataParser: EpubBookParser<KnownTag[]> = async input => {
@@ -16,7 +15,7 @@ export const metadataParser: EpubBookParser<KnownTag[]> = async input => {
     const metaStream = makeStream(records);
     const result = full(metaStream);
     return result.success
-        ? yieldOne(result.value, input, result.diagnostic)
+        ? yieldLast(result.value, result.diagnostic)
         : result;
 };
 

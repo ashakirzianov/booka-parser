@@ -258,17 +258,6 @@ export function declare<TIn, TOut>(): DeclaredParser<TIn, TOut> {
     return declared as DeclaredParser<TIn, TOut>;
 }
 
-export function anyParser<I>(input: I): Result<I, I> {
-    return yieldOne(input, input);
-}
-
-type DiagnosticOrFn<TOut> = ParserDiagnostic | ((x: TOut) => ParserDiagnostic);
-function getDiagnostic<TOut>(result: Result<any, TOut>, mOrF: DiagnosticOrFn<TOut>) {
-    return typeof mOrF === 'function'
-        ? (result.success ? mOrF(result.value) : undefined)
-        : mOrF;
-}
-
 export function expected<TI, TO>(parser: Parser<TI, TO>, value: TO, diagFn?: (i: TI) => ParserDiagnostic): SuccessParser<TI, TO> {
     return input => {
         const result = parser(input);

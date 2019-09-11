@@ -2,7 +2,7 @@ import { EpubConverterHooks, MetadataRecordParser, EpubNodeParser } from './epub
 import { ignoreTags, buildRef } from './sectionParser.utils';
 import { xmlName, xmlNameAttrs, xmlChildren, textNode, whitespaces } from '../xmlParser';
 import {
-    and, translate, seq, maybe, envParser, headParser, yieldOne, reject, yieldLast,
+    and, translate, seq, maybe, envParser, headParser, reject, yieldLast,
 } from '../combinators';
 
 export const gutenbergHooks: EpubConverterHooks = {

@@ -3,7 +3,7 @@ import { epubFileParser } from './epubFileParser';
 import { epubBookParser } from './epubBookParser';
 import { converterHooks } from './hooks';
 import { xmlStringParser } from '../xmlParser';
-import { AsyncParser, yieldOne } from '../combinators';
+import { AsyncParser, yieldLast } from '../combinators';
 
 export { EpubKind } from './epubBook';
 
@@ -27,6 +27,6 @@ export const epubParser: AsyncParser<EpubParserInput, Book> = async ({ filePath 
     });
 
     return result.success
-        ? yieldOne(result.value, { filePath }, result.diagnostic)
+        ? yieldLast(result.value, result.diagnostic)
         : result;
 };

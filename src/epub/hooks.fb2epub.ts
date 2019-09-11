@@ -7,7 +7,7 @@ import {
     nameEq, XmlTree, xmlNameAttrs, xmlNameAttrsChildren, xmlAttributes, xmlNameChildren,
 } from '../xmlParser';
 import {
-    some, translate, choice, seq, and, headParser, envParser, yieldOne, reject, yieldLast,
+    some, translate, choice, seq, and, headParser, envParser, reject, yieldLast,
 } from '../combinators';
 import { flatten } from '../utils';
 import { ignoreClass, buildRef } from './sectionParser.utils';

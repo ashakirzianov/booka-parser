@@ -1,13 +1,13 @@
 import * as parseXmlLib from '@rgrove/parse-xml';
 import { assertNever, isWhitespaces } from '../utils';
-import { yieldOne, Parser } from '../combinators';
+import { yieldLast, Parser } from '../combinators';
 
 export type XmlStringParser = Parser<string, XmlTreeDocument>;
 
 export const xmlStringParser: XmlStringParser = xmlString => {
     try {
         const tree = parseXmlLib(xmlString, { preserveComments: false });
-        return yieldOne(tree, '');
+        return yieldLast(tree);
     } catch (e) {
         return fail(e);
     }

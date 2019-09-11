@@ -1,5 +1,5 @@
 import { KnownTag } from 'booka-common';
-import { reject, yieldOne, headParser, yieldLast } from '../combinators';
+import { reject, headParser, yieldLast } from '../combinators';
 import { isTextTree, isElementTree, XmlTreeWithChildren } from '../xmlParser';
 import { EpubConverterHooks, MetadataRecordParser, EpubNodeParser } from './epubBookParser';
 
