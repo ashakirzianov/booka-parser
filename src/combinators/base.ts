@@ -7,14 +7,14 @@ export type SuccessParser<TIn, TOut> = (input: TIn) => SuccessNext<TIn, TOut>;
 export type SuccessLast<Out> = {
     success: true,
     value: Out,
-    diagnostic: ParserDiagnostic,
+    diagnostic?: ParserDiagnostic,
 };
 export type SuccessNext<In, Out> = SuccessLast<Out> & {
     next?: In,
 };
 export type Fail = {
     success: false,
-    diagnostic: ParserDiagnostic,
+    diagnostic?: ParserDiagnostic,
 };
 
 export type Result<In, Out> = SuccessNext<In, Out> | Fail;
@@ -307,4 +307,28 @@ export function tagged<TIn, TOut>(parser: Parser<TIn, TOut>, f: (x: TIn) => stri
 
 export function yieldOne<In, Out>(f: (x: In) => Out): Parser<In, Out> {
     return input => success(f(input), input);
+}
+
+export function endOfInput(): Parser<any, undefined> {
+    return input => input === undefined
+        ? { success: true, value: undefined }
+        : { success: false, diagnostic: 'expected-end' };
+}
+
+export function expectEnd<In, Out>(parser: Parser<In, Out>): FullParser<In, Out> {
+    return input => {
+        const result = parser(input);
+
+        if (!result.success) {
+            return result;
+        }
+
+        return result.next === undefined
+            ? result
+            : {
+                ...result,
+                next: undefined,
+                diagnostic: compoundDiagnostic([result.diagnostic, 'expected-end']),
+            };
+    };
 }
