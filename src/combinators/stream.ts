@@ -1,4 +1,4 @@
-import { Parser, success, fail, SuccessParser, ResultValue, some } from './base';
+import { Parser, success, fail, SuccessParser, some, ResultLast } from './base';
 import { compoundDiagnostic } from './diagnostics';
 
 export type Stream<T, E = undefined> = {
@@ -26,7 +26,7 @@ export function nextStream<T, E>(input: Stream<T, E>): Stream<T, E> | undefined 
         : undefined;
 }
 
-export type HeadFn<In, Out, Env> = (head: In, env: Env) => ResultValue<Out>;
+export type HeadFn<In, Out, Env> = (head: In, env: Env) => ResultLast<Out>;
 export function headParser<In, Out, Env = any>(f: HeadFn<In, Out, Env>): StreamParser<In, Out, Env> {
     return (input: Stream<In, Env>) => {
         const head = input.stream[0];

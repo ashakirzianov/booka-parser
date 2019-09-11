@@ -2,7 +2,7 @@ import { EpubConverterHooks, MetadataRecordParser, EpubNodeParser } from './epub
 import { ignoreTags, buildRef } from './sectionParser.utils';
 import { xmlName, xmlNameAttrs, xmlChildren, textNode, whitespaces } from '../xmlParser';
 import {
-    and, translate, seq, maybe, envParser, headParser, successValue, fail,
+    and, translate, seq, maybe, envParser, headParser, success, fail,
 } from '../combinators';
 
 export const gutenbergHooks: EpubConverterHooks = {
@@ -28,12 +28,12 @@ function metaHook(): MetadataRecordParser {
                     if (matches && matches[1]) {
                         const index = parseInt(matches[1], 10);
                         if (index) {
-                            return successValue([{ tag: 'pg-index', value: index }]);
+                            return success([{ tag: 'pg-index', value: index }]);
                         }
                     }
                 }
 
-                return successValue([], { custom: 'bad-meta', meta: { key, value } });
+                return success([], { custom: 'bad-meta', meta: { key, value } });
             default:
                 return fail();
         }

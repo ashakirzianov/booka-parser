@@ -1,5 +1,5 @@
 import { KnownTag } from 'booka-common';
-import { fail, successValue, headParser } from '../combinators';
+import { fail, success, headParser } from '../combinators';
 import { isTextTree, isElementTree, XmlTreeWithChildren } from '../xmlParser';
 import { EpubConverterHooks, MetadataRecordParser, EpubNodeParser } from './epubBookParser';
 
@@ -14,17 +14,24 @@ function metaHook(): MetadataRecordParser {
     return headParser(([key, value]) => {
         switch (key) {
             case 'FB2.book-info.translator':
-                return successValue([{ tag: 'translator', value }]);
+                return success([{ tag: 'translator', value }]);
             case 'FB2.publish-info.book-name':
-                return successValue([{ tag: 'title', value }]);
+                return success([{ tag: 'title', value }]);
             case 'FB2.publish-info.city':
-                return successValue([{ tag: 'publish-city', value }]);
+                return success([{ tag: 'publish-city', value }]);
             case 'FB2.publish-info.year':
                 const year = parseInt(value, 10);
                 if (!year) {
-                    return successValue([], { custom: 'bad-meta', meta: { key, value } });
+                    return {
+                        success: true,
+                        value: [],
+                        diagnostic: {
+                            custom: 'bad-meta',
+                            meta: { key, value },
+                        },
+                    };
                 } else {
-                    return successValue([{ tag: 'publish-year', value: year }]);
+                    return success([{ tag: 'publish-year', value: year }]);
                 }
             case 'FB2EPUB.conversionDate':
             case 'FB2EPUB.version':
@@ -36,7 +43,7 @@ function metaHook(): MetadataRecordParser {
             case 'FB2.document-info.history':
             case 'FB2.document-info.version':
             case 'FB2.document-info.id':
-                return successValue([] as KnownTag[]);
+                return success<any, any>([]);
             default:
                 return fail();
         }
@@ -74,7 +81,7 @@ function titleElement(): EpubNodeParser {
             if (!isNaN(level)) {
                 const title = extractTextLines(el);
                 if (title) {
-                    return successValue([{
+                    return success([{
                         node: 'chapter-title',
                         level: 1 - level,
                         title,

@@ -18,22 +18,18 @@ export type Fail = {
 };
 
 export type Result<In, Out> = SuccessNext<In, Out> | Fail;
-export type ResultValue<Out> = SuccessLast<Out> | Fail;
+export type ResultLast<Out> = SuccessLast<Out> | Fail;
 
 export function fail(reason?: ParserDiagnostic): Fail {
     return { success: false, diagnostic: reason };
 }
 
-export function success<TIn, TOut>(value: TOut, next: TIn | undefined, diagnostic?: ParserDiagnostic): SuccessNext<TIn, TOut> {
+export function success<TIn, TOut>(value: TOut): SuccessLast<TOut>;
+export function success<TIn, TOut>(value: TOut, next: TIn | undefined, diagnostic?: ParserDiagnostic): SuccessNext<TIn, TOut>;
+export function success<TIn, TOut>(value: TOut, next?: TIn, diagnostic?: ParserDiagnostic): SuccessNext<TIn, TOut> {
     return {
         value, next, diagnostic,
         success: true,
-    };
-}
-
-export function successValue<Out>(value: Out, diagnostic?: ParserDiagnostic): SuccessLast<Out> {
-    return {
-        success: true, value, diagnostic,
     };
 }
 

@@ -1,8 +1,8 @@
 import { KnownTag } from 'booka-common';
 import { MetadataRecordParser, EpubBookParser } from './epubBookParser';
 import {
-    headParser, successValue, makeStream, choice, flattenResult,
-    fullParser, success,
+    headParser, success, makeStream, choice, flattenResult,
+    fullParser,
 } from '../combinators';
 
 export const metadataParser: EpubBookParser<KnownTag[]> = async input => {
@@ -22,29 +22,29 @@ export const metadataParser: EpubBookParser<KnownTag[]> = async input => {
 const defaultMetadataParser: MetadataRecordParser = headParser(([key, value]) => {
     switch (key) {
         case 'title':
-            return successValue([{ tag: 'title', value }]);
+            return success([{ tag: 'title', value }]);
         case 'creator':
-            return successValue([{ tag: 'author', value }]);
+            return success([{ tag: 'author', value }]);
         case 'cover':
-            return successValue([{ tag: 'cover-ref', value }]);
+            return success([{ tag: 'cover-ref', value }]);
         case 'subject':
-            return successValue([{ tag: 'subject', value }]);
+            return success([{ tag: 'subject', value }]);
         case 'language':
-            return successValue([{ tag: 'language', value }]);
+            return success([{ tag: 'language', value }]);
         case 'publisher':
-            return successValue([{ tag: 'publisher', value }]);
+            return success([{ tag: 'publisher', value }]);
         case 'description':
-            return successValue([{ tag: 'description', value }]);
+            return success([{ tag: 'description', value }]);
         case 'series':
-            return successValue([{ tag: 'series', value }]);
+            return success([{ tag: 'series', value }]);
         case 'ISBN':
-            return successValue([{ tag: 'ISBN', value }]);
+            return success([{ tag: 'ISBN', value }]);
         case 'dc:rights':
-            return successValue([{ tag: 'rights', value }]);
+            return success([{ tag: 'rights', value }]);
         case 'creatorFileAs':
         case 'date':
         case 'dc:identifier':
-            return successValue([] as KnownTag[]);
+            return success([] as KnownTag[]);
         default:
             return fail();
     }

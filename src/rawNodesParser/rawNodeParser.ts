@@ -8,7 +8,7 @@ import { resolveReferences } from './resolveReferences';
 import { flattenNodes } from './flattenNodes';
 import {
     AsyncStreamParser, success, ParserDiagnostic,
-    compoundDiagnostic, ResultValue, successValue, SuccessLast,
+    compoundDiagnostic, ResultLast, SuccessLast,
 } from '../combinators';
 
 export type RawNodesParserEnv = {
@@ -65,7 +65,7 @@ async function buildChapters(rawNodes: RawBookNode[], env: RawNodesParserEnv): P
         ? { custom: 'extra-nodes-tail', nodes: rawNodes }
         : undefined;
 
-    return successValue(nodes, compoundDiagnostic([diag, tailDiag]));
+    return success(nodes, undefined, compoundDiagnostic([diag, tailDiag]));
 }
 
 type BuildChaptersResult = {
@@ -114,12 +114,12 @@ async function buildChaptersImpl(rawNodes: RawBookNode[], level: number | undefi
 }
 
 // TODO: propagate diags
-async function resolveRawNode(rawNode: RawBookNode, env: RawNodesParserEnv): Promise<ResultValue<BookContentNode>> {
+async function resolveRawNode(rawNode: RawBookNode, env: RawNodesParserEnv): Promise<ResultLast<BookContentNode>> {
     switch (rawNode.node) {
         case 'image-ref':
             const imageBuffer = await env.resolveImageRef(rawNode.imageId);
             if (imageBuffer) {
-                return successValue({
+                return success({
                     node: 'image-data',
                     id: rawNode.imageId,
                     data: imageBuffer,
@@ -132,7 +132,7 @@ async function resolveRawNode(rawNode: RawBookNode, env: RawNodesParserEnv): Pro
         case 'ref':
             const span = spanFromRawNode(rawNode);
             if (span.success) {
-                return successValue({
+                return success({
                     node: 'paragraph',
                     span: span.value,
                 });
@@ -148,7 +148,7 @@ async function resolveRawNode(rawNode: RawBookNode, env: RawNodesParserEnv): Pro
                     .map(r => r.success ? r.value : undefined)
             );
             const ds = rs.map(r => r.diagnostic);
-            return successValue({
+            return success({
                 node: 'paragraph',
                 span: {
                     span: 'compound',

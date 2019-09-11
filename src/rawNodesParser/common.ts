@@ -1,18 +1,22 @@
 import { assignAttributes, RawBookNode, Span } from 'booka-common';
 import { filterUndefined, assertNever } from '../utils';
-import { ResultValue, successValue, compoundDiagnostic, fail } from '../combinators';
+import { ResultLast, success, compoundDiagnostic, fail } from '../combinators';
 
 export function spanFromRawNode(
     rawNode: RawBookNode,
     titles?: string[], // TODO: find better solution
-): ResultValue<Span> {
+): ResultLast<Span> {
     switch (rawNode.node) {
         case 'span':
-            return successValue(rawNode.span);
+            return success(rawNode.span);
         case 'attr':
             const attrSpan = spanFromRawNode(rawNode.content, titles);
             if (attrSpan.success) {
-                return successValue(assignAttributes(...rawNode.attributes)(attrSpan.value), attrSpan.diagnostic);
+                return success(
+                    assignAttributes(...rawNode.attributes)(attrSpan.value),
+                    undefined,
+                    attrSpan.diagnostic,
+                );
             } else {
                 return fail({ custom: 'couldnt-build-span', node: rawNode, context: 'attr' });
             }
@@ -23,10 +27,13 @@ export function spanFromRawNode(
                 insideResults
                     .map(r => r.success ? r.value : undefined)
             );
-            return successValue({
+            return success({
                 span: 'compound',
                 spans: spans,
-            }, compoundDiagnostic(insideResults.map(r => r.diagnostic)));
+            },
+                undefined,
+                compoundDiagnostic(insideResults.map(r => r.diagnostic)),
+            );
         case 'ignore':
             return fail();
         case 'chapter-title':
