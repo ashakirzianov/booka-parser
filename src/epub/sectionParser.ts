@@ -5,7 +5,7 @@ import {
     successValue, fail, headParser, envParser, translate, some, expected, empty, flattenResult,
 } from '../combinators';
 import { isWhitespaces, flatten } from '../utils';
-import { buildRef } from './epubNodeParser';
+import { buildRef } from './sectionParser.utils';
 import { EpubSection } from './epubBook';
 import { ParserDiagnostic, compoundDiagnostic } from '../combinators/diagnostics';
 import { EpubNodeParser, EpubNodeParserEnv } from './epubBookParser';

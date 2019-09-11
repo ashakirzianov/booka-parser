@@ -1,5 +1,5 @@
 import { EpubConverterHooks, MetadataRecordParser, EpubNodeParser } from './epubBookParser';
-import { ignoreTags, buildRef } from './epubNodeParser';
+import { ignoreTags, buildRef } from './sectionParser.utils';
 import { xmlName, xmlNameAttrs, xmlChildren, textNode, whitespaces } from '../xmlParser';
 import {
     and, translate, seq, maybe, envParser, headParser, successValue, fail,
