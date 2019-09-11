@@ -1,3 +1,5 @@
+import { filterUndefined } from '../utils';
+
 export type Severity =
     | 'error' | undefined // NOTE: treat undefined as 'error'
     | 'info'
@@ -27,9 +29,10 @@ export type ParserDiagnostic =
     | CustomParserDiagnostic | EmptyParserDiagnostic;
 
 export function compoundDiagnostic(diags: ParserDiagnostic[]): ParserDiagnostic {
-    return {
-        diagnostics: diags,
-    };
+    const result = filterUndefined(diags);
+    return result.length === 0 ? undefined
+        : result.length === 1 ? result[0]
+            : { diagnostics: diags };
 }
 
 export function isEmptyDiagnostic(diag: ParserDiagnostic): boolean {

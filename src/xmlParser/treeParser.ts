@@ -27,8 +27,8 @@ export function xmlElementParser<R, Ch, E = any>(
 ): TreeParser<R, E> {
     return input => {
         const parser = children
-            ? projectLast(and(xmlName(name), expected(xmlAttributes(expectedAttributes)), xmlChildren(children)))
-            : projectLast(and(xmlName(name), expected(xmlAttributes(expectedAttributes))));
+            ? projectLast(and(xmlName(name), expected(xmlAttributes(expectedAttributes), undefined), xmlChildren(children)))
+            : projectLast(and(xmlName(name), expected(xmlAttributes(expectedAttributes), undefined)));
         const result = parser(input);
         if (!result.success) {
             return result;

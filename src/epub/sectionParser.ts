@@ -208,17 +208,6 @@ const standardParsers = [
     ignore, skip,
 ];
 
-function buildContainerNode(nodes: XmlTree[], env: EpubNodeParserEnv): RawBookNode {
-    const parser = fullParser(env.recursive);
-    const stream = makeStream(nodes, env);
-    const result = parser(stream);
-
-    return {
-        node: 'compound-raw',
-        nodes: result.value,
-    };
-}
-
 function extractTitle(nodes: XmlTree[], ds: ParserDiagnoser): ChapterTitle {
     const lines: string[] = [];
     for (const node of nodes) {

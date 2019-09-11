@@ -256,17 +256,17 @@ function getDiagnostic<TOut>(result: Result<any, TOut>, mOrF: DiagnosticOrFn<TOu
         : mOrF;
 }
 
-export function expected<TI, TO>(parser: Parser<TI, TO>): SuccessParser<TI, TO | undefined> {
+export function expected<TI, TO>(parser: Parser<TI, TO>, value: TO, diag?: ParserDiagnostic): SuccessParser<TI, TO> {
     return input => {
         const result = parser(input);
         return result.success
             ? result
-            : success(undefined, input, result.diagnostic);
+            : success(value, input, compoundDiagnostic([result.diagnostic, diag]));
     };
 }
 
 export function unexpected<T>(mOrF: ParserDiagnostic | ((x: T) => ParserDiagnostic)) {
-    return expected(failed<T>(mOrF));
+    return expected(failed<T>(mOrF), undefined);
 }
 
 export function failed<T>(mOrF: ParserDiagnostic | ((x: T) => ParserDiagnostic)): Parser<T, undefined> {
