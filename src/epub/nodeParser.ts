@@ -1,13 +1,11 @@
 import { RawBookNode } from 'booka-common';
 import { ParserDiagnoser } from '../log';
 import {
-    XmlTree, XmlTreeElement, isElementTree, TreeParser,
-    XmlAttributes, elementNode,
+    XmlTree, TreeParser, elementNode,
 } from '../xmlParser';
 import {
-    SuccessParser, Stream, some, HeadFn, yieldOne, headParser, success, successValue, fail,
+    SuccessParser, Stream, some, yieldOne, success, successValue, fail,
 } from '../combinators';
-import { Constraint, ConstraintMap, checkValue, checkObject } from '../constraint';
 import { equalsToOneOf, flatten } from '../utils';
 
 export type EpubNodeParser<T = RawBookNode[]> = TreeParser<T, EpubNodeParserEnv>;
@@ -17,37 +15,6 @@ export type EpubNodeParserEnv = {
     recursive: TreeParser<RawBookNode[], EpubNodeParserEnv>,
     filePath: string,
 };
-
-export function constrainElement<N extends string>(
-    nameConstraint: Constraint<string, N>,
-    attrsConstraint: ConstraintMap<XmlAttributes>,
-    fn: HeadFn<XmlTreeElement, RawBookNode[], EpubNodeParserEnv>,
-): EpubNodeParser {
-    return headParser((node, env) => {
-        if (!isElementTree(node)) {
-            return fail();
-        }
-
-        const nameCheck = checkValue(node.name, nameConstraint);
-        if (!nameCheck) {
-            return fail();
-        }
-
-        const attrCheck = checkObject(node.attributes, attrsConstraint);
-        for (const failedCheck of attrCheck) {
-            env.ds.add({
-                diag: 'unexpected-attr',
-                element: node,
-                name: failedCheck.key,
-                value: failedCheck.value,
-                constraint: failedCheck.constraint,
-            });
-        }
-
-        const result = fn(node, env);
-        return result;
-    });
-}
 
 export function ignoreClass(className: string): EpubNodeParser {
     return elementNode<RawBookNode[], EpubNodeParserEnv>(el =>

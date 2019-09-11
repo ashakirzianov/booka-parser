@@ -245,6 +245,10 @@ export function declare<TIn, TOut>(): DeclaredParser<TIn, TOut> {
     return declared as DeclaredParser<TIn, TOut>;
 }
 
+export function anyParser<I>(input: I): Result<I, I> {
+    return success(input, input);
+}
+
 type DiagnosticOrFn<TOut> = ParserDiagnostic | ((x: TOut) => ParserDiagnostic);
 function getDiagnostic<TOut>(result: Result<any, TOut>, mOrF: DiagnosticOrFn<TOut>) {
     return typeof mOrF === 'function'

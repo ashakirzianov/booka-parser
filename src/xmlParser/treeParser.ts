@@ -19,14 +19,16 @@ export function elementNode<O, E>(f: HeadFn<XmlTreeElement, O, E>) {
     });
 }
 
-export function xmlElement<R, Ch, E = any>(
+export function xmlElementParser<R, Ch, E = any>(
     name: Constraint<string>,
     expectedAttributes: ConstraintMap<XmlAttributes>,
-    children: TreeParser<Ch, E>,
+    children: TreeParser<Ch, E> | null,
     projection: HeadFn<[XmlTreeElement, Ch], R, E>,
 ): TreeParser<R, E> {
     return input => {
-        const parser = projectLast(and(xmlName(name), expected(xmlAttributes(expectedAttributes)), xmlChildren(children)));
+        const parser = children
+            ? projectLast(and(xmlName(name), expected(xmlAttributes(expectedAttributes)), xmlChildren(children)))
+            : projectLast(and(xmlName(name), expected(xmlAttributes(expectedAttributes))));
         const result = parser(input);
         if (!result.success) {
             return result;
@@ -36,7 +38,7 @@ export function xmlElement<R, Ch, E = any>(
             return fail('empty-stream');
         }
 
-        const proj = projection([head as XmlTreeElement, result.value], input.env);
+        const proj = projection([head as XmlTreeElement, result.value as Ch], input.env);
         return proj.success
             ? success(proj.value, nextStream(input), proj.diagnostic)
             : fail(proj.diagnostic);

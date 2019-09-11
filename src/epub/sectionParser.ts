@@ -1,13 +1,13 @@
 import { ChapterTitle, RawBookNode, AttributeName } from 'booka-common';
-import { XmlTree, path, xmlChildren } from '../xmlParser';
+import { XmlTree, path, xmlChildren, xmlElementParser } from '../xmlParser';
 import {
     choice, makeStream, success, emptyStream, SuccessStreamParser,
-    successValue, fail, headParser,
+    successValue, fail, headParser, envParser, translate,
 } from '../combinators';
 import { isWhitespaces } from '../utils';
 import { ParserDiagnoser } from '../log';
 import {
-    EpubNodeParserEnv, constrainElement, EpubNodeParser, fullParser, buildRef,
+    EpubNodeParserEnv, EpubNodeParser, fullParser, buildRef,
 } from './nodeParser';
 import { EpubSection } from './epubBook';
 
@@ -45,6 +45,16 @@ export const sectionsParser: SectionsParser = input => {
     return success(result, emptyStream(input.env));
 };
 
+const container = envParser((env: EpubNodeParserEnv) => {
+    return translate(
+        fullParser(env.recursive),
+        nodes => ({
+            node: 'compound-raw',
+            nodes,
+        } as RawBookNode),
+    );
+});
+
 const text: EpubNodeParser = headParser(node => {
     if (node.type !== 'text') {
         return fail({ custom: 'expected-xml-text' });
@@ -67,52 +77,55 @@ const small = attributeParser(['small'], ['small']);
 const big = attributeParser(['big'], ['big']);
 const attr = choice(italic, bold, quote, small, big);
 
-const a = constrainElement(
+const a: EpubNodeParser = xmlElementParser(
     'a',
     {
         class: null, href: null,
         id: null, title: null, tag: null,
     },
-    (el, env) => {
+    container,
+    ([el, ch], env) => {
         if (el.attributes.href !== undefined) {
             return successValue([{
                 node: 'ref',
                 to: el.attributes.href,
-                content: buildContainerNode(el.children, env),
+                content: ch,
             }]);
         } else if (el.attributes.id !== undefined) {
             return successValue([{
                 node: 'compound-raw',
                 ref: buildRef(env.filePath, el.attributes.id),
-                nodes: [buildContainerNode(el.children, env)],
-            }]);
+                nodes: [ch],
+            } as RawBookNode]);
         } else {
+            // TODO: add diagnostic
             return successValue([]);
         }
     });
 
 // TODO: re-implement (do not extra wrap container)
-const pph = constrainElement(
+const pph: EpubNodeParser = xmlElementParser(
     ['p', 'div', 'span'],
     {
         class: null, id: null,
         'xml:space': null, // TODO: handle ?
     },
-    (el, env) => {
-        const container = buildContainerNode(el.children, env);
+    container,
+    ([el, ch], env) => {
         return el.attributes.id
             ? successValue([{
                 node: 'compound-raw',
                 ref: buildRef(env.filePath, el.attributes.id),
-                nodes: [container],
+                nodes: [ch],
             }])
-            : successValue([container]);
+            : successValue([ch]);
     });
 
-const img = constrainElement(
+const img: EpubNodeParser = xmlElementParser(
     'img',
     { src: null, alt: null, class: null },
-    (el, env) => {
+    null,
+    ([el], env) => {
         const src = el.attributes['src'];
         if (src) {
             return successValue([{
@@ -128,24 +141,30 @@ const img = constrainElement(
         }
     });
 
-const image = constrainElement('image', {}, (el, env) => {
-    const xlinkHref = el.attributes['xlink:href'];
-    if (xlinkHref) {
-        return successValue([{
-            node: 'image-ref',
-            imageId: xlinkHref,
-        }]);
-    } else {
-        env.ds.add({ diag: 'image-must-have-xlinkhref', node: el });
-        return successValue([]);
-    }
-});
+const image: EpubNodeParser = xmlElementParser(
+    'image',
+    {},
+    null,
+    ([el], env) => {
+        const xlinkHref = el.attributes['xlink:href'];
+        if (xlinkHref) {
+            return successValue([{
+                node: 'image-ref',
+                imageId: xlinkHref,
+            }]);
+        } else {
+            env.ds.add({ diag: 'image-must-have-xlinkhref', node: el });
+            return successValue([]);
+        }
+    });
 
-const header = constrainElement(
+const header: EpubNodeParser = xmlElementParser(
     ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'],
     { id: null },
-    (el, env) => {
+    null,
+    ([el], env) => {
         const level = parseInt(el.name[1], 10);
+        // TODO: Implement as parser
         const title = extractTitle(el.children, env.ds);
         if (title.length === 0) {
             env.ds.add({ diag: 'no-title', node: el });
@@ -157,20 +176,24 @@ const header = constrainElement(
         }]);
     });
 
-const br = constrainElement(
-    'br', {},
+const br: EpubNodeParser = xmlElementParser(
+    'br',
+    {},
+    null,
     () => successValue([{ node: 'span', span: '\n' }]),
 );
 
-const svg = constrainElement(
+const svg: EpubNodeParser = xmlElementParser(
     'svg',
     { viewBox: null, xmlns: null, class: null },
+    null,
     () => successValue([])
 );
 
-const ignore = constrainElement(
+const ignore: EpubNodeParser = xmlElementParser(
     ['sup', 'sub', 'ul', 'li', 'br'], // TODO: do not ignore 'br'
     {},
+    null,
     () => successValue([]),
 );
 
@@ -229,12 +252,16 @@ function extractTitle(nodes: XmlTree[], ds: ParserDiagnoser): ChapterTitle {
     return lines;
 }
 
-function attributeParser(tagNames: string[], attrs: AttributeName[]) {
-    return constrainElement(tagNames, { class: null }, (el, env) => {
-        return successValue([{
-            node: 'attr',
-            attributes: attrs,
-            content: buildContainerNode(el.children, env),
-        }]);
-    });
+function attributeParser(tagNames: string[], attrs: AttributeName[]): EpubNodeParser {
+    return xmlElementParser(
+        tagNames,
+        { class: null },
+        container,
+        ([el, ch], env) => {
+            return successValue([{
+                node: 'attr',
+                attributes: attrs,
+                content: ch,
+            }]);
+        });
 }
