@@ -7,11 +7,11 @@ import {
     SuccessParser, Stream, some, yieldOne, success, successValue, fail,
 } from '../combinators';
 import { equalsToOneOf, flatten } from '../utils';
+import { compoundDiagnostic } from '../combinators/diagnostics';
 
 export type EpubNodeParser<T = RawBookNode[]> = TreeParser<T, EpubNodeParserEnv>;
 export type FullEpubParser = SuccessParser<Stream<XmlTree, EpubNodeParserEnv>, RawBookNode[]>;
 export type EpubNodeParserEnv = {
-    ds: ParserDiagnoser,
     recursive: TreeParser<RawBookNode[], EpubNodeParserEnv>,
     filePath: string,
 };
@@ -35,11 +35,15 @@ export function ignoreTags(tags: string[]): EpubNodeParser {
 export function fullParser(parser: EpubNodeParser): FullEpubParser {
     return input => {
         const result = some(parser)(input);
-        if (result.next.stream.length > 0) {
-            input.env.ds.add({ diag: 'extra-nodes-tail', nodes: result.next.stream });
-        }
+        const tailDiag = result.next.stream.length > 0
+            ? { custom: 'extra-nodes-tail', nodes: result.next.stream }
+            : undefined;
 
-        return success(flatten(result.value), result.next, result.diagnostic);
+        return success(
+            flatten(result.value),
+            result.next,
+            compoundDiagnostic([result.diagnostic, tailDiag]),
+        );
     };
 }
 

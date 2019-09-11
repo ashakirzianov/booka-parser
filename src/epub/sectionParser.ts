@@ -2,7 +2,7 @@ import { ChapterTitle, RawBookNode, AttributeName } from 'booka-common';
 import { XmlTree, path, xmlChildren, xmlElementParser } from '../xmlParser';
 import {
     choice, makeStream, success, emptyStream, SuccessStreamParser,
-    successValue, fail, headParser, envParser, translate, some, reparse, expected, StreamParser,
+    successValue, fail, headParser, envParser, translate, some, reparse, expected, StreamParser, Stream,
 } from '../combinators';
 import { isWhitespaces, flatten } from '../utils';
 import { ParserDiagnoser } from '../log';
@@ -10,9 +10,9 @@ import {
     EpubNodeParserEnv, EpubNodeParser, fullParser, buildRef,
 } from './epubNodeParser';
 import { EpubSection } from './epubBook';
+import { ParserDiagnostic, compoundDiagnostic } from '../combinators/diagnostics';
 
 export type SectionsParserEnv = {
-    ds: ParserDiagnoser,
     hooks: EpubNodeParser[],
 };
 // TODO: make normal 'StreamParser'
@@ -29,7 +29,6 @@ export const sectionsParser: SectionsParser = expected(
         const parser: SectionsParser = translate(
             some(headParser(s => {
                 const docStream = makeStream(s.content.children, {
-                    ds: env.ds,
                     filePath: s.filePath,
                     recursive: nodeParser,
                 });
@@ -132,11 +131,7 @@ const img: EpubNodeParser = xmlElementParser(
                 imageId: src,
             }]);
         } else {
-            env.ds.add({
-                diag: 'img-must-have-src',
-                node: el,
-            });
-            return successValue([]);
+            return successValue([], { custom: 'img-must-have-src', node: el });
         }
     });
 
@@ -152,22 +147,25 @@ const image: EpubNodeParser = xmlElementParser(
                 imageId: xlinkHref,
             }]);
         } else {
-            env.ds.add({ diag: 'image-must-have-xlinkhref', node: el });
-            return successValue([]);
+            return successValue([], { custom: 'image-must-have-xlinkhref', node: el });
         }
     });
+
+const headerTitleParser: EpubNodeParser<string[]> = input => {
+    const result = extractTitle(input.stream);
+
+    const emptyTitleDiag = result.lines.length === 0
+        ? { custom: 'no-title', nodes: input.stream }
+        : undefined;
+    return success(result.lines, emptyStream(input.env), compoundDiagnostic([...result.diags, emptyTitleDiag]));
+};
 
 const header: EpubNodeParser = xmlElementParser(
     ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'],
     { id: null },
-    null,
-    ([el], env) => {
+    headerTitleParser,
+    ([el, title], env) => {
         const level = parseInt(el.name[1], 10);
-        // TODO: Implement as parser
-        const title = extractTitle(el.children, env.ds);
-        if (title.length === 0) {
-            env.ds.add({ diag: 'no-title', node: el });
-        }
         return successValue([{
             node: 'chapter-title',
             title: title,
@@ -207,8 +205,9 @@ const standardParsers = [
     ignore, skip,
 ];
 
-function extractTitle(nodes: XmlTree[], ds: ParserDiagnoser): ChapterTitle {
+function extractTitle(nodes: XmlTree[]) {
     const lines: string[] = [];
+    const diags: ParserDiagnostic[] = [];
     for (const node of nodes) {
         switch (node.type) {
             case 'text':
@@ -221,23 +220,24 @@ function extractTitle(nodes: XmlTree[], ds: ParserDiagnoser): ChapterTitle {
                     case 'em': case 'strong': case 'big':
                     case 'a': case 'b':
                     case 'span': case 'div': case 'p':
-                        const fromElement = extractTitle(node.children, ds);
-                        lines.push(fromElement.join(''));
+                        const fromElement = extractTitle(node.children);
+                        lines.push(fromElement.lines.join(''));
+                        diags.push(...fromElement.diags);
                         break;
                     case 'br':
                         break;
                     default:
-                        ds.add({ diag: 'unexpected-node', node, context: 'title' });
+                        diags.push({ custom: 'unexpected-node', node, context: 'title' });
                         break;
                 }
                 break;
             default:
-                ds.add({ diag: 'unexpected-node', node, context: 'title' });
+                diags.push({ custom: 'unexpected-node', node, context: 'title' });
                 break;
         }
     }
 
-    return lines;
+    return { lines, diags };
 }
 
 function attributeParser(tagNames: string[], attrs: AttributeName[]): EpubNodeParser {

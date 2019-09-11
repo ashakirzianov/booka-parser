@@ -5,6 +5,7 @@ import {
     StreamParser, headParser, makeStream, nextStream, not, Stream, successValue, projectLast, and, HeadFn, expected,
 } from '../combinators';
 import { Constraint, ConstraintMap, checkObject, checkValue } from '../constraint';
+import { compoundDiagnostic } from '../combinators/diagnostics';
 
 export type TreeParser<Out = XmlTree, Env = undefined> = StreamParser<XmlTree, Out, Env>;
 
@@ -29,19 +30,20 @@ export function xmlElementParser<R, Ch, E = any>(
         const parser = children
             ? projectLast(and(xmlName(name), expected(xmlAttributes(expectedAttributes), undefined), xmlChildren(children)))
             : projectLast(and(xmlName(name), expected(xmlAttributes(expectedAttributes), undefined)));
-        const result = parser(input);
-        if (!result.success) {
-            return result;
+        const elementResult = parser(input);
+        if (!elementResult.success) {
+            return elementResult;
         }
         const head = input.stream[0];
         if (!head) {
             return fail('empty-stream');
         }
 
-        const proj = projection([head as XmlTreeElement, result.value as Ch], input.env);
+        const proj = projection([head as XmlTreeElement, elementResult.value as Ch], input.env);
+        const diag = compoundDiagnostic([proj.diagnostic, elementResult.diagnostic]);
         return proj.success
-            ? success(proj.value, nextStream(input), proj.diagnostic)
-            : fail(proj.diagnostic);
+            ? success(proj.value, nextStream(input), diag)
+            : fail(diag);
     };
 }
 
