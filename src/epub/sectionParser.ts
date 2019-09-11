@@ -2,7 +2,7 @@ import { RawBookNode, AttributeName } from 'booka-common';
 import { XmlTree, path, xmlChildren, xmlElementParser } from '../xmlParser';
 import {
     choice, makeStream, SuccessStreamParser, fullParser,
-    reject, headParser, envParser, translate, some, expected, empty, flattenResult, yieldLast, StreamParser,
+    reject, headParser, envParser, translate, some, expected, empty, flattenResult, yieldLast, StreamParser, diagnosticContext,
 } from '../combinators';
 import { isWhitespaces, flatten, AsyncIter } from '../utils';
 import { buildRef } from './sectionParser.utils';
@@ -28,7 +28,10 @@ export const sectionsParser: EpubBookParser<RawBookNode[]> = async input => {
                 filePath: s.filePath,
                 recursive: nodeParser,
             });
-            const res = withDiags(docStream);
+            const withContext = diagnosticContext(withDiags, {
+                filePath: s.filePath,
+            });
+            const res = withContext(docStream);
             return res;
         })),
         nns => flatten(nns),

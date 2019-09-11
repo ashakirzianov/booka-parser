@@ -322,6 +322,8 @@ export function expectEnd<In, Out>(parser: Parser<In, Out>): FullParser<In, Out>
     };
 }
 
+export function diagnosticContext<In, Out>(parser: SuccessParser<In, Out>, context: any): SuccessParser<In, Out>;
+export function diagnosticContext<In, Out>(parser: Parser<In, Out>, context: any): Parser<In, Out>;
 export function diagnosticContext<In, Out>(parser: Parser<In, Out>, context: any): Parser<In, Out> {
     return input => {
         const result = parser(input);
