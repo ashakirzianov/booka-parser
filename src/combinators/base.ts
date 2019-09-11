@@ -321,3 +321,16 @@ export function expectEnd<In, Out>(parser: Parser<In, Out>): FullParser<In, Out>
             };
     };
 }
+
+export function diagnosticContext<In, Out>(parser: Parser<In, Out>, context: any): Parser<In, Out> {
+    return input => {
+        const result = parser(input);
+        return {
+            ...result,
+            diagnostic: {
+                context,
+                diagnostic: result.diagnostic,
+            },
+        };
+    };
+}
