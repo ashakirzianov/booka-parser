@@ -36,46 +36,41 @@ export type EpubBookParser = AsyncParser<EpubBookParserInput, EpubBookParserResu
 export const epubBookParser: EpubBookParser = async input => {
     const { epub, options } = input;
     const ds = diagnoser({ context: 'epub', kind: epub.kind });
-    try {
-        if (epub.kind === 'unknown') {
-            ds.add({ diag: 'unknown-kind' });
-        }
-
-        const hooks = options[epub.kind];
-        const tags = parseMeta(epub.metadata, hooks.metadataHooks, ds);
-        const sections = await AsyncIter.toArray(epub.sections());
-        const sectionsParserResult = sectionsParser(makeStream(sections, {
-            hooks: hooks.nodeHooks,
-            ds: ds,
-        }));
-        const rawNodes = sectionsParserResult.value;
-        const metaNodes = buildMetaNodesFromTags(tags);
-        const allNodes = rawNodes.concat(metaNodes);
-
-        const rawNodeResult = await rawNodesParser(makeStream(allNodes, {
-            ds, resolveImageRef: epub.imageResolver,
-        }));
-
-        if (!rawNodeResult.success) {
-            return fail({ custom: 'custom', diags: ds.all(), inside: rawNodeResult.diagnostic });
-        }
-        const volume = rawNodeResult.value;
-        const book: Book = {
-            volume,
-            source: {
-                source: 'epub',
-                kind: epub.kind,
-            },
-            tags: tags,
-        };
-
-        return success({
-            book: book,
-            diagnostics: ds.all(),
-        }, input);
-    } catch (err) {
-        return fail({ custom: 'custom', diags: ds.all(), err });
+    if (epub.kind === 'unknown') {
+        ds.add({ diag: 'unknown-kind' });
     }
+
+    const hooks = options[epub.kind];
+    const tags = parseMeta(epub.metadata, hooks.metadataHooks, ds);
+    const sections = await AsyncIter.toArray(epub.sections());
+    const sectionsParserResult = sectionsParser(makeStream(sections, {
+        hooks: hooks.nodeHooks,
+    }));
+    const rawNodes = sectionsParserResult.value;
+    const metaNodes = buildMetaNodesFromTags(tags);
+    const allNodes = rawNodes.concat(metaNodes);
+
+    const rawNodeResult = await rawNodesParser(makeStream(allNodes, {
+        ds, resolveImageRef: epub.imageResolver,
+    }));
+
+    if (!rawNodeResult.success) {
+        return fail({ custom: 'custom', diags: ds.all(), inside: rawNodeResult.diagnostic });
+    }
+    const volume = rawNodeResult.value;
+    const book: Book = {
+        volume,
+        source: {
+            source: 'epub',
+            kind: epub.kind,
+        },
+        tags: tags,
+    };
+
+    return success({
+        book: book,
+        diagnostics: ds.all(),
+    }, input);
 };
 
 function buildMetaNodesFromTags(tags: KnownTag[]): RawBookNode[] {

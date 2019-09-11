@@ -12,20 +12,24 @@ export type FullEpubParser = AsyncParser<{ path: string }, Book>;
 
 // TODO: properly handle diagnostics
 export const epubFullParser: FullEpubParser = async input => {
-    const bookResult = await epubParser({
-        filePath: input.path,
-        stringParser: xmlStringParser,
-    });
-    if (!bookResult.success) {
-        return bookResult;
+    try {
+        const bookResult = await epubParser({
+            filePath: input.path,
+            stringParser: xmlStringParser,
+        });
+        if (!bookResult.success) {
+            return bookResult;
+        }
+
+        const result = await epubBookParser({
+            epub: bookResult.value,
+            options: converterHooks,
+        });
+
+        return result.success
+            ? success(result.value.book, input, result.diagnostic)
+            : result;
+    } catch (e) {
+        return fail({ custom: 'exception', err: e });
     }
-
-    const result = await epubBookParser({
-        epub: bookResult.value,
-        options: converterHooks,
-    });
-
-    return result.success
-        ? success(result.value.book, input, result.diagnostic)
-        : result;
 };
