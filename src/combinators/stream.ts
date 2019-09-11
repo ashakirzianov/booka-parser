@@ -71,14 +71,15 @@ export function envParser<I, O, E>(f: (env: E) => StreamParser<I, O, E>): Stream
 export function fullParser<I, O, E>(parser: StreamParser<I, O, E>): SuccessStreamParser<I, O[], E> {
     return input => {
         const result = some(parser)(input);
-        const tailDiag = result.next
-            ? { diag: 'extra-nodes-tail', nodes: result.next.stream }
-            : undefined;
-
-        return yieldOne(
-            result.value,
-            result.next,
-            compoundDiagnostic([result.diagnostic, tailDiag]),
-        );
+        if (result.next) {
+            return {
+                ...result,
+                diagnostic: compoundDiagnostic([result.diagnostic, {
+                    diag: 'extra-nodes-tail', nodes: result.next.stream,
+                }]),
+            };
+        } else {
+            return result;
+        }
     };
 }
