@@ -25,7 +25,7 @@ export const epubFileParser: EpubParser = async input => {
             if (!idItem || !idItem.id) {
                 return undefined;
             }
-            const [buffer, mimeType] = await epub.getImageAsync(idItem.id);
+            const [buffer] = await epub.getImageAsync(idItem.id);
             return buffer;
         },
         sections: async function* () {

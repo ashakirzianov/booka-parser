@@ -1,4 +1,4 @@
-import { XmlTree, hasChildren, XmlAttributes, XmlTreeElement, isElementTree } from './xmlTree';
+import { XmlTree, hasChildren, XmlAttributes, XmlTreeElement } from './xmlTree';
 import { caseInsensitiveEq, isWhitespaces } from '../utils';
 import {
     Result, yieldOne, reject, seq, some, translate,

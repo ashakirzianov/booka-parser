@@ -1,7 +1,7 @@
 import { RawBookNode, AttributeName } from 'booka-common';
 import { XmlTree, path, xmlChildren, xmlElementParser } from '../xmlParser';
 import {
-    choice, makeStream, SuccessStreamParser, fullParser,
+    choice, makeStream, fullParser,
     reject, headParser, envParser, translate, some, expected, empty, flattenResult, yieldLast, StreamParser, diagnosticContext,
 } from '../combinators';
 import { isWhitespaces, flatten, AsyncIter } from '../utils';

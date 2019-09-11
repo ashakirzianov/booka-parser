@@ -1,5 +1,6 @@
 {
     "compilerOptions": {
+        "noUnusedLocals": true,
         "declaration": true,
         "incremental": true,
         "module": "commonjs",
