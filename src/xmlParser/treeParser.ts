@@ -2,7 +2,7 @@ import { XmlTree, hasChildren, XmlAttributes, XmlTreeElement, isElementTree } fr
 import { caseInsensitiveEq, isWhitespaces } from '../utils';
 import {
     Result, success, fail, seq, some, translate,
-    StreamParser, headParser, makeStream, nextStream, not, Stream, successValue, projectLast, and, HeadFn,
+    StreamParser, headParser, makeStream, nextStream, not, Stream, successValue, projectLast, and, HeadFn, expected,
 } from '../combinators';
 import { Constraint, ConstraintMap, checkObject, checkValue } from '../constraint';
 
@@ -17,6 +17,30 @@ export function elementNode<O, E>(f: HeadFn<XmlTreeElement, O, E>) {
             return fail({ custom: 'expected-xml-element' });
         }
     });
+}
+
+export function xmlElement<R, Ch, E = any>(
+    name: Constraint<string>,
+    expectedAttributes: ConstraintMap<XmlAttributes>,
+    children: TreeParser<Ch, E>,
+    projection: HeadFn<[XmlTreeElement, Ch], R, E>,
+): TreeParser<R, E> {
+    return input => {
+        const parser = projectLast(and(xmlName(name), expected(xmlAttributes(expectedAttributes)), xmlChildren(children)));
+        const result = parser(input);
+        if (!result.success) {
+            return result;
+        }
+        const head = input.stream[0];
+        if (!head) {
+            return fail('empty-stream');
+        }
+
+        const proj = projection([head as XmlTreeElement, result.value], input.env);
+        return proj.success
+            ? success(proj.value, nextStream(input), proj.diagnostic)
+            : fail(proj.diagnostic);
+    };
 }
 
 export function xmlName<E = any>(name: Constraint<string>): TreeParser<XmlTreeElement, E> {
