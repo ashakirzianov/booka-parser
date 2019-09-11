@@ -1,12 +1,12 @@
 import { RawBookNode, AttributeName } from 'booka-common';
 import { XmlTree, path, xmlChildren, xmlElementParser } from '../xmlParser';
 import {
-    choice, makeStream, success, emptyStream, SuccessStreamParser,
-    successValue, fail, headParser, envParser, translate, some, expected, empty,
+    choice, makeStream, success, emptyStream, SuccessStreamParser, fullParser,
+    successValue, fail, headParser, envParser, translate, some, expected, empty, flattenResult,
 } from '../combinators';
 import { isWhitespaces, flatten } from '../utils';
 import {
-    EpubNodeParserEnv, EpubNodeParser, fullParser, buildRef,
+    EpubNodeParserEnv, EpubNodeParser, buildRef,
 } from './epubNodeParser';
 import { EpubSection } from './epubBook';
 import { ParserDiagnostic, compoundDiagnostic } from '../combinators/diagnostics';
@@ -21,7 +21,8 @@ export const sectionsParser: SectionsParser = expected(
     envParser(env => {
         const allParsers = env.hooks.concat(standardParsers);
         const nodeParser = choice(...allParsers);
-        const bodyParser = xmlChildren(fullParser(nodeParser));
+        const insideParser = flattenResult(fullParser(nodeParser));
+        const bodyParser = xmlChildren(insideParser);
         const documentParser = path(['html', 'body'], bodyParser);
         const withDiags = expected(documentParser, [], s => ({ custom: 'couldnt-parse-document', tree: s }));
 
@@ -45,9 +46,9 @@ export const sectionsParser: SectionsParser = expected(
 const container = envParser((env: EpubNodeParserEnv) => {
     return translate(
         fullParser(env.recursive),
-        nodes => ({
+        nns => ({
             node: 'compound-raw',
-            nodes,
+            nodes: flatten(nns),
         } as RawBookNode),
     );
 });

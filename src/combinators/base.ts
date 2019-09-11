@@ -1,4 +1,5 @@
 import { ParserDiagnostic, compoundDiagnostic } from './diagnostics';
+import { flatten } from '../utils';
 
 export type Parser<TIn, TOut> = (input: TIn) => Result<TIn, TOut>;
 export type SuccessParser<TIn, TOut> = (input: TIn) => Success<TIn, TOut>;
@@ -208,6 +209,10 @@ export function translateAndWarn<TI, From, To>(parser: Parser<TI, From>, f: Warn
             return success(translated, from.next, from.diagnostic);
         }
     };
+}
+
+export function flattenResult<I, O>(parser: Parser<I, O[][]>): Parser<I, O[]> {
+    return translate(parser, flatten);
 }
 
 export function reparse<T, U, V>(parser: Parser<T, U>, reparser: Parser<U, V>): Parser<T, V> {

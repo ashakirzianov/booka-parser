@@ -1,6 +1,6 @@
-import { KnownTag, RawBookNode, IgnoreNode } from 'booka-common';
+import { RawBookNode, IgnoreNode } from 'booka-common';
 import {
-    EpubConverterHooks, MetadataRecord,
+    EpubConverterHooks, MetadataRecordParser,
 } from './epubBookParser';
 import {
     textNode, xmlChildren, whitespaced, extractText, isElementTree,
@@ -11,7 +11,6 @@ import {
 } from '../combinators';
 import { flatten } from '../utils';
 import { ignoreClass, EpubNodeParser, buildRef } from './epubNodeParser';
-import { ParserDiagnoser } from '../log';
 
 export const fb2epubHooks: EpubConverterHooks = {
     nodeHooks: [
@@ -23,19 +22,21 @@ export const fb2epubHooks: EpubConverterHooks = {
         footnoteSection(),
         titlePage(),
     ],
-    metadataHooks: [metaHook],
+    metadataHooks: [metaHook()],
 };
 
-function metaHook({ key, value }: MetadataRecord, ds: ParserDiagnoser): KnownTag[] | undefined {
-    switch (key) {
-        case 'calibre:timestamp':
-        case 'calibre:title_sort':
-        case 'calibre:series':
-        case 'calibre:series_index':
-            return [];
-        default:
-            return undefined;
-    }
+function metaHook(): MetadataRecordParser {
+    return headParser(({ key, value }) => {
+        switch (key) {
+            case 'calibre:timestamp':
+            case 'calibre:title_sort':
+            case 'calibre:series':
+            case 'calibre:series_index':
+                return successValue([]);
+            default:
+                return fail();
+        }
+    });
 }
 
 function footnoteSection(): EpubNodeParser {

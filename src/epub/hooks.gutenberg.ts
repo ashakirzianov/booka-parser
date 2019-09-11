@@ -1,10 +1,8 @@
-import { KnownTag } from 'booka-common';
-import { EpubConverterHooks, MetadataRecord } from './epubBookParser';
+import { EpubConverterHooks, MetadataRecordParser } from './epubBookParser';
 import { ignoreTags, EpubNodeParser, buildRef } from './epubNodeParser';
-import { ParserDiagnoser } from '../log';
 import { xmlName, xmlNameAttrs, xmlChildren, textNode, whitespaces } from '../xmlParser';
 import {
-    and, translate, seq, maybe, envParser,
+    and, translate, seq, maybe, envParser, headParser, successValue, fail,
 } from '../combinators';
 
 export const gutenbergHooks: EpubConverterHooks = {
@@ -17,28 +15,29 @@ export const gutenbergHooks: EpubConverterHooks = {
         ]),
         footnote(),
     ],
-    metadataHooks: [metaHook],
+    metadataHooks: [metaHook()],
 };
 
-function metaHook({ key, value }: MetadataRecord, ds: ParserDiagnoser): KnownTag[] | undefined {
-    switch (key) {
-        case 'dc:identifier':
-            const id = value['#'];
-            if (id && typeof id === 'string') {
-                const matches = id.match(/http:\/\/www.gutenberg\.org\/ebooks\/([0-9]*)/);
-                if (matches && matches[1]) {
-                    const index = parseInt(matches[1], 10);
-                    if (index) {
-                        return [{ tag: 'pg-index', value: index }];
+function metaHook(): MetadataRecordParser {
+    return headParser(({ key, value }) => {
+        switch (key) {
+            case 'dc:identifier':
+                const id = value['#'];
+                if (id && typeof id === 'string') {
+                    const matches = id.match(/http:\/\/www.gutenberg\.org\/ebooks\/([0-9]*)/);
+                    if (matches && matches[1]) {
+                        const index = parseInt(matches[1], 10);
+                        if (index) {
+                            return successValue([{ tag: 'pg-index', value: index }]);
+                        }
                     }
                 }
-            }
 
-            ds.add({ diag: 'bad-meta', meta: { key, value } });
-            return [];
-        default:
-            return undefined;
-    }
+                return successValue([], { custom: 'bad-meta', meta: { key, value } });
+            default:
+                return fail();
+        }
+    });
 }
 
 function footnote(): EpubNodeParser {

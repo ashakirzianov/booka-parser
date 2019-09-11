@@ -1,74 +1,52 @@
 import { KnownTag } from 'booka-common';
-import { EpubMetadata } from './epubBook';
-import { flatten } from '../utils';
-import { MetadataHook, MetadataRecord } from './epubBookParser';
-import { ParserDiagnoser } from '../log';
+import { MetadataRecordParser, EpubBookParser } from './epubBookParser';
+import {
+    headParser, successValue, makeStream, choice, flattenResult,
+    fullParser, success,
+} from '../combinators';
 
-export function parseMeta(meta: EpubMetadata, hooks: MetadataHook[], ds: ParserDiagnoser): KnownTag[] {
-    const tags = buildMetaTags(meta, hooks, ds);
+export const metadataParser: EpubBookParser<KnownTag[]> = async input => {
+    const hooks = input.options[input.epub.kind].metadataHooks;
+    const allParsers = hooks.concat(defaultMetadataParser);
+    const singleParser = choice(...allParsers);
+    const full = flattenResult(fullParser(singleParser));
+    const records = Object
+        .entries(input.epub.metadata)
+        .map(([key, value]) => ({ key, value }));
+    const metaStream = makeStream(records);
+    const result = full(metaStream);
+    return result.success
+        ? success(result.value, input, result.diagnostic)
+        : result;
+};
 
-    return tags;
-}
-
-function defaultMetadataHook({ key, value }: MetadataRecord): KnownTag[] | undefined {
+const defaultMetadataParser: MetadataRecordParser = headParser(({ key, value }) => {
     switch (key) {
         case 'title':
-            return [{ tag: 'title', value }];
+            return successValue([{ tag: 'title', value }]);
         case 'creator':
-            return [{ tag: 'author', value }];
+            return successValue([{ tag: 'author', value }]);
         case 'cover':
-            return [{ tag: 'cover-ref', value }];
+            return successValue([{ tag: 'cover-ref', value }]);
         case 'subject':
-            return [{ tag: 'subject', value }];
+            return successValue([{ tag: 'subject', value }]);
         case 'language':
-            return [{ tag: 'language', value }];
+            return successValue([{ tag: 'language', value }]);
         case 'publisher':
-            return [{ tag: 'publisher', value }];
+            return successValue([{ tag: 'publisher', value }]);
         case 'description':
-            return [{ tag: 'description', value }];
+            return successValue([{ tag: 'description', value }]);
         case 'series':
-            return [{ tag: 'series', value }];
+            return successValue([{ tag: 'series', value }]);
         case 'ISBN':
-            return [{ tag: 'ISBN', value }];
+            return successValue([{ tag: 'ISBN', value }]);
         case 'dc:rights':
-            return [{ tag: 'rights', value }];
+            return successValue([{ tag: 'rights', value }]);
         case 'creatorFileAs':
         case 'date':
         case 'dc:identifier':
-            return [];
+            return successValue([] as KnownTag[]);
         default:
-            return undefined;
+            return fail();
     }
-}
-
-function buildMetaTags(meta: EpubMetadata, metadataHooks: MetadataHook[], ds: ParserDiagnoser): KnownTag[] {
-    const allHooks = metadataHooks.concat(defaultMetadataHook);
-    const result: KnownTag[] = [];
-    for (const [key, value] of Object.entries(meta)) {
-        if (Array.isArray(value)) {
-            const tags = flatten(
-                value.map(v => buildMetaTagsForRecord(key, v, allHooks, ds))
-            );
-            result.push(...tags);
-        } else if (value) {
-            const tags = buildMetaTagsForRecord(key, value, allHooks, ds);
-            result.push(...tags);
-        }
-    }
-
-    return result;
-}
-
-function buildMetaTagsForRecord(key: string, value: string, allHooks: MetadataHook[], ds: ParserDiagnoser): KnownTag[] {
-    const record = { key, value };
-    const tags = allHooks.reduce<KnownTag[] | undefined>(
-        (res, hook) => res || hook(record, ds),
-        undefined,
-    );
-    if (!tags) {
-        ds.add({ diag: 'unknown-meta', key, value });
-        return [];
-    } else {
-        return tags;
-    }
-}
+});

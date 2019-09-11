@@ -32,21 +32,6 @@ export function ignoreTags(tags: string[]): EpubNodeParser {
     );
 }
 
-export function fullParser(parser: EpubNodeParser): FullEpubParser {
-    return input => {
-        const result = some(parser)(input);
-        const tailDiag = result.next.stream.length > 0
-            ? { custom: 'extra-nodes-tail', nodes: result.next.stream }
-            : undefined;
-
-        return success(
-            flatten(result.value),
-            result.next,
-            compoundDiagnostic([result.diagnostic, tailDiag]),
-        );
-    };
-}
-
 export function buildRef(filePath: string, id: string) {
     return `${filePath}#${id}`;
 }

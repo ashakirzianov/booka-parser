@@ -1,11 +1,11 @@
 import { Book, KnownTag, RawBookNode } from 'booka-common';
 import { AsyncIter, equalsToOneOf } from '../utils';
 import { ParserDiagnostic, ParserDiagnoser, diagnoser } from '../log';
-import { makeStream, AsyncParser, success, fail } from '../combinators';
+import { makeStream, AsyncParser, success, fail, StreamParser } from '../combinators';
 import { rawNodesParser } from '../rawNodesParser';
 import { EpubBook, EpubKind } from './epubBook';
 import { sectionsParser } from './sectionParser';
-import { parseMeta } from './metaParser';
+import { metadataParser } from './metaParser';
 import { EpubNodeParser } from './epubNodeParser';
 
 export type EpubBookParserResult = {
@@ -25,13 +25,13 @@ export type MetadataRecord = {
     key: string,
     value: any,
 };
-export type MetadataHook = (meta: MetadataRecord, ds: ParserDiagnoser) => KnownTag[] | undefined;
+export type MetadataRecordParser = StreamParser<MetadataRecord, KnownTag[]>;
 export type EpubConverterHooks = {
     nodeHooks: EpubNodeParser[],
-    metadataHooks: MetadataHook[],
+    metadataHooks: MetadataRecordParser[],
 };
 
-export type EpubBookParser = AsyncParser<EpubBookParserInput, EpubBookParserResult>;
+export type EpubBookParser<R = EpubBookParserResult> = AsyncParser<EpubBookParserInput, R>;
 
 export const epubBookParser: EpubBookParser = async input => {
     const { epub, options } = input;
@@ -41,7 +41,8 @@ export const epubBookParser: EpubBookParser = async input => {
     }
 
     const hooks = options[epub.kind];
-    const tags = parseMeta(epub.metadata, hooks.metadataHooks, ds);
+    const metadataResult = await metadataParser(input);
+    const tags = metadataResult.success ? metadataResult.value : [];
     const sections = await AsyncIter.toArray(epub.sections());
     const sectionsParserResult = sectionsParser(makeStream(sections, {
         hooks: hooks.nodeHooks,

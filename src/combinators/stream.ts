@@ -1,4 +1,5 @@
-import { Parser, success, fail, SuccessParser, ResultValue } from './base';
+import { Parser, success, fail, SuccessParser, ResultValue, some } from './base';
+import { compoundDiagnostic } from './diagnostics';
 
 export type Stream<T, E = undefined> = {
     stream: T[],
@@ -65,5 +66,20 @@ export function envParser<I, O, E>(f: (env: E) => StreamParser<I, O, E>): Stream
         const parser = f(input.env);
         const result = parser(input);
         return result;
+    };
+}
+
+export function fullParser<I, O, E>(parser: StreamParser<I, O, E>): SuccessStreamParser<I, O[], E> {
+    return input => {
+        const result = some(parser)(input);
+        const tailDiag = result.next.stream.length > 0
+            ? { custom: 'extra-nodes-tail', nodes: result.next.stream }
+            : undefined;
+
+        return success(
+            result.value,
+            result.next,
+            compoundDiagnostic([result.diagnostic, tailDiag]),
+        );
     };
 }
