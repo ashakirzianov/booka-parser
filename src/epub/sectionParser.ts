@@ -1,7 +1,7 @@
 import { RawBookNode, AttributeName } from 'booka-common';
 import { XmlTree, path, xmlChildren, xmlElementParser } from '../xmlParser';
 import {
-    choice, makeStream, success, emptyStream, SuccessStreamParser, fullParser,
+    choice, makeStream, success, SuccessStreamParser, fullParser,
     successValue, fail, headParser, envParser, translate, some, expected, empty, flattenResult,
 } from '../combinators';
 import { isWhitespaces, flatten } from '../utils';
@@ -156,7 +156,7 @@ const headerTitleParser: EpubNodeParser<string[]> = input => {
     const emptyTitleDiag = result.lines.length === 0
         ? { custom: 'no-title', nodes: input.stream }
         : undefined;
-    return success(result.lines, emptyStream(input.env), compoundDiagnostic([...result.diags, emptyTitleDiag]));
+    return success(result.lines, undefined, compoundDiagnostic([...result.diags, emptyTitleDiag]));
 };
 
 const header: EpubNodeParser = xmlElementParser(

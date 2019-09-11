@@ -1,17 +1,17 @@
 import { RawBookNode, FootnoteSpan, SpanNode } from 'booka-common';
 import { spanFromRawNode } from './common';
 import {
-    SuccessValue, ParserDiagnostic, successValue, compoundDiagnostic,
+    SuccessLast, ParserDiagnostic, successValue, compoundDiagnostic,
 } from '../combinators';
 
-export function resolveReferences(nodes: RawBookNode[]): SuccessValue<RawBookNode[]> {
+export function resolveReferences(nodes: RawBookNode[]): SuccessLast<RawBookNode[]> {
     const r1 = swipe1(nodes, [], []);
     const r2 = swipe2(r1.value.rest, r1.value.footnotes);
 
     return r2;
 }
 
-function swipe1(nodes: RawBookNode[], refs: string[], ids: string[]): SuccessValue<{
+function swipe1(nodes: RawBookNode[], refs: string[], ids: string[]): SuccessLast<{
     rest: RawBookNode[],
     footnotes: RawBookNode[],
 }> {
@@ -73,7 +73,7 @@ function swipe1(nodes: RawBookNode[], refs: string[], ids: string[]): SuccessVal
     return successValue({ rest, footnotes }, compoundDiagnostic(diags));
 }
 
-function swipe2(nodes: RawBookNode[], footnotes: RawBookNode[]): SuccessValue<RawBookNode[]> {
+function swipe2(nodes: RawBookNode[], footnotes: RawBookNode[]): SuccessLast<RawBookNode[]> {
     const result: RawBookNode[] = [];
     const diags: ParserDiagnostic[] = [];
     for (const node of nodes) {
@@ -85,7 +85,7 @@ function swipe2(nodes: RawBookNode[], footnotes: RawBookNode[]): SuccessValue<Ra
     return successValue(result, compoundDiagnostic(diags));
 }
 
-function swipe2node(node: RawBookNode, footnotes: RawBookNode[]): SuccessValue<RawBookNode[]> {
+function swipe2node(node: RawBookNode, footnotes: RawBookNode[]): SuccessLast<RawBookNode[]> {
     if (node.node === 'ref') {
         const content = spanFromRawNode(node.content);
         if (!content.success) {

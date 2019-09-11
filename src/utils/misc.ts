@@ -1,8 +1,8 @@
-import { Result, Success } from '../combinators';
+import { Result, SuccessNext } from '../combinators';
 
 // Returning Success<In, Out> is not perfect, but afaik there's no proper way of guarding Success type here
-export function expectSuccess<In, Out>(result: Result<In, Out>): result is Success<In, Out> {
-    const success = result as Success<In, Out>;
+export function expectSuccess<In, Out>(result: Result<In, Out>): result is SuccessNext<In, Out> {
+    const success = result as SuccessNext<In, Out>;
 
     if (success.value === undefined || !success.success) {
         fail(`expected success, but got this instead: ${JSON.stringify(result)}`);

@@ -17,14 +17,13 @@ export function makeStream<I, E = undefined>(arr: I[], env?: E): Stream<I, E> {
         env: env as any,
     };
 }
-export function nextStream<T, E>(input: Stream<T, E>): Stream<T, E> {
-    return {
-        stream: input.stream.slice(1),
-        env: input.env,
-    };
-}
-export function emptyStream<E>(env: E): Stream<any, E> {
-    return makeStream([], env);
+export function nextStream<T, E>(input: Stream<T, E>): Stream<T, E> | undefined {
+    return input.stream.length > 1
+        ? {
+            stream: input.stream.slice(1),
+            env: input.env,
+        }
+        : undefined;
 }
 
 export type HeadFn<In, Out, Env> = (head: In, env: Env) => ResultValue<Out>;
@@ -72,7 +71,7 @@ export function envParser<I, O, E>(f: (env: E) => StreamParser<I, O, E>): Stream
 export function fullParser<I, O, E>(parser: StreamParser<I, O, E>): SuccessStreamParser<I, O[], E> {
     return input => {
         const result = some(parser)(input);
-        const tailDiag = result.next.stream.length > 0
+        const tailDiag = result.next
             ? { custom: 'extra-nodes-tail', nodes: result.next.stream }
             : undefined;
 

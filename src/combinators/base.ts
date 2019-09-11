@@ -2,35 +2,36 @@ import { ParserDiagnostic, compoundDiagnostic } from './diagnostics';
 import { flatten } from '../utils';
 
 export type Parser<TIn, TOut> = (input: TIn) => Result<TIn, TOut>;
-export type SuccessParser<TIn, TOut> = (input: TIn) => Success<TIn, TOut>;
-export type SuccessValue<Out> = {
+export type FullParser<In, Out> = (input: In) => SuccessLast<Out> | Fail;
+export type SuccessParser<TIn, TOut> = (input: TIn) => SuccessNext<TIn, TOut>;
+export type SuccessLast<Out> = {
     success: true,
     value: Out,
     diagnostic: ParserDiagnostic,
 };
-export type Success<In, Out> = SuccessValue<Out> & {
-    next: In,
+export type SuccessNext<In, Out> = SuccessLast<Out> & {
+    next?: In,
 };
 export type Fail = {
     success: false,
     diagnostic: ParserDiagnostic,
 };
 
-export type Result<In, Out> = Success<In, Out> | Fail;
-export type ResultValue<Out> = SuccessValue<Out> | Fail;
+export type Result<In, Out> = SuccessNext<In, Out> | Fail;
+export type ResultValue<Out> = SuccessLast<Out> | Fail;
 
 export function fail(reason?: ParserDiagnostic): Fail {
     return { success: false, diagnostic: reason };
 }
 
-export function success<TIn, TOut>(value: TOut, next: TIn, diagnostic?: ParserDiagnostic): Success<TIn, TOut> {
+export function success<TIn, TOut>(value: TOut, next: TIn | undefined, diagnostic?: ParserDiagnostic): SuccessNext<TIn, TOut> {
     return {
         value, next, diagnostic,
         success: true,
     };
 }
 
-export function successValue<Out>(value: Out, diagnostic?: ParserDiagnostic): SuccessValue<Out> {
+export function successValue<Out>(value: Out, diagnostic?: ParserDiagnostic): SuccessLast<Out> {
     return {
         success: true, value, diagnostic,
     };
@@ -44,7 +45,7 @@ export function and<T>(...ps: Array<Parser<T, any>>): Parser<T, any[]> {
     return input => {
         const results: any[] = [];
         const diagnostics: ParserDiagnostic[] = [];
-        let lastInput = input;
+        let lastInput: T | undefined = input;
         for (let i = 0; i < ps.length; i++) {
             const result = ps[i](input);
             if (!result.success) {
@@ -66,10 +67,13 @@ export function seq<TI, T1, T2, T3, T4>(p1: Parser<TI, T1>, p2: Parser<TI, T2>, 
 export function seq<TI, TS>(...ps: Array<Parser<TI, TS>>): Parser<TI, TS[]>;
 export function seq<TI>(...ps: Array<Parser<TI, any>>): Parser<TI, any[]> {
     return input => {
-        let currentInput = input;
+        let currentInput: TI | undefined = input;
         const results: any[] = [];
         const diagnostics: ParserDiagnostic[] = [];
         for (let i = 0; i < ps.length; i++) {
+            if (currentInput === undefined) {
+                return fail('empty-input');
+            }
             const result = ps[i](currentInput);
             if (!result.success) {
                 return result;
@@ -122,13 +126,16 @@ export function projectFirst<TI>(parser: Parser<TI, any[]>): Parser<TI, any> {
     return translate(parser, result => result[0]);
 }
 
-export function some<TI, T>(parser: Parser<TI, T>): SuccessParser<TI, T[]> {
+export function some<In, Out>(parser: Parser<In, Out>): SuccessParser<In, Out[]> {
     return input => {
-        const results: T[] = [];
+        const results: Out[] = [];
         const diagnostics: ParserDiagnostic[] = [];
-        let currentInput = input;
-        let currentResult: Result<TI, T>;
+        let currentInput: In | undefined = input;
+        let currentResult: Result<In, Out>;
         do {
+            if (currentInput === undefined) {
+                break;
+            }
             currentResult = parser(currentInput);
             if (currentResult.success) {
                 results.push(currentResult.value);

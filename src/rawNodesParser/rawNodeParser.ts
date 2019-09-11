@@ -7,8 +7,8 @@ import { spanFromRawNode } from './common';
 import { resolveReferences } from './resolveReferences';
 import { flattenNodes } from './flattenNodes';
 import {
-    AsyncStreamParser, success, emptyStream, ParserDiagnostic,
-    compoundDiagnostic, ResultValue, successValue, SuccessValue,
+    AsyncStreamParser, success, ParserDiagnostic,
+    compoundDiagnostic, ResultValue, successValue, SuccessLast,
 } from '../combinators';
 
 export type RawNodesParserEnv = {
@@ -35,7 +35,7 @@ export const rawNodesParser: RawNodesParser = async ({ stream, env }) => {
         meta: meta,
     };
 
-    return success(volume, emptyStream(env), compoundDiagnostic(diags));
+    return success(volume, undefined, compoundDiagnostic(diags));
 };
 
 async function collectMeta(rawNodes: RawBookNode[], env: RawNodesParserEnv): Promise<VolumeMeta> {
@@ -58,7 +58,7 @@ async function collectMeta(rawNodes: RawBookNode[], env: RawNodesParserEnv): Pro
     };
 }
 
-async function buildChapters(rawNodes: RawBookNode[], env: RawNodesParserEnv): Promise<SuccessValue<BookContentNode[]>> {
+async function buildChapters(rawNodes: RawBookNode[], env: RawNodesParserEnv): Promise<SuccessLast<BookContentNode[]>> {
     const { nodes, next, diag } = await buildChaptersImpl(rawNodes, undefined, env);
 
     const tailDiag = next.length !== 0

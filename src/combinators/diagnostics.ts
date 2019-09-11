@@ -8,7 +8,7 @@ export type Severity =
 
 export type EmptyParserDiagnostic = undefined;
 export type BasicParserDiagnostic =
-    | 'guard-failed' | 'translate-reject'
+    | 'guard-failed' | 'translate-reject' | 'empty-input'
     | 'empty-stream' | 'reject-head' | 'expected-end' | 'not-parser-succ'
     ;
 export type CompoundParserDiagnostic = {
