@@ -4,7 +4,6 @@ import {
 } from 'booka-common';
 import { filterUndefined } from '../utils';
 import { spanFromRawNode } from './common';
-import { resolveReferences } from './resolveReferences';
 import { flattenNodes } from './flattenNodes';
 import {
     AsyncStreamParser, yieldLast, ParserDiagnostic,
@@ -19,9 +18,7 @@ export type RawNodesParser = AsyncStreamParser<RawBookNode, VolumeNode, RawNodes
 export const rawNodesParser: RawNodesParser = async ({ stream, env }) => {
     const diags: ParserDiagnostic[] = [];
     const meta = await collectMeta(stream, env);
-    const resolved = resolveReferences(stream);
-    diags.push(resolved.diagnostic);
-    const preprocessed = flattenNodes(resolved.value);
+    const preprocessed = flattenNodes(stream);
     const nodes = await buildChapters(preprocessed, env);
     diags.push(nodes.diagnostic);
 
@@ -128,7 +125,6 @@ async function resolveRawNode(rawNode: RawBookNode, env: RawNodesParserEnv): Pro
                 return fail({ custom: 'couldnt-resolve-ref', id: rawNode.imageId, context: 'image-node' });
             }
         case 'span':
-        case 'ref':
             const span = spanFromRawNode(rawNode);
             if (span.success) {
                 return yieldLast({

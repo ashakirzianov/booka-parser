@@ -35,7 +35,6 @@ export function spanFromRawNode(
         case 'image-ref':
         case 'image-url':
         case 'tag':
-        case 'ref':
             return reject({ diag: 'unexpected-raw-node', node: rawNode, context: 'span' });
         default:
             assertNever(rawNode);
