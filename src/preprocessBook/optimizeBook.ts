@@ -2,7 +2,7 @@ import {
     VolumeNode, BookContentNode,
     Span, AttributeName, ParagraphNode, CompoundSpan,
     isChapter, isParagraph, isImage,
-    isSimpleSpan, isAttributedSpan, isFootnoteSpan, isCompoundSpan, Book,
+    isSimpleSpan, isAttributedSpan, isRefSpan, isCompoundSpan, Book,
 } from 'booka-common';
 import { assertNever } from '../utils';
 
@@ -55,19 +55,11 @@ function optimizeParagraph(p: ParagraphNode): BookContentNode {
 function optimizeSpan(span: Span): Span {
     if (isSimpleSpan(span)) {
         return span;
-    } else if (isAttributedSpan(span)) {
+    } else if (isAttributedSpan(span) || isRefSpan(span)) {
         const optimizedContent = optimizeSpan(span.content);
         return {
             ...span,
             content: optimizedContent,
-        };
-    } else if (isFootnoteSpan(span)) {
-        const content = optimizeSpan(span.content);
-        const footnote = optimizeSpan(span.footnote);
-        return {
-            ...span,
-            content,
-            footnote,
         };
     } else if (isCompoundSpan(span)) {
         return optimizeCompound(span);
