@@ -11,12 +11,12 @@ import {
 } from '../combinators';
 import { BookElement, TagElement } from './bookElement';
 
-export type RawNodesParserEnv = {
+export type ElementParserEnv = {
     resolveImageRef: (ref: string) => Promise<Buffer | undefined>,
 };
-export type RawNodesParser = AsyncStreamParser<BookElement, VolumeNode, RawNodesParserEnv>;
+export type ElementParser = AsyncStreamParser<BookElement, VolumeNode, ElementParserEnv>;
 
-export const rawNodesParser: RawNodesParser = async ({ stream, env }) => {
+export const elementParser: ElementParser = async ({ stream, env }) => {
     const diags: ParserDiagnostic[] = [];
     const meta = await collectMeta(stream, env);
     const preprocessed = flattenElements(stream);
@@ -36,8 +36,8 @@ export const rawNodesParser: RawNodesParser = async ({ stream, env }) => {
     return yieldLast(volume, compoundDiagnostic(diags));
 };
 
-async function collectMeta(rawNodes: BookElement[], env: RawNodesParserEnv): Promise<VolumeMeta> {
-    const tags = rawNodes
+async function collectMeta(elements: BookElement[], env: ElementParserEnv): Promise<VolumeMeta> {
+    const tags = elements
         .filter((n): n is TagElement => n.element === 'tag')
         .map(n => n.tag);
 
@@ -56,11 +56,11 @@ async function collectMeta(rawNodes: BookElement[], env: RawNodesParserEnv): Pro
     };
 }
 
-async function buildChapters(rawNodes: BookElement[], env: RawNodesParserEnv): Promise<SuccessLast<BookContentNode[]>> {
-    const { nodes, next, diag } = await buildChaptersImpl(rawNodes, undefined, env);
+async function buildChapters(elements: BookElement[], env: ElementParserEnv): Promise<SuccessLast<BookContentNode[]>> {
+    const { nodes, next, diag } = await buildChaptersImpl(elements, undefined, env);
 
     const tailDiag = next.length !== 0
-        ? { diag: 'extra-nodes-tail', nodes: rawNodes }
+        ? { diag: 'extra-nodes-tail', nodes: elements }
         : undefined;
 
     return yieldLast(nodes, compoundDiagnostic([diag, tailDiag]));
@@ -71,14 +71,14 @@ type BuildChaptersResult = {
     next: BookElement[],
     diag: ParserDiagnostic,
 };
-async function buildChaptersImpl(rawNodes: BookElement[], level: number | undefined, env: RawNodesParserEnv): Promise<BuildChaptersResult> {
-    if (rawNodes.length === 0) {
+async function buildChaptersImpl(elements: BookElement[], level: number | undefined, env: ElementParserEnv): Promise<BuildChaptersResult> {
+    if (elements.length === 0) {
         return { nodes: [], next: [], diag: undefined };
     }
-    const headNode = rawNodes[0];
+    const headNode = elements[0];
     if (headNode.element === 'chapter-title') {
         if (level === undefined || level > headNode.level) {
-            const content = await buildChaptersImpl(rawNodes.slice(1), headNode.level, env);
+            const content = await buildChaptersImpl(elements.slice(1), headNode.level, env);
             const chapter: ChapterNode = {
                 node: 'chapter',
                 nodes: content.nodes,
@@ -94,13 +94,13 @@ async function buildChaptersImpl(rawNodes: BookElement[], level: number | undefi
         } else {
             return {
                 nodes: [],
-                next: rawNodes,
+                next: elements,
                 diag: undefined,
             };
         }
     } else {
         const node = await resolveRawNode(headNode, env);
-        const after = await buildChaptersImpl(rawNodes.slice(1), level, env);
+        const after = await buildChaptersImpl(elements.slice(1), level, env);
         return {
             nodes: node.success
                 ? [node.value, ...after.nodes]
@@ -112,7 +112,7 @@ async function buildChaptersImpl(rawNodes: BookElement[], level: number | undefi
 }
 
 // TODO: propagate diags
-async function resolveRawNode(rawNode: BookElement, env: RawNodesParserEnv): Promise<ResultLast<BookContentNode>> {
+async function resolveRawNode(rawNode: BookElement, env: ElementParserEnv): Promise<ResultLast<BookContentNode>> {
     switch (rawNode.element) {
         case 'image-ref':
             const imageBuffer = await env.resolveImageRef(rawNode.imageId);

@@ -3,7 +3,7 @@ import { equalsToOneOf } from '../utils';
 import {
     makeStream, yieldLast, StreamParser, andAsync, AsyncFullParser, pipeAsync,
 } from '../combinators';
-import { rawNodesParser, BookElement } from '../bookElementParser';
+import { elementParser, BookElement } from '../bookElementParser';
 import { EpubBook, EpubKind } from './epubBook';
 import { sectionsParser } from './sectionParser';
 import { metadataParser } from './metaParser';
@@ -35,11 +35,11 @@ const diagnoseKind: EpubBookParser<EpubBook> = async input =>
 
 export const epubBookParser: EpubBookParser = pipeAsync(
     andAsync(diagnoseKind, metadataParser, sectionsParser),
-    async ([epub, tags, rawNodes]) => {
-        const metaNodes = buildMetaNodesFromTags(tags);
-        const allNodes = rawNodes.concat(metaNodes);
+    async ([epub, tags, elements]) => {
+        const metaNodes = buildMetaElementsFromTags(tags);
+        const allNodes = elements.concat(metaNodes);
 
-        const volumeResult = await rawNodesParser(makeStream(allNodes, {
+        const volumeResult = await elementParser(makeStream(allNodes, {
             resolveImageRef: epub.imageResolver,
         }));
 
@@ -61,11 +61,11 @@ export const epubBookParser: EpubBookParser = pipeAsync(
     }
 );
 
-function buildMetaNodesFromTags(tags: KnownTag[]): BookElement[] {
+function buildMetaElementsFromTags(tags: KnownTag[]): BookElement[] {
     const filtered = tags.filter(t => equalsToOneOf(t.tag, ['author', 'title', 'cover-ref']));
-    const nodes = filtered.map(t => ({
+    const elements = filtered.map(t => ({
         element: 'tag',
         tag: t,
     } as const));
-    return nodes;
+    return elements;
 }

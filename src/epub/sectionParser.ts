@@ -83,15 +83,15 @@ const aSpan: EpubSpanParser = xmlElementParser(
         class: null, href: null, title: null, tag: null,
     },
     span,
-    ([el, sp]) => {
-        if (el.attributes.href !== undefined) {
+    ([xml, sp]) => {
+        if (xml.attributes.href !== undefined) {
             return yieldLast({
                 span: 'ref',
-                refToId: el.attributes.href,
+                refToId: xml.attributes.href,
                 content: sp,
             });
         } else {
-            return yieldLast(sp, { diag: 'bad-anchor', a: el });
+            return yieldLast(sp, { diag: 'bad-anchor', a: xml });
         }
     });
 
@@ -109,18 +109,18 @@ const aNode: EpubNodeParser = xmlElementParser(
         id: null, title: null, tag: null,
     },
     span,
-    ([el, sp], env) => {
-        if (el.attributes.id !== undefined) {
-            const childSpan: Span = el.attributes.href === undefined
+    ([xml, sp], env) => {
+        if (xml.attributes.id !== undefined) {
+            const childSpan: Span = xml.attributes.href === undefined
                 ? sp
                 : {
                     span: 'ref',
-                    refToId: el.attributes.href,
+                    refToId: xml.attributes.href,
                     content: sp,
                 };
             return yieldLast([{
                 element: 'compound-raw',
-                ref: buildRef(env.filePath, el.attributes.id),
+                ref: buildRef(env.filePath, xml.attributes.id),
                 nodes: [{
                     element: 'span',
                     span: childSpan,
@@ -141,11 +141,11 @@ const pph: EpubNodeParser = xmlElementParser(
         'xml:space': null, // TODO: handle ?
     },
     container,
-    ([el, ch], env) => {
-        return el.attributes.id
+    ([xml, ch], env) => {
+        return xml.attributes.id
             ? yieldLast([{
                 element: 'compound-raw',
-                ref: buildRef(env.filePath, el.attributes.id),
+                ref: buildRef(env.filePath, xml.attributes.id),
                 nodes: [ch],
             }])
             : yieldLast([ch]);
@@ -155,15 +155,15 @@ const img: EpubNodeParser = xmlElementParser(
     'img',
     { src: null, alt: null, class: null },
     expected(empty(), undefined, i => ({ diag: 'expected-eoi', nodes: i })),
-    ([el], env) => {
-        const src = el.attributes['src'];
+    ([xml], env) => {
+        const src = xml.attributes['src'];
         if (src) {
             return yieldLast([{
                 element: 'image-ref',
                 imageId: src,
             }]);
         } else {
-            return yieldLast([], { diag: 'img-must-have-src', node: el });
+            return yieldLast([], { diag: 'img-must-have-src', node: xml });
         }
     });
 
@@ -171,15 +171,15 @@ const image: EpubNodeParser = xmlElementParser(
     'image',
     {},
     expected(empty(), undefined, i => ({ diag: 'expected-eoi', nodes: i })),
-    ([el], env) => {
-        const xlinkHref = el.attributes['xlink:href'];
+    ([xml], env) => {
+        const xlinkHref = xml.attributes['xlink:href'];
         if (xlinkHref) {
             return yieldLast([{
                 element: 'image-ref',
                 imageId: xlinkHref,
             }]);
         } else {
-            return yieldLast([], { diag: 'image-must-have-xlinkhref', node: el });
+            return yieldLast([], { diag: 'image-must-have-xlinkhref', node: xml });
         }
     });
 
@@ -196,8 +196,8 @@ const header: EpubNodeParser = xmlElementParser(
     ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'],
     { id: null },
     headerTitleParser,
-    ([el, title], env) => {
-        const level = parseInt(el.name[1], 10);
+    ([xml, title], env) => {
+        const level = parseInt(xml.name[1], 10);
         return yieldLast([{
             element: 'chapter-title',
             title: title,
