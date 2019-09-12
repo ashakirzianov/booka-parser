@@ -1,6 +1,7 @@
-import { RawBookNode, Span } from 'booka-common';
+import { Span } from 'booka-common';
 import { filterUndefined, assertNever } from '../utils';
 import { ResultLast, yieldLast, compoundDiagnostic, reject } from '../combinators';
+import { RawBookNode } from './rawNodes';
 
 export function spanFromRawNode(
     rawNode: RawBookNode,
@@ -35,6 +36,7 @@ export function spanFromRawNode(
         case 'image-ref':
         case 'image-url':
         case 'tag':
+        case 'content':
             return reject({ diag: 'unexpected-raw-node', node: rawNode, context: 'span' });
         default:
             assertNever(rawNode);

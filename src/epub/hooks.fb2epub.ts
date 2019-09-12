@@ -1,4 +1,4 @@
-import { RawBookNode, IgnoreNode } from 'booka-common';
+import { IgnoreNode } from 'booka-common';
 import {
     EpubConverterHooks, MetadataRecordParser, EpubNodeParser,
 } from './epubBookParser';
@@ -11,6 +11,7 @@ import {
 } from '../combinators';
 import { flatten } from '../utils';
 import { ignoreClass, buildRef } from './sectionParser.utils';
+import { RawBookNode } from '../rawNodesParser';
 
 export const fb2epubHooks: EpubConverterHooks = {
     nodeHooks: [

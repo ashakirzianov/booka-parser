@@ -1,9 +1,9 @@
-import { Book, KnownTag, RawBookNode } from 'booka-common';
+import { Book, KnownTag } from 'booka-common';
 import { equalsToOneOf } from '../utils';
 import {
     makeStream, yieldLast, StreamParser, andAsync, AsyncFullParser, pipeAsync,
 } from '../combinators';
-import { rawNodesParser } from '../rawNodesParser';
+import { rawNodesParser, RawBookNode } from '../rawNodesParser';
 import { EpubBook, EpubKind } from './epubBook';
 import { sectionsParser } from './sectionParser';
 import { metadataParser } from './metaParser';

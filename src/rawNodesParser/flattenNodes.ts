@@ -1,4 +1,4 @@
-import { RawBookNode, RawCompoundNode } from 'booka-common';
+import { RawBookNode, RawCompoundNode } from './rawNodes';
 
 export function flattenNodes(rawNodes: RawBookNode[]): RawBookNode[] {
     const result: RawBookNode[] = [];

@@ -1,6 +1,6 @@
 import {
     BookContentNode, ChapterNode, VolumeNode, VolumeMeta,
-    RawBookNode, TagNode, tagValue,
+    tagValue,
 } from 'booka-common';
 import { filterUndefined } from '../utils';
 import { spanFromRawNode } from './common';
@@ -9,6 +9,7 @@ import {
     AsyncStreamParser, yieldLast, ParserDiagnostic,
     compoundDiagnostic, ResultLast, SuccessLast,
 } from '../combinators';
+import { RawBookNode, TagNode } from './rawNodes';
 
 export type RawNodesParserEnv = {
     resolveImageRef: (ref: string) => Promise<Buffer | undefined>,

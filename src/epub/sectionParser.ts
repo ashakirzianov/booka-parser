@@ -1,4 +1,4 @@
-import { RawBookNode, AttributeName, Span } from 'booka-common';
+import { AttributeName, Span } from 'booka-common';
 import { XmlTree, path, xmlChildren, xmlElementParser } from '../xmlParser';
 import {
     choice, makeStream, fullParser,
@@ -9,6 +9,7 @@ import { buildRef } from './sectionParser.utils';
 import { EpubSection } from './epubBook';
 import { ParserDiagnostic, compoundDiagnostic } from '../combinators/diagnostics';
 import { EpubNodeParser, EpubNodeParserEnv, EpubBookParser } from './epubBookParser';
+import { RawBookNode } from '../rawNodesParser';
 
 export type SectionsParser = StreamParser<EpubSection, RawBookNode[], undefined>;
 
