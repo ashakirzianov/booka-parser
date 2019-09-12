@@ -7,7 +7,7 @@ export function spanFromRawNode(
     rawNode: BookElement,
     titles?: string[], // TODO: find better solution
 ): ResultLast<Span> {
-    switch (rawNode.node) {
+    switch (rawNode.element) {
         case 'span':
             return yieldLast(rawNode.span);
         case 'compound-raw':

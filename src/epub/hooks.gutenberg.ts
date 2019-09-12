@@ -86,7 +86,7 @@ function footnote(): EpubNodeParser {
         const fullFootnote: EpubNodeParser = translate(
             seq(footnoteMarker, whitespaces, footnoteContainer),
             ([id, _, { content, title }]) => [{
-                node: 'compound-raw',
+                element: 'compound-raw',
                 ref: buildRef(env.filePath, id),
                 nodes: content,
                 semantic: 'footnote',

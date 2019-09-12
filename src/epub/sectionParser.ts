@@ -45,7 +45,7 @@ const container = envParser((env: EpubNodeParserEnv) => {
     return translate(
         fullParser(env.recursive),
         nns => ({
-            node: 'compound-raw',
+            element: 'compound-raw',
             nodes: flatten(nns),
         } as BookElement),
     );
@@ -98,7 +98,7 @@ const aSpan: EpubSpanParser = xmlElementParser(
 span.implementation = choice(text, attr, aSpan);
 
 const normalSpanNode: EpubNodeParser = translate(span, s => [{
-    node: 'span',
+    element: 'span',
     span: s,
 }]);
 
@@ -119,10 +119,10 @@ const aNode: EpubNodeParser = xmlElementParser(
                     content: sp,
                 };
             return yieldLast([{
-                node: 'compound-raw',
+                element: 'compound-raw',
                 ref: buildRef(env.filePath, el.attributes.id),
                 nodes: [{
-                    node: 'span',
+                    element: 'span',
                     span: childSpan,
                 }],
             }]);
@@ -144,7 +144,7 @@ const pph: EpubNodeParser = xmlElementParser(
     ([el, ch], env) => {
         return el.attributes.id
             ? yieldLast([{
-                node: 'compound-raw',
+                element: 'compound-raw',
                 ref: buildRef(env.filePath, el.attributes.id),
                 nodes: [ch],
             }])
@@ -159,7 +159,7 @@ const img: EpubNodeParser = xmlElementParser(
         const src = el.attributes['src'];
         if (src) {
             return yieldLast([{
-                node: 'image-ref',
+                element: 'image-ref',
                 imageId: src,
             }]);
         } else {
@@ -175,7 +175,7 @@ const image: EpubNodeParser = xmlElementParser(
         const xlinkHref = el.attributes['xlink:href'];
         if (xlinkHref) {
             return yieldLast([{
-                node: 'image-ref',
+                element: 'image-ref',
                 imageId: xlinkHref,
             }]);
         } else {
@@ -199,7 +199,7 @@ const header: EpubNodeParser = xmlElementParser(
     ([el, title], env) => {
         const level = parseInt(el.name[1], 10);
         return yieldLast([{
-            node: 'chapter-title',
+            element: 'chapter-title',
             title: title,
             level: 4 - level,
         }]);
@@ -209,7 +209,7 @@ const br: EpubNodeParser = xmlElementParser(
     'br',
     {},
     expected(empty(), undefined, i => ({ diag: 'expected-eoi', nodes: i })),
-    () => yieldLast([{ node: 'span', span: '\n' }]),
+    () => yieldLast([{ element: 'span', span: '\n' }]),
 );
 
 const svg: EpubNodeParser = xmlElementParser(

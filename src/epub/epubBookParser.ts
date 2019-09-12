@@ -64,7 +64,7 @@ export const epubBookParser: EpubBookParser = pipeAsync(
 function buildMetaNodesFromTags(tags: KnownTag[]): BookElement[] {
     const filtered = tags.filter(t => equalsToOneOf(t.tag, ['author', 'title', 'cover-ref']));
     const nodes = filtered.map(t => ({
-        node: 'tag',
+        element: 'tag',
         tag: t,
     } as const));
     return nodes;

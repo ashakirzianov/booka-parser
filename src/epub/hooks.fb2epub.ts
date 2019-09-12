@@ -53,7 +53,7 @@ function footnoteSection(): EpubNodeParser {
         ));
         const back = translate(
             xmlNameAttrs('a', { class: 'note_anchor' }),
-            () => [{ node: 'ignore' } as IgnoreElement]
+            () => [{ element: 'ignore' } as IgnoreElement]
         );
         const rec = env.recursive;
 
@@ -65,7 +65,7 @@ function footnoteSection(): EpubNodeParser {
             ([id, [tls, bs]]) => {
                 const ref = buildRef(env.filePath, id);
                 const node: BookElement = {
-                    node: 'compound-raw',
+                    element: 'compound-raw',
                     refId: ref,
                     semantic: 'footnote',
                     title: tls || [],
@@ -83,19 +83,19 @@ function titlePage(): EpubNodeParser {
     const bookTitle = translate(
         extractText(xmlAttributes({ class: 'title1' })),
         t => ({
-            node: 'tag',
+            element: 'tag',
             tag: { tag: 'title', value: t },
         } as BookElement),
     );
     const bookAuthor = translate(
         extractText(xmlAttributes({ class: 'title_authors' })),
         a => ({
-            node: 'tag',
+            element: 'tag',
             tag: { tag: 'author', value: a },
         } as BookElement),
     );
     const ignore = headParser(
-        (x: XmlTree) => yieldLast({ node: 'ignore' } as BookElement),
+        (x: XmlTree) => yieldLast({ element: 'ignore' } as BookElement),
     );
 
     const parser = xmlNameAttrsChildren(
@@ -127,7 +127,7 @@ function divTitle(): EpubNodeParser {
     const parser = translate(
         and(divLevel, xmlChildren(content)),
         ([level, ts]) => [{
-            node: 'chapter-title',
+            element: 'chapter-title',
             title: ts,
             level: 4 - level,
         } as BookElement],

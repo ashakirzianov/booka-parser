@@ -38,7 +38,7 @@ export const rawNodesParser: RawNodesParser = async ({ stream, env }) => {
 
 async function collectMeta(rawNodes: BookElement[], env: RawNodesParserEnv): Promise<VolumeMeta> {
     const tags = rawNodes
-        .filter((n): n is TagElement => n.node === 'tag')
+        .filter((n): n is TagElement => n.element === 'tag')
         .map(n => n.tag);
 
     const coverRef = tagValue(tags, 'cover-ref') || undefined;
@@ -76,7 +76,7 @@ async function buildChaptersImpl(rawNodes: BookElement[], level: number | undefi
         return { nodes: [], next: [], diag: undefined };
     }
     const headNode = rawNodes[0];
-    if (headNode.node === 'chapter-title') {
+    if (headNode.element === 'chapter-title') {
         if (level === undefined || level > headNode.level) {
             const content = await buildChaptersImpl(rawNodes.slice(1), headNode.level, env);
             const chapter: ChapterNode = {
@@ -113,7 +113,7 @@ async function buildChaptersImpl(rawNodes: BookElement[], level: number | undefi
 
 // TODO: propagate diags
 async function resolveRawNode(rawNode: BookElement, env: RawNodesParserEnv): Promise<ResultLast<BookContentNode>> {
-    switch (rawNode.node) {
+    switch (rawNode.element) {
         case 'image-ref':
             const imageBuffer = await env.resolveImageRef(rawNode.imageId);
             if (imageBuffer) {

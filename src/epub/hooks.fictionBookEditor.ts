@@ -81,7 +81,7 @@ function titleElement(): EpubNodeParser {
                 const title = extractTextLines(el);
                 if (title) {
                     return yieldLast([{
-                        node: 'chapter-title',
+                        element: 'chapter-title',
                         level: 1 - level,
                         title,
                     }]);

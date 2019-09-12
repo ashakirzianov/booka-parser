@@ -3,7 +3,7 @@ import { KnownTag, BookContentNode, Span, SupportSemantic } from 'booka-common';
 // TODO: rename
 
 type DefElement<K extends string> = {
-    node: K,
+    element: K,
     refId?: string,
 };
 export type ContentElement = DefElement<'content'> & {
