@@ -125,10 +125,9 @@ async function resolveRawNode(rawNode: RawBookNode, env: RawNodesParserEnv): Pro
                     data: imageBuffer,
                 });
             } else {
-                fail({ custom: 'couldnt-resolve-ref', id: rawNode.imageId, context: 'image-node' });
+                return fail({ custom: 'couldnt-resolve-ref', id: rawNode.imageId, context: 'image-node' });
             }
         case 'span':
-        case 'attr':
         case 'ref':
             const span = spanFromRawNode(rawNode);
             if (span.success) {
