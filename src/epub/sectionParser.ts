@@ -76,37 +76,61 @@ const small = attrsSpanParser(['small'], ['small'], span);
 const big = attrsSpanParser(['big'], ['big'], span);
 const attr = choice(italic, bold, quote, small, big);
 
-span.implementation = choice(text, attr);
+const aSpan: EpubSpanParser = xmlElementParser(
+    'a',
+    {
+        class: null, href: null, title: null, tag: null,
+    },
+    span,
+    ([el, sp]) => {
+        if (el.attributes.href !== undefined) {
+            return yieldLast({
+                span: 'ref',
+                refToId: el.attributes.href,
+                content: sp,
+            });
+        } else {
+            return yieldLast(sp, { diag: 'bad-anchor', a: el });
+        }
+    });
 
-const spanNode: EpubNodeParser = translate(span, s => [{
+span.implementation = choice(text, attr, aSpan);
+
+const normalSpanNode: EpubNodeParser = translate(span, s => [{
     node: 'span',
     span: s,
 }]);
 
-const a: EpubNodeParser = xmlElementParser(
+const aNode: EpubNodeParser = xmlElementParser(
     'a',
     {
         class: null, href: null,
         id: null, title: null, tag: null,
     },
-    container,
-    ([el, ch], env) => {
-        if (el.attributes.href !== undefined) {
-            return yieldLast([{
-                node: 'ref',
-                to: el.attributes.href,
-                content: ch,
-            }]);
-        } else if (el.attributes.id !== undefined) {
+    span,
+    ([el, sp], env) => {
+        if (el.attributes.id !== undefined) {
+            const childSpan: Span = el.attributes.href === undefined
+                ? sp
+                : {
+                    span: 'ref',
+                    refToId: el.attributes.href,
+                    content: sp,
+                };
             return yieldLast([{
                 node: 'compound-raw',
                 ref: buildRef(env.filePath, el.attributes.id),
-                nodes: [ch],
-            } as RawBookNode]);
+                nodes: [{
+                    node: 'span',
+                    span: childSpan,
+                }],
+            }]);
         } else {
-            return yieldLast([], { diag: 'bad-anchor', a: el });
+            return reject();
         }
     });
+
+const spanNode: EpubNodeParser = choice(aNode, normalSpanNode);
 
 // TODO: re-implement (do not extra wrap container)
 const pph: EpubNodeParser = xmlElementParser(
@@ -207,7 +231,7 @@ const skip: EpubNodeParser = headParser(node => {
 
 const standardParser: EpubNodeParser = choice(
     skipWhitespaces,
-    spanNode, a, pph, img, image, header, br,
+    spanNode, pph, img, image, header, br,
     svg, ignore, skip,
 );
 
