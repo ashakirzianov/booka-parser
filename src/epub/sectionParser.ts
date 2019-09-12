@@ -113,7 +113,7 @@ span.implementation = choice(text, attr, aSpan, spanSpan);
 const paragraphContent = seq(some(span), empty());
 const paragraph: EpubNodeParser<ParagraphNode> = xmlElementParser(
     ['p', 'span', 'div'],
-    { class: null },
+    { class: null, id: null },
     paragraphContent,
     ([el, [spans]]) => {
         const s: Span = spans.length === 1
