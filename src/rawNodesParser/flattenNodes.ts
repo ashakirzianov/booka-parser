@@ -28,5 +28,5 @@ export function flattenNodes(rawNodes: RawBookNode[]): RawBookNode[] {
 }
 
 function shouldBeFlatten(container: RawContainerNode): boolean {
-    return !container.nodes.every(n => (n.node === 'span') || n.node === 'attr');
+    return !container.nodes.every(n => n.node === 'span');
 }

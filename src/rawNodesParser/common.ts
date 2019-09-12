@@ -1,4 +1,4 @@
-import { assignAttributes, RawBookNode, Span } from 'booka-common';
+import { RawBookNode, Span } from 'booka-common';
 import { filterUndefined, assertNever } from '../utils';
 import { ResultLast, yieldLast, compoundDiagnostic, reject } from '../combinators';
 
@@ -9,16 +9,6 @@ export function spanFromRawNode(
     switch (rawNode.node) {
         case 'span':
             return yieldLast(rawNode.span);
-        case 'attr':
-            const attrSpan = spanFromRawNode(rawNode.content, titles);
-            if (attrSpan.success) {
-                return yieldLast(
-                    assignAttributes(...rawNode.attributes)(attrSpan.value),
-                    attrSpan.diagnostic,
-                );
-            } else {
-                return reject({ diag: 'couldnt-build-span', node: rawNode, context: 'attr' });
-            }
         case 'compound-raw':
             const insideResults = rawNode.nodes
                 .map(c => spanFromRawNode(c, titles));

@@ -43,20 +43,6 @@ function swipe1(nodes: RawBookNode[], refs: string[], ids: string[]): SuccessLas
                     diags.push(inside.diagnostic);
                 }
                 break;
-            case 'attr':
-                {
-                    const inside = swipe1([node.content], refs, ids);
-                    footnotes.push(...inside.value.footnotes);
-                    nodeToInsert = {
-                        ...node,
-                        content: {
-                            node: 'compound-raw',
-                            nodes: inside.value.rest,
-                        },
-                    };
-                    diags.push(inside.diagnostic);
-                }
-                break;
         }
 
         if (nodeToInsert) {
@@ -120,12 +106,6 @@ function swipe2node(node: RawBookNode, footnotes: RawBookNode[]): SuccessLast<Ra
         return yieldLast([{
             ...node,
             nodes: inside.value,
-        }]);
-    } else if (node.node === 'attr') {
-        const inside = swipe2([node.content], footnotes);
-        return yieldLast([{
-            ...node,
-            content: inside.value[0],
         }]);
     } else {
         return yieldLast([node]);
