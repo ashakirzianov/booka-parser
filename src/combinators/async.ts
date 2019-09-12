@@ -1,10 +1,8 @@
 import { Result, yieldOne, ResultLast } from './base';
-import { Stream } from './stream';
 import { ParserDiagnostic, compoundDiagnostic } from './diagnostics';
 
 export type AsyncParser<I, O> = (input: I) => Promise<Result<I, O>>;
 export type AsyncFullParser<I, O> = (input: I) => Promise<ResultLast<O>>;
-export type AsyncStreamParser<I, O, E> = AsyncParser<Stream<I, E>, O>;
 
 export function andAsync<TI, T1, T2>(
     p1: AsyncParser<TI, T1>, p2: AsyncParser<TI, T2>,
