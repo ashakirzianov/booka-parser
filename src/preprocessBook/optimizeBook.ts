@@ -2,7 +2,7 @@ import {
     VolumeNode, BookContentNode,
     Span, AttributeName, ParagraphNode, CompoundSpan,
     isChapter, isParagraph, isImage,
-    isSimpleSpan, isAttributedSpan, isRefSpan, isCompoundSpan, Book,
+    isSimpleSpan, isAttributedSpan, isRefSpan, isCompoundSpan, Book, isGroup,
 } from 'booka-common';
 import { assertNever } from '../utils';
 
@@ -35,7 +35,7 @@ function optimizeNode(node: BookContentNode): BookContentNode {
         };
     } else if (isParagraph(node)) {
         return optimizeParagraph(node);
-    } else if (isImage(node)) {
+    } else if (isImage(node) || isGroup(node)) {
         return node;
     } else {
         assertNever(node);

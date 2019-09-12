@@ -1,6 +1,6 @@
 import {
     VolumeNode, BookContentNode, ChapterNode, ParagraphNode,
-    Span, isChapter, isParagraph, isImage,
+    Span, isChapter, isParagraph, isImage, isGroup,
     isSimpleSpan, isAttributedSpan, isCompoundSpan, Book, isRefSpan,
 } from 'booka-common';
 import {
@@ -32,7 +32,7 @@ function simplifyNode(node: BookContentNode): BookContentNode | undefined {
         return simplifyChapter(node);
     } else if (isParagraph(node)) {
         return simplifyParagraph(node);
-    } else if (isImage(node)) {
+    } else if (isImage(node) || isGroup(node)) {
         return node;
     } else {
         assertNever(node);
