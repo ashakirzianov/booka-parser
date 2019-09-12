@@ -1,4 +1,4 @@
-import { Result, yieldOne, ResultLast } from './base';
+import { Result, yieldOne, ResultLast, reject } from './base';
 import { ParserDiagnostic, compoundDiagnostic } from './diagnostics';
 
 export type AsyncParser<I, O> = (input: I) => Promise<Result<I, O>>;
@@ -86,4 +86,19 @@ export function alwaysYieldAsync<In, Out>(f: (input: In) => Promise<Out>): Async
         const result = await f(input);
         return yieldOne(result, input);
     };
+}
+
+export type DeclaredAsyncParser<TIn, TOut> = {
+    (input: TIn): Promise<Result<TIn, TOut>>,
+    implementation: AsyncParser<TIn, TOut>,
+};
+export function declareAsync<TIn, TOut>(): DeclaredAsyncParser<TIn, TOut> {
+    const declared = async (input: TIn) => {
+        const impl = (declared as any).implementation;
+        return impl
+            ? impl(input)
+            : reject({ diag: 'no-implementation' });
+    };
+
+    return declared as DeclaredAsyncParser<TIn, TOut>;
 }
