@@ -76,12 +76,23 @@ const bold = attrsSpanParser(['strong', 'b'], ['bold'], expectSpan);
 const quote = attrsSpanParser(['q'], ['quote'], expectSpan);
 const small = attrsSpanParser(['small'], ['small'], expectSpan);
 const big = attrsSpanParser(['big'], ['big'], expectSpan);
-const spanSpan = attrsSpanParser(['span'], [], span);
-const attr = choice(italic, bold, quote, small, big, spanSpan);
+const sup = attrsSpanParser(['sup'], ['superscript'], expectSpan);
+const sub = attrsSpanParser(['sub'], ['subscript'], expectSpan);
+const attr = choice(italic, bold, quote, small, big, sup, sub);
 
+const spanSpan: EpubSpanParser = xmlElementParser(
+    'span',
+    {
+        id: null,
+        class: null, href: null, title: null, tag: null,
+    },
+    span,
+    ([xml, sp]) => yieldLast(sp),
+);
 const aSpan: EpubSpanParser = xmlElementParser(
     'a',
     {
+        id: null,
         class: null, href: null, title: null, tag: null,
     },
     span,
@@ -97,22 +108,13 @@ const aSpan: EpubSpanParser = xmlElementParser(
         }
     });
 
-span.implementation = choice(text, attr, aSpan);
+span.implementation = choice(text, attr, aSpan, spanSpan);
 
 const paragraphContent = seq(some(span), empty());
-const wrapped = namedParser('pph-content', (input: Stream<XmlTree, EpubNodeParserEnv>) => {
-    const result = paragraphContent(input);
-    if (!result.success) {
-        const reresult = paragraphContent(input);
-        return reresult;
-    } else {
-        return result;
-    }
-});
 const paragraph: EpubNodeParser<ParagraphNode> = xmlElementParser(
     ['p', 'span', 'div'],
     { class: null },
-    wrapped,
+    paragraphContent,
     ([el, [spans]]) => {
         const s: Span = spans.length === 1
             ? spans[0]
