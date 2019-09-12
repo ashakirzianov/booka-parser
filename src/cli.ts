@@ -5,7 +5,7 @@ import { extname, join } from 'path';
 import { parseEpub } from '.';
 import { promisify, inspect } from 'util';
 import { extractNodeText } from 'booka-common';
-import { isEmptyDiagnostic } from './combinators/diagnostics';
+import { isEmptyDiagnostic, flattenDiagnostic } from './combinators/diagnostics';
 
 exec();
 
@@ -40,8 +40,9 @@ async function exec() {
             console.log(`Book length: ${bookText && bookText.length} symbols`);
         }
         if (!isEmptyDiagnostic(result.diagnostic)) {
+            const flattened = flattenDiagnostic(result.diagnostic);
             logRed('Diagnostics:');
-            console.log(inspect(result.diagnostic, false, 6, true));
+            console.log(inspect(flattened, false, 7, true));
         }
     }
 }

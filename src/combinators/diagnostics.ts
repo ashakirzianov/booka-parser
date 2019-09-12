@@ -31,6 +31,23 @@ export function compoundDiagnostic(diags: ParserDiagnostic[]): ParserDiagnostic 
             : { diagnostics: result };
 }
 
+export function flattenDiagnostic(diag: ParserDiagnostic): ParserDiagnostic {
+    if (isCompound(diag)) {
+        const inside = filterUndefined(diag.diagnostics.map(flattenDiagnostic));
+        return inside.length === 0 ? undefined
+            : inside.length === 1 ? inside[0]
+                : { ...diag, diagnostics: inside };
+    } else if (isContext(diag)) {
+        const inside = flattenDiagnostic(diag.diagnostic);
+        return inside && {
+            ...diag,
+            diagnostic: flattenDiagnostic(diag.diagnostic),
+        };
+    } else {
+        return diag;
+    }
+}
+
 export function isEmptyDiagnostic(diag: ParserDiagnostic): boolean {
     if (diag === undefined) {
         return true;
