@@ -1,6 +1,6 @@
 import { epubParser } from './epub';
 import { preprocessBook, StoreBufferFn } from './preprocessBook';
-import { AsyncParser } from './combinators';
+import { AsyncParser, reject } from './combinators';
 import { Book } from 'booka-common';
 
 export { storeBuffers } from './preprocessBook';
@@ -27,6 +27,6 @@ export const parseEpub: AsyncParser<ParseEpubInput, Book> = async ({ filePath, s
             return result;
         }
     } catch (e) {
-        return fail({ custom: 'exception', err: e });
+        return reject({ diag: 'exception', err: e });
     }
 };

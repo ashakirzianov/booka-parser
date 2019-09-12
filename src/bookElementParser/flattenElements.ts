@@ -4,13 +4,13 @@ export function flattenElements(rawNodes: BookElement[]): BookElement[] {
     const result: BookElement[] = [];
     for (const node of rawNodes) {
         switch (node.element) {
-            case 'compound-raw':
+            case 'compound':
                 const preprocessed: CompoundElement = {
                     ...node,
-                    nodes: flattenElements(node.nodes),
+                    elements: flattenElements(node.elements),
                 };
                 if (shouldBeFlatten(preprocessed)) {
-                    result.push(...preprocessed.nodes);
+                    result.push(...preprocessed.elements);
                 } else {
                     result.push(preprocessed);
                 }
@@ -28,5 +28,5 @@ export function flattenElements(rawNodes: BookElement[]): BookElement[] {
 }
 
 function shouldBeFlatten(container: CompoundElement): boolean {
-    return !container.nodes.every(n => n.element === 'span');
+    return !container.elements.every(n => n.element === 'span');
 }

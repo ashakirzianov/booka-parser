@@ -1,5 +1,5 @@
 import {
-    EpubConverterHooks, MetadataRecordParser, EpubNodeParser,
+    EpubBookParserHooks, MetadataRecordParser, EpubNodeParser,
 } from './epubBookParser';
 import {
     textNode, xmlChildren, whitespaced, extractText, isElementTree,
@@ -8,11 +8,12 @@ import {
 import {
     some, translate, choice, seq, and, headParser, envParser, reject, yieldLast,
 } from '../combinators';
-import { flatten } from '../utils';
+import { filterUndefined } from '../utils';
 import { ignoreClass, buildRef } from './sectionParser.utils';
-import { BookElement, IgnoreElement } from '../bookElementParser';
+import { BookElement } from '../bookElementParser';
+import { BookContentNode } from 'booka-common';
 
-export const fb2epubHooks: EpubConverterHooks = {
+export const fb2epubHooks: EpubBookParserHooks = {
     nodeHooks: [
         ignoreClass('about'),
         ignoreClass('annotation'),
@@ -53,23 +54,38 @@ function footnoteSection(): EpubNodeParser {
         ));
         const back = translate(
             xmlNameAttrs('a', { class: 'note_anchor' }),
-            () => [{ element: 'ignore' } as IgnoreElement]
+            () => undefined,
         );
-        const rec = env.recursive;
+        const content = translate(
+            some(choice(back, env.span)),
+            (spans): BookContentNode[] => {
+                const defined = filterUndefined(spans);
+                return [{
+                    node: 'paragraph',
+                    span: {
+                        span: 'compound',
+                        spans: defined,
+                    },
+                }];
+            }
+        );
 
         const parser = translate(
             and(
                 divId,
-                xmlChildren(seq(title, some(choice(back, rec)))),
+                xmlChildren(seq(title, content)),
             ),
-            ([id, [tls, bs]]) => {
+            ([id, [tls, footnoteContent]]) => {
                 const ref = buildRef(env.filePath, id);
                 const node: BookElement = {
-                    element: 'compound-raw',
-                    refId: ref,
-                    semantic: 'footnote',
-                    title: tls || [],
-                    nodes: flatten(bs),
+                    element: 'content',
+                    content: {
+                        node: 'group',
+                        nodes: footnoteContent,
+                        refId: ref,
+                        semantic: 'footnote',
+                        title: tls || [],
+                    },
                 };
                 return [node];
             },

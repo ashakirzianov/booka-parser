@@ -10,8 +10,8 @@ export function spanFromRawNode(
     switch (rawNode.element) {
         case 'span':
             return yieldLast(rawNode.span);
-        case 'compound-raw':
-            const insideResults = rawNode.nodes
+        case 'compound':
+            const insideResults = rawNode.elements
                 .map(c => spanFromRawNode(c, titles));
             const spans = filterUndefined(
                 insideResults

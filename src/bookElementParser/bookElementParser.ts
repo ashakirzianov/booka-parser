@@ -135,9 +135,9 @@ async function resolveRawNode(rawNode: BookElement, env: ElementParserEnv): Prom
             } else {
                 return span;
             }
-        case 'compound-raw':
+        case 'compound':
             // TODO: propagate diags
-            const rs = rawNode.nodes
+            const rs = rawNode.elements
                 .map(c => spanFromRawNode(c));
             const spans = filterUndefined(
                 rs

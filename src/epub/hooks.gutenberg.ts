@@ -1,11 +1,12 @@
-import { EpubConverterHooks, MetadataRecordParser, EpubNodeParser } from './epubBookParser';
+import { EpubBookParserHooks, MetadataRecordParser, EpubNodeParser } from './epubBookParser';
 import { ignoreTags, buildRef } from './sectionParser.utils';
 import { xmlName, xmlNameAttrs, xmlChildren, textNode, whitespaces } from '../xmlParser';
 import {
-    and, translate, seq, maybe, envParser, headParser, reject, yieldLast,
+    and, translate, seq, maybe, envParser, headParser, reject, yieldLast, some,
 } from '../combinators';
+import { ParagraphNode } from 'booka-common';
 
-export const gutenbergHooks: EpubConverterHooks = {
+export const gutenbergHooks: EpubBookParserHooks = {
     nodeHooks: [
         // TODO: do not ignore?
         ignoreTags([
@@ -75,7 +76,17 @@ function footnote(): EpubNodeParser {
             ([title]) => title,
         );
 
-        const footnoteContent = seq(maybe(footnoteTitleLine), env.recursive);
+        const pph = translate(
+            some(env.span),
+            (spans): ParagraphNode => ({
+                node: 'paragraph',
+                span: {
+                    span: 'compound',
+                    spans,
+                },
+            })
+        );
+        const footnoteContent = seq(maybe(footnoteTitleLine), pph);
         const footnoteP = xmlNameAttrs('p', { class: 'foot' });
 
         const footnoteContainer = translate(
@@ -86,11 +97,14 @@ function footnote(): EpubNodeParser {
         const fullFootnote: EpubNodeParser = translate(
             seq(footnoteMarker, whitespaces, footnoteContainer),
             ([id, _, { content, title }]) => [{
-                element: 'compound-raw',
-                ref: buildRef(env.filePath, id),
-                nodes: content,
-                semantic: 'footnote',
-                title: title ? [title] : [],
+                element: 'content',
+                content: {
+                    node: 'group',
+                    refId: buildRef(env.filePath, id),
+                    nodes: [content],
+                    semantic: 'footnote',
+                    title: title ? [title] : [],
+                },
             }],
         );
 

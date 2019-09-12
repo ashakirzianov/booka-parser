@@ -19,8 +19,10 @@ export function ignoreTags(tags: string[]): EpubNodeParser {
     );
 }
 
-export function buildRef(filePath: string, id: string) {
-    return `${filePath}#${id}`;
+export function buildRef(filePath: string, id: string | undefined) {
+    return id !== undefined
+        ? `${filePath}#${id}`
+        : undefined;
 }
 
 export function logWhileParsing(message?: string, dontLogTree?: boolean) {

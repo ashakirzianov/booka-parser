@@ -1,9 +1,8 @@
 import { KnownTag, BookContentNode, Span, SupportSemantic } from 'booka-common';
 
-// TODO: rename
-
 type DefElement<K extends string> = {
     element: K,
+    // TODO: remove ?
     refId?: string,
 };
 export type ContentElement = DefElement<'content'> & {
@@ -27,8 +26,8 @@ export type ImageRefElement = DefElement<'image-ref'> & {
 export type IgnoreElement = DefElement<'ignore'>;
 
 // TODO: remove
-export type CompoundElement = SupportSemantic<DefElement<'compound-raw'> & {
-    nodes: BookElement[],
+export type CompoundElement = SupportSemantic<DefElement<'compound'> & {
+    elements: BookElement[],
 }, 'footnote'>;
 export type ImageUrlElement = DefElement<'image-url'> & {
     id: string,
