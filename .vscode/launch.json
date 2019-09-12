@@ -8,7 +8,7 @@
       "preLaunchTask": "watch",
       "program": "${workspaceFolder}/src/cli.ts",
       "args": [
-        "epub/pg2710-images.epub"
+        "epub/without-thinking.epub"
       ],
       "cwd": "${workspaceFolder}",
       "protocol": "inspector",

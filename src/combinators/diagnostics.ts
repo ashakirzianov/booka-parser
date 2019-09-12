@@ -61,9 +61,9 @@ export function isEmptyDiagnostic(diag: ParserDiagnostic): boolean {
 }
 
 function isCompound(d: ParserDiagnostic): d is CompoundParserDiagnostic {
-    return (d as any).diagnostics !== undefined;
+    return d !== undefined && (d as any).diagnostics !== undefined;
 }
 
 function isContext(d: ParserDiagnostic): d is ContextParserDiagnostic {
-    return (d as any).context !== undefined;
+    return d !== undefined && (d as any).context !== undefined;
 }

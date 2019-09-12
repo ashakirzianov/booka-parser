@@ -278,12 +278,6 @@ export function alwaysYield<In, Out>(f: (x: In) => Out): Parser<In, Out> {
     return input => yieldOne(f(input), input);
 }
 
-export function endOfInput(): Parser<any, undefined> {
-    return input => input === undefined
-        ? { success: true, value: undefined }
-        : { success: false };
-}
-
 export function expectEnd<In, Out>(parser: Parser<In, Out>): FullParser<In, Out> {
     return input => {
         const result = parser(input);
@@ -316,4 +310,10 @@ export function diagnosticContext<In, Out>(parser: Parser<In, Out>, context: any
                 : undefined,
         };
     };
+}
+
+export function namedParser<In, Out>(name: string, parser: Parser<In, Out>): Parser<In, Out> {
+    const result: Parser<In, Out> = named => parser(named);
+    (result as any).displayName = name;
+    return result;
 }

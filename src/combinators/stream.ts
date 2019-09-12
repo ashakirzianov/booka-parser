@@ -18,12 +18,10 @@ export function makeStream<I, E = undefined>(arr: I[], env?: E): Stream<I, E> {
     };
 }
 export function nextStream<T, E>(input: Stream<T, E>): Stream<T, E> | undefined {
-    return input.stream.length > 1
-        ? {
-            stream: input.stream.slice(1),
-            env: input.env,
-        }
-        : undefined;
+    return {
+        stream: input.stream.slice(1),
+        env: input.env,
+    };
 }
 
 export type HeadFn<In, Out, Env> = (head: In, env: Env) => ResultLast<Out>;
@@ -44,7 +42,7 @@ export function headParser<In, Out, Env = any>(f: HeadFn<In, Out, Env>): StreamP
 }
 
 export function empty<T = any, E = any>(): StreamParser<T, undefined, E> {
-    return input => input.stream === undefined || input.stream.length === 0
+    return input => input.stream.length === 0
         ? yieldOne(undefined, input)
         : reject({ diag: `Expected end of input`, rest: input });
 }

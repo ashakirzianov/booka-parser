@@ -7,7 +7,7 @@ import { spanFromRawNode } from './common';
 import { flattenElements } from './flattenElements';
 import {
     AsyncStreamParser, yieldLast, ParserDiagnostic,
-    compoundDiagnostic, ResultLast, SuccessLast,
+    compoundDiagnostic, ResultLast, SuccessLast, reject,
 } from '../combinators';
 import { BookElement, TagElement } from './bookElement';
 
@@ -123,7 +123,7 @@ async function resolveRawNode(rawNode: BookElement, env: ElementParserEnv): Prom
                     data: imageBuffer,
                 });
             } else {
-                return fail({ custom: 'couldnt-resolve-ref', id: rawNode.imageId, context: 'image-node' });
+                return reject({ diag: 'couldnt-resolve-ref', id: rawNode.imageId, context: 'image-node' });
             }
         case 'span':
             const span = spanFromRawNode(rawNode);
@@ -152,6 +152,6 @@ async function resolveRawNode(rawNode: BookElement, env: ElementParserEnv): Prom
                 },
             }, compoundDiagnostic(ds));
         default:
-            return fail({ custom: 'unexpected-raw-node', node: rawNode, context: 'node' });
+            return reject({ diag: 'unexpected-raw-node', node: rawNode, context: 'node' });
     }
 }
