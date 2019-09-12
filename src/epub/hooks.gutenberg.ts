@@ -80,15 +80,17 @@ function footnote(): EpubNodeParser {
 
         const footnoteContainer = translate(
             and(footnoteP, xmlChildren(footnoteContent)),
-            ([_, [title, content]]) => content,
+            ([_, [title, content]]) => ({ title, content }),
         );
 
         const fullFootnote: EpubNodeParser = translate(
             seq(footnoteMarker, whitespaces, footnoteContainer),
-            ([id, _, content]) => [{
+            ([id, _, { content, title }]) => [{
                 node: 'compound-raw',
                 ref: buildRef(env.filePath, id),
                 nodes: content,
+                semantic: 'footnote',
+                title: title ? [title] : [],
             }],
         );
 

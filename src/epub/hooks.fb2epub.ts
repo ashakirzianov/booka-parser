@@ -64,12 +64,14 @@ function footnoteSection(): EpubNodeParser {
             ),
             ([id, [tls, bs]]) => {
                 const ref = buildRef(env.filePath, id);
-                return [{
+                const node: RawBookNode = {
                     node: 'compound-raw',
-                    ref: ref,
-                    // title: tls || [], // TODO: use title
+                    refId: ref,
+                    semantic: 'footnote',
+                    title: tls || [],
                     nodes: flatten(bs),
-                } as RawBookNode];
+                };
+                return [node];
             },
         );
 
