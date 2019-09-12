@@ -20,8 +20,8 @@ function swipe1(nodes: RawBookNode[], refs: string[], ids: string[]): SuccessLas
     const diags: ParserDiagnostic[] = [];
     for (const node of nodes) {
         let nodeToInsert: RawBookNode | undefined = node;
-        if (node.ref) {
-            ids.push(node.ref);
+        if (node.refId) {
+            ids.push(node.refId);
         }
 
         switch (node.node) {
@@ -46,7 +46,7 @@ function swipe1(nodes: RawBookNode[], refs: string[], ids: string[]): SuccessLas
         }
 
         if (nodeToInsert) {
-            const isFootnote = refs.some(r => r === node.ref);
+            const isFootnote = refs.some(r => r === node.refId);
             if (isFootnote) {
                 footnotes.push(nodeToInsert);
             } else {
@@ -77,7 +77,7 @@ function swipe2node(node: RawBookNode, footnotes: RawBookNode[]): SuccessLast<Ra
         if (!content.success) {
             return yieldLast([], { diag: 'couldnt-build-span', node, context: 'footnote' });
         }
-        const footnoteNode = footnotes.find(f => f.ref === node.to);
+        const footnoteNode = footnotes.find(f => f.refId === node.to);
         if (!footnoteNode) {
             return yieldLast([], { diag: 'couldnt-resolve-footnote', node });
         }

@@ -1,11 +1,11 @@
-import { RawBookNode, RawContainerNode } from 'booka-common';
+import { RawBookNode, RawCompoundNode } from 'booka-common';
 
 export function flattenNodes(rawNodes: RawBookNode[]): RawBookNode[] {
     const result: RawBookNode[] = [];
     for (const node of rawNodes) {
         switch (node.node) {
             case 'compound-raw':
-                const preprocessed: RawContainerNode = {
+                const preprocessed: RawCompoundNode = {
                     ...node,
                     nodes: flattenNodes(node.nodes),
                 };
@@ -27,6 +27,6 @@ export function flattenNodes(rawNodes: RawBookNode[]): RawBookNode[] {
     return result;
 }
 
-function shouldBeFlatten(container: RawContainerNode): boolean {
+function shouldBeFlatten(container: RawCompoundNode): boolean {
     return !container.nodes.every(n => n.node === 'span');
 }
