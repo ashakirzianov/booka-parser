@@ -224,7 +224,7 @@ export function flattenResult<I, O>(parser: Parser<I, O[][]>): Parser<I, O[]> {
 
 export type DeclaredParser<TIn, TOut> = {
     (input: TIn): Result<TIn, TOut>,
-    implementation: (input: TIn) => Result<TIn, TOut>,
+    implementation: Parser<TIn, TOut>,
 };
 export function declare<TIn, TOut>(): DeclaredParser<TIn, TOut> {
     const declared = (input: TIn) => {

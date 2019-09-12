@@ -1,8 +1,8 @@
-import { RawBookNode, AttributeName } from 'booka-common';
+import { RawBookNode, AttributeName, Span } from 'booka-common';
 import { XmlTree, path, xmlChildren, xmlElementParser } from '../xmlParser';
 import {
     choice, makeStream, fullParser,
-    reject, headParser, envParser, translate, some, expected, empty, flattenResult, yieldLast, StreamParser, diagnosticContext,
+    reject, headParser, envParser, translate, some, expected, empty, flattenResult, yieldLast, StreamParser, diagnosticContext, declare, Stream,
 } from '../combinators';
 import { isWhitespaces, flatten, AsyncIter } from '../utils';
 import { buildRef } from './sectionParser.utils';
@@ -14,8 +14,8 @@ export type SectionsParser = StreamParser<EpubSection, RawBookNode[], undefined>
 
 export const sectionsParser: EpubBookParser<RawBookNode[]> = async input => {
     const hooks = input.options[input.epub.kind].nodeHooks;
-    const allParsers = hooks.concat(standardParsers);
-    const nodeParser = choice(...allParsers);
+    const hooksParser = choice(...hooks);
+    const nodeParser = choice(hooksParser, standardParser);
     const insideParser = flattenResult(fullParser(nodeParser));
     const bodyParser = xmlChildren(insideParser);
     const documentParser = path(['html', 'body'], bodyParser);
@@ -50,27 +50,38 @@ const container = envParser((env: EpubNodeParserEnv) => {
     );
 });
 
-const text: EpubNodeParser = headParser(node => {
+const skipWhitespaces: EpubNodeParser = headParser(node => {
     if (node.type !== 'text') {
-        return reject({ diag: 'expected-xml-text' });
+        return reject();
     }
-    // Skip whitespace nodes
     if (node.text.startsWith('\n') && isWhitespaces(node.text)) {
         return yieldLast([]);
     } else {
-        return yieldLast([{
-            node: 'span',
-            span: node.text,
-        }]);
+        return reject();
     }
 });
 
-const italic = attributeParser(['em', 'i'], ['italic']);
-const bold = attributeParser(['strong', 'b'], ['bold']);
-const quote = attributeParser(['q'], ['quote']);
-const small = attributeParser(['small'], ['small']);
-const big = attributeParser(['big'], ['big']);
+type EpubSpanParser = EpubNodeParser<Span>;
+const span = declare<Stream<XmlTree, EpubNodeParserEnv>, Span>();
+const text: EpubSpanParser = headParser(node => {
+    return node.type === 'text'
+        ? yieldLast(node.text)
+        : reject();
+});
+
+const italic = attrsSpanParser(['em', 'i'], ['italic'], span);
+const bold = attrsSpanParser(['strong', 'b'], ['bold'], span);
+const quote = attrsSpanParser(['q'], ['quote'], span);
+const small = attrsSpanParser(['small'], ['small'], span);
+const big = attrsSpanParser(['big'], ['big'], span);
 const attr = choice(italic, bold, quote, small, big);
+
+span.implementation = choice(text, attr);
+
+const spanNode: EpubNodeParser = translate(span, s => [{
+    node: 'span',
+    span: s,
+}]);
 
 const a: EpubNodeParser = xmlElementParser(
     'a',
@@ -194,12 +205,11 @@ const skip: EpubNodeParser = headParser(node => {
     return yieldLast([], { diag: 'unexpected-node', node });
 });
 
-const standardParsers = [
-    text, attr,
-    a, pph, img, image, header, br,
-    svg,
-    ignore, skip,
-];
+const standardParser: EpubNodeParser = choice(
+    skipWhitespaces,
+    spanNode, a, pph, img, image, header, br,
+    svg, ignore, skip,
+);
 
 function extractTitle(nodes: XmlTree[]) {
     const lines: string[] = [];
@@ -236,16 +246,14 @@ function extractTitle(nodes: XmlTree[]) {
     return { lines, diags };
 }
 
-function attributeParser(tagNames: string[], attrs: AttributeName[]): EpubNodeParser {
+function attrsSpanParser(tagNames: string[], attrs: AttributeName[], contentParser: EpubSpanParser): EpubSpanParser {
     return xmlElementParser(
         tagNames,
         { class: null },
-        container,
-        ([el, ch], env) => {
-            return yieldLast([{
-                node: 'attr',
-                attributes: attrs,
-                content: ch,
-            }]);
-        });
+        contentParser,
+        ([_, content]) => yieldLast({
+            span: 'attrs',
+            attrs,
+            content,
+        }));
 }
