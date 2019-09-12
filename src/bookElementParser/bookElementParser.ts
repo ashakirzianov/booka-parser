@@ -4,22 +4,22 @@ import {
 } from 'booka-common';
 import { filterUndefined } from '../utils';
 import { spanFromRawNode } from './common';
-import { flattenNodes } from './flattenNodes';
+import { flattenElements } from './flattenElements';
 import {
     AsyncStreamParser, yieldLast, ParserDiagnostic,
     compoundDiagnostic, ResultLast, SuccessLast,
 } from '../combinators';
-import { RawBookNode, TagNode } from './rawNodes';
+import { BookElement, TagElement } from './bookElement';
 
 export type RawNodesParserEnv = {
     resolveImageRef: (ref: string) => Promise<Buffer | undefined>,
 };
-export type RawNodesParser = AsyncStreamParser<RawBookNode, VolumeNode, RawNodesParserEnv>;
+export type RawNodesParser = AsyncStreamParser<BookElement, VolumeNode, RawNodesParserEnv>;
 
 export const rawNodesParser: RawNodesParser = async ({ stream, env }) => {
     const diags: ParserDiagnostic[] = [];
     const meta = await collectMeta(stream, env);
-    const preprocessed = flattenNodes(stream);
+    const preprocessed = flattenElements(stream);
     const nodes = await buildChapters(preprocessed, env);
     diags.push(nodes.diagnostic);
 
@@ -36,9 +36,9 @@ export const rawNodesParser: RawNodesParser = async ({ stream, env }) => {
     return yieldLast(volume, compoundDiagnostic(diags));
 };
 
-async function collectMeta(rawNodes: RawBookNode[], env: RawNodesParserEnv): Promise<VolumeMeta> {
+async function collectMeta(rawNodes: BookElement[], env: RawNodesParserEnv): Promise<VolumeMeta> {
     const tags = rawNodes
-        .filter((n): n is TagNode => n.node === 'tag')
+        .filter((n): n is TagElement => n.node === 'tag')
         .map(n => n.tag);
 
     const coverRef = tagValue(tags, 'cover-ref') || undefined;
@@ -56,7 +56,7 @@ async function collectMeta(rawNodes: RawBookNode[], env: RawNodesParserEnv): Pro
     };
 }
 
-async function buildChapters(rawNodes: RawBookNode[], env: RawNodesParserEnv): Promise<SuccessLast<BookContentNode[]>> {
+async function buildChapters(rawNodes: BookElement[], env: RawNodesParserEnv): Promise<SuccessLast<BookContentNode[]>> {
     const { nodes, next, diag } = await buildChaptersImpl(rawNodes, undefined, env);
 
     const tailDiag = next.length !== 0
@@ -68,10 +68,10 @@ async function buildChapters(rawNodes: RawBookNode[], env: RawNodesParserEnv): P
 
 type BuildChaptersResult = {
     nodes: BookContentNode[],
-    next: RawBookNode[],
+    next: BookElement[],
     diag: ParserDiagnostic,
 };
-async function buildChaptersImpl(rawNodes: RawBookNode[], level: number | undefined, env: RawNodesParserEnv): Promise<BuildChaptersResult> {
+async function buildChaptersImpl(rawNodes: BookElement[], level: number | undefined, env: RawNodesParserEnv): Promise<BuildChaptersResult> {
     if (rawNodes.length === 0) {
         return { nodes: [], next: [], diag: undefined };
     }
@@ -112,7 +112,7 @@ async function buildChaptersImpl(rawNodes: RawBookNode[], level: number | undefi
 }
 
 // TODO: propagate diags
-async function resolveRawNode(rawNode: RawBookNode, env: RawNodesParserEnv): Promise<ResultLast<BookContentNode>> {
+async function resolveRawNode(rawNode: BookElement, env: RawNodesParserEnv): Promise<ResultLast<BookContentNode>> {
     switch (rawNode.node) {
         case 'image-ref':
             const imageBuffer = await env.resolveImageRef(rawNode.imageId);

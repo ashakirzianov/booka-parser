@@ -1,10 +1,10 @@
 import { Span } from 'booka-common';
 import { filterUndefined, assertNever } from '../utils';
 import { ResultLast, yieldLast, compoundDiagnostic, reject } from '../combinators';
-import { RawBookNode } from './rawNodes';
+import { BookElement } from './bookElement';
 
 export function spanFromRawNode(
-    rawNode: RawBookNode,
+    rawNode: BookElement,
     titles?: string[], // TODO: find better solution
 ): ResultLast<Span> {
     switch (rawNode.node) {

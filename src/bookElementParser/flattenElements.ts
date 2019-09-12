@@ -1,13 +1,13 @@
-import { RawBookNode, RawCompoundNode } from './rawNodes';
+import { BookElement, CompoundElement } from './bookElement';
 
-export function flattenNodes(rawNodes: RawBookNode[]): RawBookNode[] {
-    const result: RawBookNode[] = [];
+export function flattenElements(rawNodes: BookElement[]): BookElement[] {
+    const result: BookElement[] = [];
     for (const node of rawNodes) {
         switch (node.node) {
             case 'compound-raw':
-                const preprocessed: RawCompoundNode = {
+                const preprocessed: CompoundElement = {
                     ...node,
-                    nodes: flattenNodes(node.nodes),
+                    nodes: flattenElements(node.nodes),
                 };
                 if (shouldBeFlatten(preprocessed)) {
                     result.push(...preprocessed.nodes);
@@ -27,6 +27,6 @@ export function flattenNodes(rawNodes: RawBookNode[]): RawBookNode[] {
     return result;
 }
 
-function shouldBeFlatten(container: RawCompoundNode): boolean {
+function shouldBeFlatten(container: CompoundElement): boolean {
     return !container.nodes.every(n => n.node === 'span');
 }

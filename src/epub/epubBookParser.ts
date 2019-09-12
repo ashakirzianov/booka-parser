@@ -3,7 +3,7 @@ import { equalsToOneOf } from '../utils';
 import {
     makeStream, yieldLast, StreamParser, andAsync, AsyncFullParser, pipeAsync,
 } from '../combinators';
-import { rawNodesParser, RawBookNode } from '../rawNodesParser';
+import { rawNodesParser, BookElement } from '../bookElementParser';
 import { EpubBook, EpubKind } from './epubBook';
 import { sectionsParser } from './sectionParser';
 import { metadataParser } from './metaParser';
@@ -22,10 +22,10 @@ export type EpubBookParserInput = {
 export type EpubBookParser<R = Book> = AsyncFullParser<EpubBookParserInput, R>;
 
 export type EpubNodeParserEnv = {
-    recursive: TreeParser<RawBookNode[], EpubNodeParserEnv>,
+    recursive: TreeParser<BookElement[], EpubNodeParserEnv>,
     filePath: string,
 };
-export type EpubNodeParser<T = RawBookNode[]> = TreeParser<T, EpubNodeParserEnv>;
+export type EpubNodeParser<T = BookElement[]> = TreeParser<T, EpubNodeParserEnv>;
 export type MetadataRecordParser = StreamParser<[string, any], KnownTag[]>;
 
 const diagnoseKind: EpubBookParser<EpubBook> = async input =>
@@ -61,7 +61,7 @@ export const epubBookParser: EpubBookParser = pipeAsync(
     }
 );
 
-function buildMetaNodesFromTags(tags: KnownTag[]): RawBookNode[] {
+function buildMetaNodesFromTags(tags: KnownTag[]): BookElement[] {
     const filtered = tags.filter(t => equalsToOneOf(t.tag, ['author', 'title', 'cover-ref']));
     const nodes = filtered.map(t => ({
         node: 'tag',

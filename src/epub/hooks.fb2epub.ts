@@ -1,4 +1,3 @@
-import { IgnoreNode } from 'booka-common';
 import {
     EpubConverterHooks, MetadataRecordParser, EpubNodeParser,
 } from './epubBookParser';
@@ -11,7 +10,7 @@ import {
 } from '../combinators';
 import { flatten } from '../utils';
 import { ignoreClass, buildRef } from './sectionParser.utils';
-import { RawBookNode } from '../rawNodesParser';
+import { BookElement, IgnoreElement } from '../bookElementParser';
 
 export const fb2epubHooks: EpubConverterHooks = {
     nodeHooks: [
@@ -54,7 +53,7 @@ function footnoteSection(): EpubNodeParser {
         ));
         const back = translate(
             xmlNameAttrs('a', { class: 'note_anchor' }),
-            () => [{ node: 'ignore' } as IgnoreNode]
+            () => [{ node: 'ignore' } as IgnoreElement]
         );
         const rec = env.recursive;
 
@@ -65,7 +64,7 @@ function footnoteSection(): EpubNodeParser {
             ),
             ([id, [tls, bs]]) => {
                 const ref = buildRef(env.filePath, id);
-                const node: RawBookNode = {
+                const node: BookElement = {
                     node: 'compound-raw',
                     refId: ref,
                     semantic: 'footnote',
@@ -86,17 +85,17 @@ function titlePage(): EpubNodeParser {
         t => ({
             node: 'tag',
             tag: { tag: 'title', value: t },
-        } as RawBookNode),
+        } as BookElement),
     );
     const bookAuthor = translate(
         extractText(xmlAttributes({ class: 'title_authors' })),
         a => ({
             node: 'tag',
             tag: { tag: 'author', value: a },
-        } as RawBookNode),
+        } as BookElement),
     );
     const ignore = headParser(
-        (x: XmlTree) => yieldLast({ node: 'ignore' } as RawBookNode),
+        (x: XmlTree) => yieldLast({ node: 'ignore' } as BookElement),
     );
 
     const parser = xmlNameAttrsChildren(
@@ -131,7 +130,7 @@ function divTitle(): EpubNodeParser {
             node: 'chapter-title',
             title: ts,
             level: 4 - level,
-        } as RawBookNode],
+        } as BookElement],
     );
 
     return parser;

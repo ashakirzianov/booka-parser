@@ -9,11 +9,11 @@ import { buildRef } from './sectionParser.utils';
 import { EpubSection } from './epubBook';
 import { ParserDiagnostic, compoundDiagnostic } from '../combinators/diagnostics';
 import { EpubNodeParser, EpubNodeParserEnv, EpubBookParser } from './epubBookParser';
-import { RawBookNode } from '../rawNodesParser';
+import { BookElement } from '../bookElementParser';
 
-export type SectionsParser = StreamParser<EpubSection, RawBookNode[], undefined>;
+export type SectionsParser = StreamParser<EpubSection, BookElement[], undefined>;
 
-export const sectionsParser: EpubBookParser<RawBookNode[]> = async input => {
+export const sectionsParser: EpubBookParser<BookElement[]> = async input => {
     const hooks = input.options[input.epub.kind].nodeHooks;
     const hooksParser = choice(...hooks);
     const nodeParser = choice(hooksParser, standardParser);
@@ -22,7 +22,7 @@ export const sectionsParser: EpubBookParser<RawBookNode[]> = async input => {
     const documentParser = path(['html', 'body'], bodyParser);
     const withDiags = expected(documentParser, [], s => ({ diag: 'couldnt-parse-document', tree: s }));
 
-    const parser: StreamParser<EpubSection, RawBookNode[]> = translate(
+    const parser: StreamParser<EpubSection, BookElement[]> = translate(
         some(headParser(s => {
             const docStream = makeStream(s.content.children, {
                 filePath: s.filePath,
@@ -47,7 +47,7 @@ const container = envParser((env: EpubNodeParserEnv) => {
         nns => ({
             node: 'compound-raw',
             nodes: flatten(nns),
-        } as RawBookNode),
+        } as BookElement),
     );
 });
 
