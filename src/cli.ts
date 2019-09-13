@@ -42,7 +42,7 @@ async function exec() {
         if (!isEmptyDiagnostic(result.diagnostic)) {
             const flattened = topDiagnostic(result.diagnostic, 5);
             logRed('Diagnostics:');
-            console.log(inspect(flattened, false, 7, true));
+            console.log(inspect(flattened, false, 8, true));
         }
     }
 }

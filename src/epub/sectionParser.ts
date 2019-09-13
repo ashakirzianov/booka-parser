@@ -1,10 +1,10 @@
-import { AttributeName, Span, ParagraphNode } from 'booka-common';
+import { AttributeName, Span, ParagraphNode, compoundSpan } from 'booka-common';
 import { XmlTree, path, xmlChildren, xmlElementParser } from '../xmlParser';
 import {
     choice, makeStream, fullParser, reject, headParser, envParser,
     translate, some, expected, empty, flattenResult, yieldLast,
     StreamParser, diagnosticContext, declare, Stream,
-    seq, namedParser,
+    seq, namedParser, oneOrMore,
 } from '../combinators';
 import { isWhitespaces, flatten, AsyncIter } from '../utils';
 import { buildRef } from './sectionParser.utils';
@@ -32,7 +32,7 @@ export const sectionsParser: EpubBookParser<BookElement[]> = async input => {
             const docStream = makeStream(s.content.children, {
                 filePath: s.filePath,
                 recursive: nodeParser,
-                paragraph: paragraph,
+                paragraph: pphNode,
                 span: span,
             });
             const withContext = diagnosticContext(withDiags, {
@@ -61,11 +61,19 @@ const skipWhitespaces: EpubNodeParser = headParser(node => {
     }
 });
 
-const span = declare<Stream<XmlTree, EpubNodeParserEnv>, Span>();
-const expectSpan: EpubSpanParser = choice(span, headParser(
-    el =>
-        yieldLast('', { diag: 'unexpected-xml', tree: el })
-));
+const span = declare<Stream<XmlTree, EpubNodeParserEnv>, Span>('span');
+
+const spanContent: EpubSpanParser = translate(
+    seq(some(span), empty()),
+    ([spans]) => compoundSpan(spans),
+);
+const expectSpanContent: EpubSpanParser = translate(
+    some(choice(span, headParser(
+        el =>
+            yieldLast('', { diag: 'unexpected-xml', tree: el })
+    ))),
+    compoundSpan,
+);
 
 const text: EpubSpanParser = headParser(node => {
     return node.type === 'text'
@@ -73,13 +81,13 @@ const text: EpubSpanParser = headParser(node => {
         : reject();
 });
 
-const italic = attrsSpanParser(['em', 'i'], ['italic'], expectSpan);
-const bold = attrsSpanParser(['strong', 'b'], ['bold'], expectSpan);
-const quote = attrsSpanParser(['q'], ['quote'], expectSpan);
-const small = attrsSpanParser(['small'], ['small'], expectSpan);
-const big = attrsSpanParser(['big'], ['big'], expectSpan);
-const sup = attrsSpanParser(['sup'], ['superscript'], expectSpan);
-const sub = attrsSpanParser(['sub'], ['subscript'], expectSpan);
+const italic = attrsSpanParser(['em', 'i'], ['italic'], expectSpanContent);
+const bold = attrsSpanParser(['strong', 'b'], ['bold'], expectSpanContent);
+const quote = attrsSpanParser(['q'], ['quote'], expectSpanContent);
+const small = attrsSpanParser(['small'], ['small'], expectSpanContent);
+const big = attrsSpanParser(['big'], ['big'], expectSpanContent);
+const sup = attrsSpanParser(['sup'], ['superscript'], expectSpanContent);
+const sub = attrsSpanParser(['sub'], ['subscript'], expectSpanContent);
 const attr = choice(italic, bold, quote, small, big, sup, sub);
 
 const brSpan: EpubSpanParser = xmlElementParser(
@@ -93,7 +101,7 @@ const spanSpan: EpubSpanParser = xmlElementParser(
         id: null,
         class: null, href: null, title: null, tag: null,
     },
-    span,
+    spanContent,
     ([xml, sp]) => yieldLast(sp),
 );
 const aSpan: EpubSpanParser = xmlElementParser(
@@ -102,7 +110,7 @@ const aSpan: EpubSpanParser = xmlElementParser(
         id: null,
         class: null, href: null, title: null, tag: null,
     },
-    span,
+    spanContent,
     ([xml, sp]) => {
         if (xml.attributes.href !== undefined) {
             return yieldLast({
@@ -111,41 +119,46 @@ const aSpan: EpubSpanParser = xmlElementParser(
                 content: sp,
             });
         } else {
-            return yieldLast(sp, { diag: 'bad-anchor', a: xml });
+            return yieldLast(sp);
         }
     });
 
 span.implementation = choice(text, attr, brSpan, aSpan, spanSpan);
 
-const paragraphContent = seq(some(span), empty());
-const paragraph: EpubNodeParser<ParagraphNode> = xmlElementParser(
+const wrappedSpans = xmlElementParser(
     ['p', 'span', 'div'],
-    { class: null, id: null },
-    paragraphContent,
-    ([el, [spans]]) => {
-        const s: Span = spans.length === 1
-            ? spans[0]
-            : { span: 'compound', spans };
-        const p: ParagraphNode = {
-            node: 'paragraph',
-            span: s,
-        };
-        return yieldLast(p);
-    }
+    {
+        class: null, id: null,
+        'xml:space': 'preserve',
+    },
+    spanContent,
+    ([el, compound]) => yieldLast([compound]),
+);
+const pphSpans = choice(wrappedSpans, oneOrMore(span));
+
+const pphNode: EpubNodeParser<ParagraphNode> = translate(
+    pphSpans,
+    spans => ({
+        node: 'paragraph',
+        span: compoundSpan(spans),
+    })
 );
 
-const paragraphElement: EpubNodeParser = namedParser('pph', translate(
-    paragraph,
-    p => [{
+const pphElement: EpubNodeParser = namedParser('pph', translate(
+    pphNode,
+    pNode => [{
         element: 'content',
-        content: p,
+        content: pNode,
     }],
 ));
 
 const containerElement: EpubNodeParser = namedParser('container', envParser(env => {
     return xmlElementParser(
         ['p', 'div', 'span'],
-        { id: null, class: null, },
+        {
+            id: null, class: null,
+            'xml:space': 'preserve',
+        },
         fullParser(env.recursive),
         ([xml, ch], e) => {
             return yieldLast([{
@@ -232,13 +245,13 @@ const ignore: EpubNodeParser = xmlElementParser(
     () => yieldLast([]),
 );
 
-const skip: EpubNodeParser = headParser(node => {
+const skip: EpubNodeParser = headParser((node, env) => {
     return yieldLast([], { diag: 'unexpected-node', node });
 });
 
 const standardNodeParsers: EpubNodeParser[] = [
     skipWhitespaces,
-    paragraphElement, containerElement,
+    pphElement, containerElement,
     img, image, header, br,
     svg, ignore, skip,
 ];

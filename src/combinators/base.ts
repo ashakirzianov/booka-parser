@@ -225,16 +225,18 @@ export function flattenResult<I, O>(parser: Parser<I, O[][]>): Parser<I, O[]> {
 export type DeclaredParser<TIn, TOut> = {
     (input: TIn): Result<TIn, TOut>,
     implementation: Parser<TIn, TOut>,
+    displayName?: string,
 };
-export function declare<TIn, TOut>(): DeclaredParser<TIn, TOut> {
-    const declared = (input: TIn) => {
+export function declare<TIn, TOut>(name?: string): DeclaredParser<TIn, TOut> {
+    const declared = ((input: TIn) => {
         const impl = (declared as any).implementation;
         return impl
             ? impl(input)
             : reject({ diag: 'no-implementation' });
-    };
+    }) as DeclaredParser<TIn, TOut>;
+    declared.displayName = name;
 
-    return declared as DeclaredParser<TIn, TOut>;
+    return declared;
 }
 
 export function expected<TI, TO>(parser: Parser<TI, TO>, value: TO, diagFn?: (i: TI) => ParserDiagnostic): SuccessParser<TI, TO> {
