@@ -1,15 +1,12 @@
-import {
-    EpubBookParserHooks, MetadataRecordParser, EpubElementParser,
-} from './epubBookParser';
+import { EpubBookParserHooks, MetadataRecordParser } from './epubBookParser';
 import {
     textNode, xmlChildren, whitespaced, extractText,
-    nameEq, xmlNameAttrs, xmlNameAttrsChildren, xmlAttributes, xmlNameChildren,
+    nameEq, xmlNameAttrs, xmlNameAttrsChildren, xmlAttributes, xmlNameChildren, ignoreClass, buildRef, Tree2ElementsParser,
 } from '../xmlTreeParser';
 import {
     some, translate, choice, seq, and, headParser, envParser, reject, yieldLast,
 } from '../combinators';
 import { filterUndefined } from '../utils';
-import { ignoreClass, buildRef } from './sectionParser.utils';
 import { BookElement } from '../bookElementParser';
 import { BookContentNode } from 'booka-common';
 import { XmlTree, isElementTree } from '../xmlStringParser';
@@ -41,7 +38,7 @@ function metaHook(): MetadataRecordParser {
     });
 }
 
-function footnoteSection(): EpubElementParser {
+function footnoteSection(): Tree2ElementsParser {
     return envParser(env => {
         const divId = translate(
             xmlNameAttrs('div', { class: 'section2', id: id => id !== undefined }),
@@ -96,7 +93,7 @@ function footnoteSection(): EpubElementParser {
     });
 }
 
-function titlePage(): EpubElementParser {
+function titlePage(): Tree2ElementsParser {
     const bookTitle = translate(
         extractText(xmlAttributes({ class: 'title1' })),
         t => ({
@@ -124,7 +121,7 @@ function titlePage(): EpubElementParser {
     return parser;
 }
 
-function divTitle(): EpubElementParser {
+function divTitle(): Tree2ElementsParser {
     const divLevel = headParser((n: XmlTree) => {
         if (isElementTree(n) && nameEq('div', n.name)
             && n.attributes.class && n.attributes.class.startsWith('title')) {

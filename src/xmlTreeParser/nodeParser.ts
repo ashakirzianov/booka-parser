@@ -1,17 +1,16 @@
+import { ParagraphNode, compoundSpan } from 'booka-common';
 import {
     yieldLast, headParser, reject, choice, oneOrMore, translate,
     namedParser, envParser, fullParser, expectEmpty,
     compoundDiagnostic, expected, empty, ParserDiagnostic,
 } from '../combinators';
 import { isWhitespaces, flatten } from '../utils';
-import { EpubElementParser, EpubTreeParser } from './epubBookParser';
-import { xmlElementParser } from '../xmlTreeParser';
+import { xmlElementParser } from './treeParser';
 import { spanContent, span } from './spanParser';
-import { ParagraphNode, compoundSpan } from 'booka-common';
-import { buildRef } from './sectionParser.utils';
 import { XmlTree } from '../xmlStringParser';
+import { Tree2ElementsParser, EpubTreeParser, buildRef } from './utils';
 
-const skipWhitespaces: EpubElementParser = headParser(node => {
+const skipWhitespaces: Tree2ElementsParser = headParser(node => {
     if (node.type !== 'text') {
         return reject();
     }
@@ -41,7 +40,7 @@ const pphNode: EpubTreeParser<ParagraphNode> = translate(
     })
 );
 
-const pphElement: EpubElementParser = namedParser('pph', translate(
+const pphElement: Tree2ElementsParser = namedParser('pph', translate(
     pphNode,
     pNode => [{
         element: 'content',
@@ -49,7 +48,7 @@ const pphElement: EpubElementParser = namedParser('pph', translate(
     }],
 ));
 
-const containerElement: EpubElementParser = namedParser('container', envParser(env => {
+const containerElement: Tree2ElementsParser = namedParser('container', envParser(env => {
     return xmlElementParser(
         ['p', 'div', 'span'],
         {
@@ -67,7 +66,7 @@ const containerElement: EpubElementParser = namedParser('container', envParser(e
     );
 }));
 
-const img: EpubElementParser = xmlElementParser(
+const img: Tree2ElementsParser = xmlElementParser(
     'img',
     { src: null, alt: null, class: null },
     expectEmpty,
@@ -83,7 +82,7 @@ const img: EpubElementParser = xmlElementParser(
         }
     });
 
-const image: EpubElementParser = xmlElementParser(
+const image: Tree2ElementsParser = xmlElementParser(
     'image',
     {},
     expectEmpty,
@@ -108,7 +107,7 @@ const headerTitleParser: EpubTreeParser<string[]> = input => {
     return yieldLast(result.lines, compoundDiagnostic([...result.diags, emptyTitleDiag]));
 };
 
-const header: EpubElementParser = xmlElementParser(
+const header: Tree2ElementsParser = xmlElementParser(
     ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'],
     { id: null },
     headerTitleParser,
@@ -121,32 +120,32 @@ const header: EpubElementParser = xmlElementParser(
         }]);
     });
 
-const br: EpubElementParser = xmlElementParser(
+const br: Tree2ElementsParser = xmlElementParser(
     'br',
     {},
     expected(empty(), undefined, i => ({ diag: 'expected-eoi', nodes: i })),
     () => yieldLast([{ element: 'span', span: '\n' }]),
 );
 
-const svg: EpubElementParser = xmlElementParser(
+const svg: Tree2ElementsParser = xmlElementParser(
     'svg',
     { viewBox: null, xmlns: null, class: null },
     () => yieldLast(undefined),
     () => yieldLast([])
 );
 
-const ignore: EpubElementParser = xmlElementParser(
+const ignore: Tree2ElementsParser = xmlElementParser(
     ['sup', 'sub', 'ul', 'li', 'br'], // TODO: do not ignore 'br'
     {},
     (expected(empty(), undefined, i => ({ diag: 'expected-eoi', nodes: i }))),
     () => yieldLast([]),
 );
 
-const skip: EpubElementParser = headParser((node, env) => {
+const skip: Tree2ElementsParser = headParser((node, env) => {
     return yieldLast([], { diag: 'unexpected-node', node });
 });
 
-const nodeParsers: EpubElementParser[] = [
+const nodeParsers: Tree2ElementsParser[] = [
     skipWhitespaces,
     pphElement,
     img, image, header, br, svg,

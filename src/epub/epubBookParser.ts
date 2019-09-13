@@ -1,4 +1,4 @@
-import { Book, KnownTag, Span } from 'booka-common';
+import { Book, KnownTag } from 'booka-common';
 import { equalsToOneOf } from '../utils';
 import {
     makeStream, yieldLast, StreamParser, andAsync, AsyncFullParser, pipeAsync,
@@ -7,10 +7,10 @@ import { elementParser, BookElement } from '../bookElementParser';
 import { EpubBook, EpubKind } from './epubBook';
 import { sectionsParser } from './sectionParser';
 import { metadataParser } from './metaParser';
-import { TreeParser } from '../xmlTreeParser';
+import { Tree2ElementsParser } from '../xmlTreeParser';
 
 export type EpubBookParserHooks = {
-    nodeHooks: EpubElementParser[],
+    nodeHooks: Tree2ElementsParser[],
     metadataHooks: MetadataRecordParser[],
 };
 export type EpubBookParserInput = {
@@ -20,15 +20,6 @@ export type EpubBookParserInput = {
     },
 };
 export type EpubBookParser<R = Book> = AsyncFullParser<EpubBookParserInput, R>;
-
-export type EpubTreeParserEnv = {
-    span: TreeParser<Span, EpubTreeParserEnv>,
-    recursive: TreeParser<BookElement[], EpubTreeParserEnv>,
-    filePath: string,
-};
-export type EpubTreeParser<T> = TreeParser<T, EpubTreeParserEnv>;
-export type EpubSpanParser = EpubTreeParser<Span>;
-export type EpubElementParser = EpubTreeParser<BookElement[]>;
 export type MetadataRecordParser = StreamParser<[string, any], KnownTag[]>;
 
 const diagnoseKind: EpubBookParser<EpubBook> = async input =>

@@ -1,24 +1,19 @@
-import { path, xmlChildren } from '../xmlTreeParser';
+import { buildDocumentParser, span, nodeParser } from '../xmlTreeParser';
 import {
-    choice, makeStream, fullParser, headParser,
-    translate, some, expected, flattenResult, yieldLast,
+    makeStream, headParser,
+    translate, some, expected, yieldLast,
     StreamParser, diagnosticContext,
 } from '../combinators';
 import { flatten, AsyncIter } from '../utils';
 import { EpubSection } from './epubBook';
 import { EpubBookParser } from './epubBookParser';
 import { BookElement } from '../bookElementParser';
-import { span } from './spanParser';
-import { nodeParser } from './nodeParser';
 
 export type SectionsParser = StreamParser<EpubSection, BookElement[], undefined>;
 
 export const sectionsParser: EpubBookParser<BookElement[]> = async input => {
     const hooks = input.options[input.epub.kind];
-    const nodeParser2 = choice(...hooks.nodeHooks, nodeParser);
-    const insideParser = flattenResult(fullParser(nodeParser2));
-    const bodyParser = xmlChildren(insideParser);
-    const documentParser = path(['html', 'body'], bodyParser);
+    const documentParser = buildDocumentParser(hooks.nodeHooks);
     const withDiags = expected(documentParser, [], stream => ({
         diag: 'couldnt-parse-document',
         tree: stream && stream.stream,

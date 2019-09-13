@@ -3,14 +3,14 @@ import {
     declare, translate, seq, some, empty, choice,
     headParser, yieldLast, reject, Stream, expectEmpty, projectFirst,
 } from '../combinators';
-import { xmlElementParser } from '../xmlTreeParser';
-import { EpubTreeParserEnv, EpubSpanParser } from './epubBookParser';
+import { xmlElementParser } from './treeParser';
 import { XmlTree } from '../xmlStringParser';
+import { TreeParserEnv, Tree2SpanParser } from './utils';
 
-export const span = declare<Stream<XmlTree, EpubTreeParserEnv>, Span>('span');
+export const span = declare<Stream<XmlTree, TreeParserEnv>, Span>('span');
 
 export const spanContent = projectFirst(seq(some(span), empty()));
-const expectSpanContent: EpubSpanParser = translate(
+const expectSpanContent: Tree2SpanParser = translate(
     some(choice(span, headParser(
         el =>
             yieldLast('', { diag: 'unexpected-xml', tree: el })
@@ -18,7 +18,7 @@ const expectSpanContent: EpubSpanParser = translate(
     compoundSpan,
 );
 
-const text: EpubSpanParser = headParser(node => {
+const text: Tree2SpanParser = headParser(node => {
     return node.type === 'text'
         ? yieldLast(node.text)
         : reject();
@@ -33,12 +33,12 @@ const sup = attrsSpanParser(['sup'], ['superscript'], expectSpanContent);
 const sub = attrsSpanParser(['sub'], ['subscript'], expectSpanContent);
 const attr = choice(italic, bold, quote, small, big, sup, sub);
 
-const brSpan: EpubSpanParser = xmlElementParser(
+const brSpan: Tree2SpanParser = xmlElementParser(
     'br', {}, expectEmpty,
     () => yieldLast('/n'),
 );
 
-const spanSpan: EpubSpanParser = xmlElementParser(
+const spanSpan: Tree2SpanParser = xmlElementParser(
     'span',
     {
         id: null,
@@ -47,7 +47,7 @@ const spanSpan: EpubSpanParser = xmlElementParser(
     spanContent,
     ([xml, sp]) => yieldLast(compoundSpan(sp)),
 );
-const aSpan: EpubSpanParser = xmlElementParser(
+const aSpan: Tree2SpanParser = xmlElementParser(
     'a',
     {
         id: null,
@@ -69,7 +69,7 @@ const aSpan: EpubSpanParser = xmlElementParser(
 
 span.implementation = choice(text, attr, brSpan, aSpan, spanSpan);
 
-function attrsSpanParser(tagNames: string[], attrs: AttributeName[], contentParser: EpubSpanParser): EpubSpanParser {
+function attrsSpanParser(tagNames: string[], attrs: AttributeName[], contentParser: Tree2SpanParser): Tree2SpanParser {
     return xmlElementParser(
         tagNames,
         { class: null, id: null },
