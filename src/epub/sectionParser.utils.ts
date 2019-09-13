@@ -1,9 +1,9 @@
 import { XmlTree } from '../xmlParser';
 import { Stream, alwaysYield, reject, yieldLast, headParser } from '../combinators';
 import { equalsToOneOf } from '../utils';
-import { EpubNodeParserEnv, EpubNodeParser } from './epubBookParser';
+import { EpubTreeParserEnv, EpubElementParser } from './epubBookParser';
 
-export function ignoreClass(className: string): EpubNodeParser {
+export function ignoreClass(className: string): EpubElementParser {
     return headParser(el =>
         el.type === 'element' && el.attributes.class === className
             ? yieldLast([])
@@ -11,7 +11,7 @@ export function ignoreClass(className: string): EpubNodeParser {
     );
 }
 
-export function ignoreTags(tags: string[]): EpubNodeParser {
+export function ignoreTags(tags: string[]): EpubElementParser {
     return headParser(el =>
         equalsToOneOf(el.name, tags)
             ? yieldLast([])
@@ -26,7 +26,7 @@ export function buildRef(filePath: string, id: string | undefined) {
 }
 
 export function logWhileParsing(message?: string, dontLogTree?: boolean) {
-    return alwaysYield((stream: Stream<XmlTree, EpubNodeParserEnv>) => {
+    return alwaysYield((stream: Stream<XmlTree, EpubTreeParserEnv>) => {
         if (!dontLogTree) {
             // tslint:disable-next-line: no-console
             console.log(stream.stream[0]);

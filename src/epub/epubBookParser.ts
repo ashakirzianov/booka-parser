@@ -1,4 +1,4 @@
-import { Book, KnownTag, Span, BookContentNode } from 'booka-common';
+import { Book, KnownTag, Span } from 'booka-common';
 import { equalsToOneOf } from '../utils';
 import {
     makeStream, yieldLast, StreamParser, andAsync, AsyncFullParser, pipeAsync,
@@ -10,7 +10,7 @@ import { metadataParser } from './metaParser';
 import { TreeParser } from '../xmlParser';
 
 export type EpubBookParserHooks = {
-    nodeHooks: EpubNodeParser[],
+    nodeHooks: EpubElementParser[],
     metadataHooks: MetadataRecordParser[],
 };
 export type EpubBookParserInput = {
@@ -21,14 +21,14 @@ export type EpubBookParserInput = {
 };
 export type EpubBookParser<R = Book> = AsyncFullParser<EpubBookParserInput, R>;
 
-export type EpubNodeParserEnv = {
-    span: TreeParser<Span, EpubNodeParserEnv>,
-    paragraph: TreeParser<BookContentNode, EpubNodeParserEnv>,
-    recursive: TreeParser<BookElement[], EpubNodeParserEnv>,
+export type EpubTreeParserEnv = {
+    span: TreeParser<Span, EpubTreeParserEnv>,
+    recursive: TreeParser<BookElement[], EpubTreeParserEnv>,
     filePath: string,
 };
-export type EpubNodeParser<T = BookElement[]> = TreeParser<T, EpubNodeParserEnv>;
-export type EpubSpanParser = EpubNodeParser<Span>;
+export type EpubTreeParser<T> = TreeParser<T, EpubTreeParserEnv>;
+export type EpubSpanParser = EpubTreeParser<Span>;
+export type EpubElementParser = EpubTreeParser<BookElement[]>;
 export type MetadataRecordParser = StreamParser<[string, any], KnownTag[]>;
 
 const diagnoseKind: EpubBookParser<EpubBook> = async input =>

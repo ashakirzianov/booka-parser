@@ -4,9 +4,9 @@ import {
     headParser, yieldLast, reject, Stream, expectEmpty, projectFirst,
 } from '../combinators';
 import { XmlTree, xmlElementParser } from '../xmlParser';
-import { EpubNodeParserEnv, EpubSpanParser } from './epubBookParser';
+import { EpubTreeParserEnv, EpubSpanParser } from './epubBookParser';
 
-export const span = declare<Stream<XmlTree, EpubNodeParserEnv>, Span>('span');
+export const span = declare<Stream<XmlTree, EpubTreeParserEnv>, Span>('span');
 
 export const spanContent = projectFirst(seq(some(span), empty()));
 const expectSpanContent: EpubSpanParser = translate(

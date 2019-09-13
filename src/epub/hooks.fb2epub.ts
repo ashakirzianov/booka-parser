@@ -1,5 +1,5 @@
 import {
-    EpubBookParserHooks, MetadataRecordParser, EpubNodeParser,
+    EpubBookParserHooks, MetadataRecordParser, EpubElementParser,
 } from './epubBookParser';
 import {
     textNode, xmlChildren, whitespaced, extractText, isElementTree,
@@ -40,7 +40,7 @@ function metaHook(): MetadataRecordParser {
     });
 }
 
-function footnoteSection(): EpubNodeParser {
+function footnoteSection(): EpubElementParser {
     return envParser(env => {
         const divId = translate(
             xmlNameAttrs('div', { class: 'section2', id: id => id !== undefined }),
@@ -95,7 +95,7 @@ function footnoteSection(): EpubNodeParser {
     });
 }
 
-function titlePage(): EpubNodeParser {
+function titlePage(): EpubElementParser {
     const bookTitle = translate(
         extractText(xmlAttributes({ class: 'title1' })),
         t => ({
@@ -123,7 +123,7 @@ function titlePage(): EpubNodeParser {
     return parser;
 }
 
-function divTitle(): EpubNodeParser {
+function divTitle(): EpubElementParser {
     const divLevel = headParser((n: XmlTree) => {
         if (isElementTree(n) && nameEq('div', n.name)
             && n.attributes.class && n.attributes.class.startsWith('title')) {

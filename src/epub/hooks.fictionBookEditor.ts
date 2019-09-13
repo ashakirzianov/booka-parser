@@ -1,7 +1,7 @@
 import { KnownTag } from 'booka-common';
 import { reject, headParser, yieldLast } from '../combinators';
 import { isTextTree, isElementTree, XmlTreeWithChildren } from '../xmlParser';
-import { EpubBookParserHooks, MetadataRecordParser, EpubNodeParser } from './epubBookParser';
+import { EpubBookParserHooks, MetadataRecordParser, EpubElementParser } from './epubBookParser';
 
 export const fictionBookEditorHooks: EpubBookParserHooks = {
     nodeHooks: [
@@ -50,7 +50,7 @@ function metaHook(): MetadataRecordParser {
     });
 }
 
-function titleElement(): EpubNodeParser {
+function titleElement(): EpubElementParser {
     function extractTextLines(node: XmlTreeWithChildren): string[] {
         const result: string[] = [];
         for (const ch of node.children) {

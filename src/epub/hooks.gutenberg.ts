@@ -1,4 +1,4 @@
-import { EpubBookParserHooks, MetadataRecordParser, EpubNodeParser } from './epubBookParser';
+import { EpubBookParserHooks, MetadataRecordParser, EpubElementParser } from './epubBookParser';
 import { ignoreTags, buildRef } from './sectionParser.utils';
 import { xmlName, xmlNameAttrs, xmlChildren, textNode, whitespaces } from '../xmlParser';
 import {
@@ -41,7 +41,7 @@ function metaHook(): MetadataRecordParser {
     });
 }
 
-function footnote(): EpubNodeParser {
+function footnote(): EpubElementParser {
     return envParser(env => {
         const footnoteId = translate(
             xmlNameAttrs(
@@ -94,7 +94,7 @@ function footnote(): EpubNodeParser {
             ([_, [title, content]]) => ({ title, content }),
         );
 
-        const fullFootnote: EpubNodeParser = translate(
+        const fullFootnote: EpubElementParser = translate(
             seq(footnoteMarker, whitespaces, footnoteContainer),
             ([id, _, { content, title }]) => [{
                 element: 'content',
