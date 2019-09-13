@@ -2,7 +2,7 @@ import { Book } from 'booka-common';
 import { epubFileParser } from './epubFileParser';
 import { epubBookParser } from './epubBookParser';
 import { converterHooks } from './hooks';
-import { xmlStringParser } from '../xmlParser';
+import { xmlStringParser } from '../xmlStringParser';
 import { pipeAsync, translateAsync, AsyncFullParser } from '../combinators';
 
 export { EpubKind } from './epubBook';

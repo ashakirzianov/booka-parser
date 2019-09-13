@@ -1,4 +1,4 @@
-import { XmlTreeDocument } from '../xmlParser';
+import { XmlTreeDocument } from '../xmlStringParser';
 
 export type EpubCollection<T> = AsyncIterableIterator<T>;
 

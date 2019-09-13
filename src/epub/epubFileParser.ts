@@ -2,7 +2,7 @@ import { EPub } from 'epub2';
 import {
     EpubBook, EpubSection, EpubKind, EpubKindResolver, resolveEpubKind, EpubMetadata,
 } from './epubBook';
-import { XmlStringParser } from '../xmlParser';
+import { XmlStringParser } from '../xmlStringParser';
 import { last } from '../utils';
 import { AsyncParser, yieldLast } from '../combinators';
 

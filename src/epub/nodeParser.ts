@@ -5,7 +5,7 @@ import {
 } from '../combinators';
 import { isWhitespaces, flatten } from '../utils';
 import { EpubElementParser, EpubTreeParser } from './epubBookParser';
-import { xmlElementParser, XmlTree } from '../xmlParser';
+import { xmlElementParser, XmlTree } from '../xmlStringParser';
 import { spanContent, span } from './spanParser';
 import { ParagraphNode, compoundSpan } from 'booka-common';
 import { buildRef } from './sectionParser.utils';

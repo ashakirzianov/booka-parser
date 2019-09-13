@@ -7,7 +7,7 @@ import { elementParser, BookElement } from '../bookElementParser';
 import { EpubBook, EpubKind } from './epubBook';
 import { sectionsParser } from './sectionParser';
 import { metadataParser } from './metaParser';
-import { TreeParser } from '../xmlParser';
+import { TreeParser } from '../xmlStringParser';
 
 export type EpubBookParserHooks = {
     nodeHooks: EpubElementParser[],

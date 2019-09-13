@@ -3,7 +3,7 @@ import {
     declare, translate, seq, some, empty, choice,
     headParser, yieldLast, reject, Stream, expectEmpty, projectFirst,
 } from '../combinators';
-import { XmlTree, xmlElementParser } from '../xmlParser';
+import { XmlTree, xmlElementParser } from '../xmlStringParser';
 import { EpubTreeParserEnv, EpubSpanParser } from './epubBookParser';
 
 export const span = declare<Stream<XmlTree, EpubTreeParserEnv>, Span>('span');

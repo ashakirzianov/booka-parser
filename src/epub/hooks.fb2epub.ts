@@ -4,7 +4,7 @@ import {
 import {
     textNode, xmlChildren, whitespaced, extractText, isElementTree,
     nameEq, XmlTree, xmlNameAttrs, xmlNameAttrsChildren, xmlAttributes, xmlNameChildren,
-} from '../xmlParser';
+} from '../xmlStringParser';
 import {
     some, translate, choice, seq, and, headParser, envParser, reject, yieldLast,
 } from '../combinators';

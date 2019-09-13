@@ -1,4 +1,4 @@
-import { XmlTree } from '../xmlParser';
+import { XmlTree } from '../xmlStringParser';
 import { Stream, alwaysYield, reject, yieldLast, headParser } from '../combinators';
 import { equalsToOneOf } from '../utils';
 import { EpubTreeParserEnv, EpubElementParser } from './epubBookParser';
