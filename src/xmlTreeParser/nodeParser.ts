@@ -7,7 +7,7 @@ import {
 import { isWhitespaces, flatten } from '../utils';
 import { xmlElementParser } from './treeParser';
 import { spanContent, span } from './spanParser';
-import { XmlTree } from '../xmlStringParser';
+import { XmlTree, tree2String } from '../xmlStringParser';
 import { Tree2ElementsParser, EpubTreeParser, buildRef } from './utils';
 
 const skipWhitespaces: Tree2ElementsParser = headParser(node => {
@@ -135,14 +135,14 @@ const svg: Tree2ElementsParser = xmlElementParser(
 );
 
 const ignore: Tree2ElementsParser = xmlElementParser(
-    ['sup', 'sub', 'ul', 'li', 'br'], // TODO: do not ignore 'br'
-    {},
-    (expected(empty(), undefined, i => ({ diag: 'expected-eoi', nodes: i }))),
+    ['sup', 'sub', 'ul', 'li', 'br', 'hr'], // TODO: do not ignore
+    { class: null },
+    () => yieldLast(undefined), // TODO: do not ignore children
     () => yieldLast([]),
 );
 
 const skip: Tree2ElementsParser = headParser((node, env) => {
-    return yieldLast([], { diag: 'unexpected-node', node });
+    return yieldLast([], { diag: 'unexpected-node', xml: tree2String(node) });
 });
 
 const nodeParsers: Tree2ElementsParser[] = [
@@ -178,12 +178,12 @@ function extractTitle(nodes: XmlTree[]) {
                     case 'br':
                         break;
                     default:
-                        diags.push({ diag: 'unexpected-node', node, context: 'title' });
+                        diags.push({ diag: 'unexpected-node', xml: tree2String(node), context: 'title' });
                         break;
                 }
                 break;
             default:
-                diags.push({ diag: 'unexpected-node', node, context: 'title' });
+                diags.push({ diag: 'unexpected-node', xml: tree2String(node), context: 'title' });
                 break;
         }
     }
