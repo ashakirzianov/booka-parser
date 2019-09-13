@@ -8,8 +8,6 @@ export function spanFromRawNode(
     titles?: string[], // TODO: find better solution
 ): ResultLast<Span> {
     switch (rawNode.element) {
-        case 'span':
-            return yieldLast(rawNode.span);
         case 'compound':
             const insideResults = rawNode.elements
                 .map(c => spanFromRawNode(c, titles));
@@ -32,9 +30,7 @@ export function spanFromRawNode(
             } else {
                 return reject({ diag: 'unexpected-title', node: rawNode, context: 'span' });
             }
-        case 'image-data':
         case 'image-ref':
-        case 'image-url':
         case 'tag':
         case 'content':
             return reject({ diag: 'unexpected-raw-node', node: rawNode, context: 'span' });

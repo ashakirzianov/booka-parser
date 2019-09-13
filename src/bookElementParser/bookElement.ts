@@ -1,4 +1,4 @@
-import { KnownTag, BookContentNode, Span, SupportSemantic } from 'booka-common';
+import { KnownTag, BookContentNode, SupportSemantic } from 'booka-common';
 
 type DefElement<K extends string> = {
     element: K,
@@ -17,9 +17,6 @@ export type TagElement = DefElement<'tag'> & {
 };
 
 // TODO: do we need it ?
-export type SpanElement = DefElement<'span'> & {
-    span: Span,
-};
 export type ImageRefElement = DefElement<'image-ref'> & {
     imageId: string,
 };
@@ -37,10 +34,8 @@ export type ImageDataElement = DefElement<'image-data'> & {
     id: string,
     data: Buffer,
 };
-export type ImageElement = ImageUrlElement | ImageDataElement;
 
 export type BookElement =
-    | ContentElement | TitleElement | TagElement
-    | ImageRefElement | SpanElement | IgnoreElement
-    | CompoundElement | ImageElement
+    | ContentElement | TitleElement | TagElement | CompoundElement
+    | ImageRefElement | IgnoreElement
     ;

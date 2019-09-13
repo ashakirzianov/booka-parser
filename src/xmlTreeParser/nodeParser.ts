@@ -2,7 +2,7 @@ import { ParagraphNode, compoundSpan } from 'booka-common';
 import {
     yieldLast, headParser, reject, choice, oneOrMore, translate,
     namedParser, envParser, fullParser, expectEmpty,
-    compoundDiagnostic, expected, empty, ParserDiagnostic,
+    compoundDiagnostic, ParserDiagnostic,
 } from '../combinators';
 import { isWhitespaces, flatten } from '../utils';
 import { xmlElementParser } from './treeParser';
@@ -120,13 +120,6 @@ const header: Tree2ElementsParser = xmlElementParser(
         }]);
     });
 
-const br: Tree2ElementsParser = xmlElementParser(
-    'br',
-    {},
-    expected(empty(), undefined, i => ({ diag: 'expected-eoi', nodes: i })),
-    () => yieldLast([{ element: 'span', span: '\n' }]),
-);
-
 const svg: Tree2ElementsParser = xmlElementParser(
     'svg',
     { viewBox: null, xmlns: null, class: null },
@@ -148,7 +141,7 @@ const skip: Tree2ElementsParser = headParser((node, env) => {
 const nodeParsers: Tree2ElementsParser[] = [
     skipWhitespaces,
     pphElement,
-    img, image, header, br, svg,
+    img, image, header, svg,
     containerElement,
     ignore, skip,
 ];

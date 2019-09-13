@@ -125,16 +125,6 @@ async function resolveRawNode(rawNode: BookElement, env: ElementParserEnv): Prom
             } else {
                 return reject({ diag: 'couldnt-resolve-ref', id: rawNode.imageId, context: 'image-node' });
             }
-        case 'span':
-            const span = spanFromRawNode(rawNode);
-            if (span.success) {
-                return yieldLast({
-                    node: 'paragraph',
-                    span: span.value,
-                });
-            } else {
-                return span;
-            }
         case 'compound':
             // TODO: propagate diags
             const rs = rawNode.elements

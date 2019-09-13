@@ -28,5 +28,5 @@ export function flattenElements(rawNodes: BookElement[]): BookElement[] {
 }
 
 function shouldBeFlatten(container: CompoundElement): boolean {
-    return !container.elements.every(n => n.element === 'span');
+    return false;
 }
