@@ -39,7 +39,9 @@ export const sectionsParser: EpubBookParser<BookElement[]> = async input => {
                 filePath: s.filePath,
             });
             const res = withContext(docStream);
-            return res;
+            return res.success
+                ? res
+                : yieldLast([] as BookElement[], { diag: 'couldnt-parse-section', section: s, inside: res.diagnostic });
         })),
         nns => flatten(nns),
     );
@@ -66,7 +68,7 @@ const wrappedSpans = xmlElementParser(
         'xml:space': 'preserve',
     },
     spanContent,
-    ([el, compound]) => yieldLast([compound]),
+    ([el, spans]) => yieldLast(spans),
 );
 const pphSpans = choice(wrappedSpans, oneOrMore(span));
 
@@ -185,9 +187,10 @@ const skip: EpubNodeParser = headParser((node, env) => {
 
 const standardNodeParsers: EpubNodeParser[] = [
     skipWhitespaces,
-    pphElement, containerElement,
-    img, image, header, br,
-    svg, ignore, skip,
+    pphElement,
+    img, image, header, br, svg,
+    containerElement,
+    ignore, skip,
 ];
 
 // TODO: remove ?

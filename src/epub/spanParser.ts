@@ -1,17 +1,14 @@
 import { Span, compoundSpan, AttributeName } from 'booka-common';
 import {
     declare, translate, seq, some, empty, choice,
-    headParser, yieldLast, reject, Stream, expectEmpty,
+    headParser, yieldLast, reject, Stream, expectEmpty, projectFirst,
 } from '../combinators';
 import { XmlTree, xmlElementParser } from '../xmlParser';
 import { EpubNodeParserEnv, EpubSpanParser } from './epubBookParser';
 
 export const span = declare<Stream<XmlTree, EpubNodeParserEnv>, Span>('span');
 
-export const spanContent: EpubSpanParser = translate(
-    seq(some(span), empty()),
-    ([spans]) => compoundSpan(spans),
-);
+export const spanContent = projectFirst(seq(some(span), empty()));
 const expectSpanContent: EpubSpanParser = translate(
     some(choice(span, headParser(
         el =>
@@ -47,7 +44,7 @@ const spanSpan: EpubSpanParser = xmlElementParser(
         class: null, href: null, title: null, tag: null,
     },
     spanContent,
-    ([xml, sp]) => yieldLast(sp),
+    ([xml, sp]) => yieldLast(compoundSpan(sp)),
 );
 const aSpan: EpubSpanParser = xmlElementParser(
     'a',
@@ -57,14 +54,15 @@ const aSpan: EpubSpanParser = xmlElementParser(
     },
     spanContent,
     ([xml, sp]) => {
+        const content = compoundSpan(sp);
         if (xml.attributes.href !== undefined) {
             return yieldLast({
                 span: 'ref',
                 refToId: xml.attributes.href,
-                content: sp,
+                content,
             });
         } else {
-            return yieldLast(sp);
+            return yieldLast(content);
         }
     });
 
