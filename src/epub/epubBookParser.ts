@@ -33,9 +33,7 @@ export const epubBookParser: EpubBookParser = pipeAsync(
         const metaNodes = buildMetaElementsFromTags(tags);
         const allNodes = elements.concat(metaNodes);
 
-        const volumeResult = await elementParser(makeStream(allNodes, {
-            resolveImageRef: epub.imageResolver,
-        }));
+        const volumeResult = await elementParser(makeStream(allNodes));
 
         if (!volumeResult.success) {
             return volumeResult;

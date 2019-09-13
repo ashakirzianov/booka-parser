@@ -1,16 +1,13 @@
 import { Book } from 'booka-common';
 import { optimizeBook } from './optimizeBook';
 import { simplifyBook } from './simplifyBook';
-import { storeBuffers, StoreBufferFn } from './storeBuffers';
+import { storeBuffers, ProcessImagesArgs } from './storeBuffers';
 
-export type PreprocessEnv = {
-    storeBuffer?: StoreBufferFn,
-};
-export async function preprocessBook(book: Book, env: PreprocessEnv): Promise<Book> {
+export async function preprocessBook(book: Book, env: ProcessImagesArgs): Promise<Book> {
     const simplified = simplifyBook(book);
     const optimized = optimizeBook(simplified);
-    const resolved = env.storeBuffer
-        ? await storeBuffers(optimized, env.storeBuffer)
+    const resolved = env.restoreBuffer
+        ? await storeBuffers(optimized, env)
         : optimized;
     return resolved;
 }

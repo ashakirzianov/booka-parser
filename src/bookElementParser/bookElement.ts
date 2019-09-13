@@ -14,15 +14,10 @@ export type TagElement = DefElement<'tag'> & {
     tag: KnownTag,
 };
 
-// TODO: do we need it ?
-export type ImageRefElement = DefElement<'image-ref'> & {
-    imageId: string,
-};
 export type IgnoreElement = DefElement<'ignore'>;
 
 export type BookElement =
-    | ContentElement | TitleElement | TagElement
-    | ImageRefElement | IgnoreElement
+    | ContentElement | TitleElement | TagElement | IgnoreElement
     ;
 export type TitleOrContentElement = TitleElement | ContentElement;
 

@@ -7,20 +7,13 @@ import {
 } from '../combinators';
 import { BookElement, TitleOrContentElement } from './bookElement';
 
-type ImageResolver = (ref: string) => Promise<Buffer | undefined>;
-export type ElementParserEnv = {
-    resolveImageRef: ImageResolver,
-};
-export type ElementParser = AsyncStreamParser<BookElement, VolumeNode, ElementParserEnv>;
+export type ElementParser = AsyncStreamParser<BookElement, VolumeNode>;
 
-export const elementParser: ElementParser = async ({ stream, env }) => {
+export const elementParser: ElementParser = async ({ stream }) => {
     const diags: ParserDiagnostic[] = [];
-    const result = await parseMeta({
-        elements: stream,
-        resolveImage: env.resolveImageRef,
-    });
+    const result = parseMeta(stream);
     diags.push(result.diagnostic);
-    const nodes = await buildChapters(result.value.titleOrContent, env);
+    const nodes = buildChapters(result.value.titleOrContent);
     diags.push(nodes.diagnostic);
 
     const volume: VolumeNode = {
@@ -32,11 +25,11 @@ export const elementParser: ElementParser = async ({ stream, env }) => {
     return yieldLast(volume, compoundDiagnostic(diags));
 };
 
-async function parseMeta(input: { elements: BookElement[], resolveImage: ImageResolver }) {
+function parseMeta(elements: BookElement[]) {
     const meta: VolumeMeta = {};
     const titleOrContent: TitleOrContentElement[] = [];
     const diags: ParserDiagnostic[] = [];
-    for (const el of input.elements) {
+    for (const el of elements) {
         switch (el.element) {
             case 'tag':
                 const tag = el.tag;
@@ -48,16 +41,11 @@ async function parseMeta(input: { elements: BookElement[], resolveImage: ImageRe
                         meta.author = tag.value;
                         break;
                     case 'cover-ref':
-                        const coverImageBuffer = await input.resolveImage(tag.value);
-                        if (coverImageBuffer) {
-                            meta.coverImageNode = {
-                                node: 'image-data',
-                                id: tag.value,
-                                data: coverImageBuffer,
-                            };
-                        } else {
-                            diags.push({ diag: 'couldnt-resolve-cover', id: tag.value });
-                        }
+                        meta.coverImageNode = {
+                            node: 'image-ref',
+                            imageId: tag.value,
+                            imageRef: tag.value,
+                        };
                         break;
                 }
                 break;
@@ -79,8 +67,8 @@ async function parseMeta(input: { elements: BookElement[], resolveImage: ImageRe
     }, compoundDiagnostic(diags));
 }
 
-async function buildChapters(elements: BookElement[], env: ElementParserEnv): Promise<SuccessLast<BookContentNode[]>> {
-    const { nodes, next, diag } = await buildChaptersImpl(elements, undefined, env);
+function buildChapters(elements: BookElement[]): SuccessLast<BookContentNode[]> {
+    const { nodes, next, diag } = buildChaptersImpl(elements, undefined);
 
     const tailDiag = next.length !== 0
         ? { diag: 'extra-nodes-tail', nodes: elements }
@@ -94,21 +82,21 @@ type BuildChaptersResult = {
     next: BookElement[],
     diag: ParserDiagnostic,
 };
-async function buildChaptersImpl(elements: BookElement[], level: number | undefined, env: ElementParserEnv): Promise<BuildChaptersResult> {
+function buildChaptersImpl(elements: BookElement[], level: number | undefined): BuildChaptersResult {
     if (elements.length === 0) {
         return { nodes: [], next: [], diag: undefined };
     }
     const headNode = elements[0];
     if (headNode.element === 'chapter-title') {
         if (level === undefined || level > headNode.level) {
-            const content = await buildChaptersImpl(elements.slice(1), headNode.level, env);
+            const content = buildChaptersImpl(elements.slice(1), headNode.level);
             const chapter: ChapterNode = {
                 node: 'chapter',
                 nodes: content.nodes,
                 title: headNode.title,
                 level: headNode.level,
             };
-            const after = await buildChaptersImpl(content.next, level, env);
+            const after = buildChaptersImpl(content.next, level);
             return {
                 nodes: [chapter as BookContentNode].concat(after.nodes),
                 next: after.next,
@@ -122,8 +110,8 @@ async function buildChaptersImpl(elements: BookElement[], level: number | undefi
             };
         }
     } else {
-        const node = await resolveRawNode(headNode, env);
-        const after = await buildChaptersImpl(elements.slice(1), level, env);
+        const node = resolveRawNode(headNode);
+        const after = buildChaptersImpl(elements.slice(1), level);
         return {
             nodes: node.success
                 ? [node.value, ...after.nodes]
@@ -135,19 +123,8 @@ async function buildChaptersImpl(elements: BookElement[], level: number | undefi
 }
 
 // TODO: propagate diags
-async function resolveRawNode(rawNode: BookElement, env: ElementParserEnv): Promise<ResultLast<BookContentNode>> {
+function resolveRawNode(rawNode: BookElement): ResultLast<BookContentNode> {
     switch (rawNode.element) {
-        case 'image-ref':
-            const imageBuffer = await env.resolveImageRef(rawNode.imageId);
-            if (imageBuffer) {
-                return yieldLast({
-                    node: 'image-data',
-                    id: rawNode.imageId,
-                    data: imageBuffer,
-                });
-            } else {
-                return reject({ diag: 'couldnt-resolve-ref', id: rawNode.imageId, context: 'image-node' });
-            }
         default:
             return reject({ diag: 'unexpected-raw-node', node: rawNode, context: 'node' });
     }

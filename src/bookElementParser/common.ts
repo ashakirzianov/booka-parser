@@ -17,7 +17,6 @@ export function spanFromRawNode(
             } else {
                 return reject({ diag: 'unexpected-title', node: rawNode, context: 'span' });
             }
-        case 'image-ref':
         case 'tag':
         case 'content':
             return reject({ diag: 'unexpected-raw-node', node: rawNode, context: 'span' });

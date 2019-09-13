@@ -75,8 +75,12 @@ const img: Tree2ElementsParser = xmlElementParser(
         const src = xml.attributes['src'];
         if (src) {
             return yieldLast([{
-                element: 'image-ref',
-                imageId: src,
+                element: 'content',
+                content: {
+                    node: 'image-ref',
+                    imageId: src,
+                    imageRef: src,
+                },
             }]);
         } else {
             return yieldLast([], { diag: 'img-must-have-src', node: xml });
@@ -91,8 +95,12 @@ const image: Tree2ElementsParser = xmlElementParser(
         const xlinkHref = xml.attributes['xlink:href'];
         if (xlinkHref) {
             return yieldLast([{
-                element: 'image-ref',
-                imageId: xlinkHref,
+                element: 'content',
+                content: {
+                    node: 'image-ref',
+                    imageId: xlinkHref,
+                    imageRef: xlinkHref,
+                },
             }]);
         } else {
             return yieldLast([], { diag: 'image-must-have-xlinkhref', node: xml });
