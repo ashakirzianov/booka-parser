@@ -1,4 +1,4 @@
-import { path, xmlChildren } from '../xmlStringParser';
+import { path, xmlChildren } from '../xmlTreeParser';
 import {
     choice, makeStream, fullParser, headParser,
     translate, some, expected, flattenResult, yieldLast,

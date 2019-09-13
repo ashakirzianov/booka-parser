@@ -5,10 +5,11 @@ import {
 } from '../combinators';
 import { isWhitespaces, flatten } from '../utils';
 import { EpubElementParser, EpubTreeParser } from './epubBookParser';
-import { xmlElementParser, XmlTree } from '../xmlStringParser';
+import { xmlElementParser } from '../xmlTreeParser';
 import { spanContent, span } from './spanParser';
 import { ParagraphNode, compoundSpan } from 'booka-common';
 import { buildRef } from './sectionParser.utils';
+import { XmlTree } from '../xmlStringParser';
 
 const skipWhitespaces: EpubElementParser = headParser(node => {
     if (node.type !== 'text') {

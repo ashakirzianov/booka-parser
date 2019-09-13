@@ -2,9 +2,9 @@ import {
     EpubBookParserHooks, MetadataRecordParser, EpubElementParser,
 } from './epubBookParser';
 import {
-    textNode, xmlChildren, whitespaced, extractText, isElementTree,
-    nameEq, XmlTree, xmlNameAttrs, xmlNameAttrsChildren, xmlAttributes, xmlNameChildren,
-} from '../xmlStringParser';
+    textNode, xmlChildren, whitespaced, extractText,
+    nameEq, xmlNameAttrs, xmlNameAttrsChildren, xmlAttributes, xmlNameChildren,
+} from '../xmlTreeParser';
 import {
     some, translate, choice, seq, and, headParser, envParser, reject, yieldLast,
 } from '../combinators';
@@ -12,6 +12,7 @@ import { filterUndefined } from '../utils';
 import { ignoreClass, buildRef } from './sectionParser.utils';
 import { BookElement } from '../bookElementParser';
 import { BookContentNode } from 'booka-common';
+import { XmlTree, isElementTree } from '../xmlStringParser';
 
 export const fb2epubHooks: EpubBookParserHooks = {
     nodeHooks: [

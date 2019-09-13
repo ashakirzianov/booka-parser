@@ -1,6 +1,6 @@
 import { EpubBookParserHooks, MetadataRecordParser, EpubElementParser } from './epubBookParser';
 import { ignoreTags, buildRef } from './sectionParser.utils';
-import { xmlName, xmlNameAttrs, xmlChildren, textNode, whitespaces } from '../xmlStringParser';
+import { xmlName, xmlNameAttrs, xmlChildren, textNode, whitespaces } from '../xmlTreeParser';
 import {
     and, translate, seq, maybe, envParser, headParser, reject, yieldLast, some,
 } from '../combinators';
