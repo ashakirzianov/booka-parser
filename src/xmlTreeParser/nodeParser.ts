@@ -9,6 +9,8 @@ import { xmlElementParser } from './treeParser';
 import { spanContent, span } from './spanParser';
 import { XmlTree, tree2String } from '../xmlStringParser';
 import { Tree2ElementsParser, EpubTreeParser, buildRef } from './utils';
+import { BookElement, ContentElement, TitleElement, TitleOrContentElement, isTitleOrContentElement } from '../bookElementParser';
+import { partition } from 'lodash';
 
 const skipWhitespaces: Tree2ElementsParser = headParser(node => {
     if (node.type !== 'text') {
@@ -57,11 +59,10 @@ const containerElement: Tree2ElementsParser = namedParser('container', envParser
         },
         fullParser(env.recursive),
         ([xml, ch], e) => {
-            return yieldLast([{
-                refId: buildRef(e.filePath, xml.attributes.id),
-                element: 'compound',
-                elements: flatten(ch),
-            }]);
+            return yieldLast(buildContainerElements(
+                flatten(ch),
+                buildRef(e.filePath, xml.attributes.id),
+            ));
         }
     );
 }));
@@ -182,4 +183,46 @@ function extractTitle(nodes: XmlTree[]) {
     }
 
     return { lines, diags };
+}
+
+function buildContainerElements(elements: BookElement[], refId?: string): BookElement[] {
+    if (!refId) {
+        return elements;
+    }
+    const [contentOrTitle, rest] = partition(elements, isTitleOrContentElement);
+    const processed = buildContainerElementsHelper(contentOrTitle, refId);
+    return [...processed, ...rest];
+}
+
+function buildContainerElementsHelper(elements: TitleOrContentElement[], refId: string): TitleOrContentElement[] {
+    const indexOfFirstTitle = elements.findIndex(el => el.element === 'chapter-title');
+    if (indexOfFirstTitle < 0) {
+        const before = elements as ContentElement[];
+        const group: BookElement = {
+            element: 'content',
+            content: {
+                node: 'group',
+                refId,
+                nodes: before.map(c => c.content),
+            },
+        };
+        return [group];
+    } else if (indexOfFirstTitle === 0) {
+        const after = elements.slice(1);
+        const result = buildContainerElementsHelper(after, refId);
+        return [elements[0], ...result];
+    } else {
+        const before = elements.slice(0, indexOfFirstTitle) as ContentElement[];
+        const group: BookElement = {
+            element: 'content',
+            content: {
+                node: 'group',
+                refId,
+                nodes: before.map(c => c.content),
+            },
+        };
+        const title = elements[indexOfFirstTitle] as TitleElement;
+        const after = elements.slice(indexOfFirstTitle + 1);
+        return [group, title, ...after];
+    }
 }

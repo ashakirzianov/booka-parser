@@ -1,9 +1,7 @@
-import { KnownTag, BookContentNode, SupportSemantic } from 'booka-common';
+import { KnownTag, BookContentNode } from 'booka-common';
 
 type DefElement<K extends string> = {
     element: K,
-    // TODO: remove ?
-    refId?: string,
 };
 export type ContentElement = DefElement<'content'> & {
     content: BookContentNode,
@@ -22,20 +20,20 @@ export type ImageRefElement = DefElement<'image-ref'> & {
 };
 export type IgnoreElement = DefElement<'ignore'>;
 
-// TODO: remove
-export type CompoundElement = SupportSemantic<DefElement<'compound'> & {
-    elements: BookElement[],
-}, 'footnote'>;
-export type ImageUrlElement = DefElement<'image-url'> & {
-    id: string,
-    url: string,
-};
-export type ImageDataElement = DefElement<'image-data'> & {
-    id: string,
-    data: Buffer,
-};
-
 export type BookElement =
-    | ContentElement | TitleElement | TagElement | CompoundElement
+    | ContentElement | TitleElement | TagElement
     | ImageRefElement | IgnoreElement
     ;
+export type TitleOrContentElement = TitleElement | ContentElement;
+
+export function isTitleOrContentElement(element: BookElement): element is TitleOrContentElement {
+    return isContentElement(element) || isTitleElement(element);
+}
+
+export function isContentElement(element: BookElement): element is ContentElement {
+    return element.element === 'content';
+}
+
+export function isTitleElement(element: BookElement): element is TitleElement {
+    return element.element === 'chapter-title';
+}

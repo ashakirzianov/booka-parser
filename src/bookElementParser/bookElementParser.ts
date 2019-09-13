@@ -2,9 +2,6 @@ import {
     BookContentNode, ChapterNode, VolumeNode, VolumeMeta,
     tagValue,
 } from 'booka-common';
-import { filterUndefined } from '../utils';
-import { spanFromRawNode } from './common';
-import { flattenElements } from './flattenElements';
 import {
     AsyncStreamParser, yieldLast, ParserDiagnostic,
     compoundDiagnostic, ResultLast, SuccessLast, reject,
@@ -19,8 +16,7 @@ export type ElementParser = AsyncStreamParser<BookElement, VolumeNode, ElementPa
 export const elementParser: ElementParser = async ({ stream, env }) => {
     const diags: ParserDiagnostic[] = [];
     const meta = await collectMeta(stream, env);
-    const preprocessed = flattenElements(stream);
-    const nodes = await buildChapters(preprocessed, env);
+    const nodes = await buildChapters(stream, env);
     diags.push(nodes.diagnostic);
 
     if (meta.title === undefined) {
@@ -125,22 +121,6 @@ async function resolveRawNode(rawNode: BookElement, env: ElementParserEnv): Prom
             } else {
                 return reject({ diag: 'couldnt-resolve-ref', id: rawNode.imageId, context: 'image-node' });
             }
-        case 'compound':
-            // TODO: propagate diags
-            const rs = rawNode.elements
-                .map(c => spanFromRawNode(c));
-            const spans = filterUndefined(
-                rs
-                    .map(r => r.success ? r.value : undefined)
-            );
-            const ds = rs.map(r => r.diagnostic);
-            return yieldLast({
-                node: 'paragraph',
-                span: {
-                    span: 'compound',
-                    spans: spans,
-                },
-            }, compoundDiagnostic(ds));
         default:
             return reject({ diag: 'unexpected-raw-node', node: rawNode, context: 'node' });
     }

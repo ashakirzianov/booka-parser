@@ -1,6 +1,6 @@
 import { Span } from 'booka-common';
-import { filterUndefined, assertNever } from '../utils';
-import { ResultLast, yieldLast, compoundDiagnostic, reject } from '../combinators';
+import { assertNever } from '../utils';
+import { ResultLast, reject } from '../combinators';
 import { BookElement } from './bookElement';
 
 export function spanFromRawNode(
@@ -8,19 +8,6 @@ export function spanFromRawNode(
     titles?: string[], // TODO: find better solution
 ): ResultLast<Span> {
     switch (rawNode.element) {
-        case 'compound':
-            const insideResults = rawNode.elements
-                .map(c => spanFromRawNode(c, titles));
-            const spans = filterUndefined(
-                insideResults
-                    .map(r => r.success ? r.value : undefined)
-            );
-            return yieldLast({
-                span: 'compound',
-                spans: spans,
-            },
-                compoundDiagnostic(insideResults.map(r => r.diagnostic)),
-            );
         case 'ignore':
             return reject();
         case 'chapter-title':
