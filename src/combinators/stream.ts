@@ -1,4 +1,4 @@
-import { Parser, yieldOne, reject, SuccessParser, some, ResultLast } from './base';
+import { Parser, yieldOne, reject, SuccessParser, some, ResultLast, expected } from './base';
 import { compoundDiagnostic } from './diagnostics';
 
 export type Stream<T, E = undefined> = {
@@ -46,6 +46,8 @@ export function empty<T = any, E = any>(): StreamParser<T, undefined, E> {
         ? yieldOne(undefined, input)
         : reject({ diag: `Expected end of input`, rest: input });
 }
+
+export const expectEmpty = expected(empty(), undefined, i => ({ diag: 'expected-eoi', nodes: i }));
 
 export function not<T, E>(parser: StreamParser<T, any, E>): StreamParser<T, T, E> {
     return input => {

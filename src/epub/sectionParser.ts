@@ -1,17 +1,17 @@
-import { AttributeName, Span, ParagraphNode, compoundSpan } from 'booka-common';
+import { ParagraphNode, compoundSpan } from 'booka-common';
 import { XmlTree, path, xmlChildren, xmlElementParser } from '../xmlParser';
 import {
     choice, makeStream, fullParser, reject, headParser, envParser,
     translate, some, expected, empty, flattenResult, yieldLast,
-    StreamParser, diagnosticContext, declare, Stream,
-    seq, namedParser, oneOrMore,
+    StreamParser, diagnosticContext, namedParser, oneOrMore, expectEmpty,
 } from '../combinators';
 import { isWhitespaces, flatten, AsyncIter } from '../utils';
 import { buildRef } from './sectionParser.utils';
 import { EpubSection } from './epubBook';
 import { ParserDiagnostic, compoundDiagnostic } from '../combinators/diagnostics';
-import { EpubNodeParser, EpubNodeParserEnv, EpubBookParser, EpubSpanParser } from './epubBookParser';
+import { EpubNodeParser, EpubBookParser } from './epubBookParser';
 import { BookElement } from '../bookElementParser';
+import { span, spanContent } from './spanParser';
 
 export type SectionsParser = StreamParser<EpubSection, BookElement[], undefined>;
 
@@ -48,8 +48,6 @@ export const sectionsParser: EpubBookParser<BookElement[]> = async input => {
     return parser(makeStream(sections));
 };
 
-const expectEmpty = expected(empty(), undefined, i => ({ diag: 'expected-eoi', nodes: i }));
-
 const skipWhitespaces: EpubNodeParser = headParser(node => {
     if (node.type !== 'text') {
         return reject();
@@ -60,70 +58,6 @@ const skipWhitespaces: EpubNodeParser = headParser(node => {
         return reject();
     }
 });
-
-const span = declare<Stream<XmlTree, EpubNodeParserEnv>, Span>('span');
-
-const spanContent: EpubSpanParser = translate(
-    seq(some(span), empty()),
-    ([spans]) => compoundSpan(spans),
-);
-const expectSpanContent: EpubSpanParser = translate(
-    some(choice(span, headParser(
-        el =>
-            yieldLast('', { diag: 'unexpected-xml', tree: el })
-    ))),
-    compoundSpan,
-);
-
-const text: EpubSpanParser = headParser(node => {
-    return node.type === 'text'
-        ? yieldLast(node.text)
-        : reject();
-});
-
-const italic = attrsSpanParser(['em', 'i'], ['italic'], expectSpanContent);
-const bold = attrsSpanParser(['strong', 'b'], ['bold'], expectSpanContent);
-const quote = attrsSpanParser(['q'], ['quote'], expectSpanContent);
-const small = attrsSpanParser(['small'], ['small'], expectSpanContent);
-const big = attrsSpanParser(['big'], ['big'], expectSpanContent);
-const sup = attrsSpanParser(['sup'], ['superscript'], expectSpanContent);
-const sub = attrsSpanParser(['sub'], ['subscript'], expectSpanContent);
-const attr = choice(italic, bold, quote, small, big, sup, sub);
-
-const brSpan: EpubSpanParser = xmlElementParser(
-    'br', {}, expectEmpty,
-    () => yieldLast('/n'),
-);
-
-const spanSpan: EpubSpanParser = xmlElementParser(
-    'span',
-    {
-        id: null,
-        class: null, href: null, title: null, tag: null,
-    },
-    spanContent,
-    ([xml, sp]) => yieldLast(sp),
-);
-const aSpan: EpubSpanParser = xmlElementParser(
-    'a',
-    {
-        id: null,
-        class: null, href: null, title: null, tag: null,
-    },
-    spanContent,
-    ([xml, sp]) => {
-        if (xml.attributes.href !== undefined) {
-            return yieldLast({
-                span: 'ref',
-                refToId: xml.attributes.href,
-                content: sp,
-            });
-        } else {
-            return yieldLast(sp);
-        }
-    });
-
-span.implementation = choice(text, attr, brSpan, aSpan, spanSpan);
 
 const wrappedSpans = xmlElementParser(
     ['p', 'span', 'div'],
@@ -290,16 +224,4 @@ function extractTitle(nodes: XmlTree[]) {
     }
 
     return { lines, diags };
-}
-
-function attrsSpanParser(tagNames: string[], attrs: AttributeName[], contentParser: EpubSpanParser): EpubSpanParser {
-    return xmlElementParser(
-        tagNames,
-        { class: null, id: null },
-        contentParser,
-        ([_, content]) => yieldLast({
-            span: 'attrs',
-            attrs,
-            content,
-        }));
 }
