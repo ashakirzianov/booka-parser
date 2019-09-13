@@ -48,6 +48,8 @@ export const sectionsParser: EpubBookParser<BookElement[]> = async input => {
     return parser(makeStream(sections));
 };
 
+const expectEmpty = expected(empty(), undefined, i => ({ diag: 'expected-eoi', nodes: i }));
+
 const skipWhitespaces: EpubNodeParser = headParser(node => {
     if (node.type !== 'text') {
         return reject();
@@ -80,6 +82,11 @@ const sup = attrsSpanParser(['sup'], ['superscript'], expectSpan);
 const sub = attrsSpanParser(['sub'], ['subscript'], expectSpan);
 const attr = choice(italic, bold, quote, small, big, sup, sub);
 
+const brSpan: EpubSpanParser = xmlElementParser(
+    'br', {}, expectEmpty,
+    () => yieldLast('/n'),
+);
+
 const spanSpan: EpubSpanParser = xmlElementParser(
     'span',
     {
@@ -108,7 +115,7 @@ const aSpan: EpubSpanParser = xmlElementParser(
         }
     });
 
-span.implementation = choice(text, attr, aSpan, spanSpan);
+span.implementation = choice(text, attr, brSpan, aSpan, spanSpan);
 
 const paragraphContent = seq(some(span), empty());
 const paragraph: EpubNodeParser<ParagraphNode> = xmlElementParser(
@@ -149,8 +156,6 @@ const containerElement: EpubNodeParser = namedParser('container', envParser(env 
         }
     );
 }));
-
-const expectEmpty = expected(empty(), undefined, i => ({ diag: 'expected-eoi', nodes: i }));
 
 const img: EpubNodeParser = xmlElementParser(
     'img',
