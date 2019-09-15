@@ -319,3 +319,33 @@ export function namedParser<In, Out>(name: string, parser: Parser<In, Out>): Par
     (result as any).displayName = name;
     return result;
 }
+
+export function pipe<T1, T2, TR>(p1: FullParser<T1, T2>, p2: FullParser<T2, TR>): FullParser<T1, TR>;
+export function pipe<T1, T2, T3, TR>(
+    p1: FullParser<T1, T2>,
+    p2: FullParser<T2, T3>,
+    p3: FullParser<T3, TR>
+): FullParser<T1, TR>;
+export function pipe(...ps: Array<FullParser<any, any>>): FullParser<any, any> {
+    return input => {
+        const diags: ParserDiagnostic[] = [];
+        let currInput = input;
+        let r: any = undefined;
+        for (const p of ps) {
+            r = p(currInput);
+            diags.push(r.diagnostic);
+            if (!r.success) {
+                return {
+                    ...r,
+                    diagnostic: compoundDiagnostic(diags),
+                };
+            }
+            currInput = r.value;
+        }
+
+        return {
+            ...r,
+            diagnostic: compoundDiagnostic(diags),
+        };
+    };
+}
