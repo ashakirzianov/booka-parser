@@ -1,7 +1,7 @@
-import { Book, KnownTag } from 'booka-common';
+import { Book, KnownTag, processImagesAsync } from 'booka-common';
 import { equalsToOneOf } from '../utils';
 import {
-    makeStream, yieldLast, StreamParser, andAsync, AsyncFullParser, pipeAsync,
+    makeStream, yieldLast, StreamParser, andAsync, AsyncFullParser, pipeAsync, ParserDiagnostic, compoundDiagnostic,
 } from '../combinators';
 import { elementParser, BookElement } from '../bookElementParser';
 import { EpubBook, EpubKind } from './epubBook';
@@ -28,7 +28,9 @@ const diagnoseKind: EpubBookParser<EpubBook> = async input =>
         : yieldLast(input.epub);
 
 export const epubBookParser: EpubBookParser = pipeAsync(
+    // Diagnose book kind, parse metadata and sections
     andAsync(diagnoseKind, metadataParser, sectionsParser),
+    // Parse book elements
     async ([epub, tags, elements]) => {
         const metaNodes = buildMetaElementsFromTags(tags);
         const allNodes = elements.concat(metaNodes);
@@ -49,7 +51,29 @@ export const epubBookParser: EpubBookParser = pipeAsync(
             tags: tags,
         };
 
-        return yieldLast(book, volumeResult.diagnostic);
+        return yieldLast({ book, epub }, volumeResult.diagnostic);
+    },
+    // Resolve image references
+    async ({ book, epub }) => {
+        const diags: ParserDiagnostic[] = [];
+        const resolved = await processImagesAsync(book.volume, async imageNode => {
+            if (imageNode.node === 'image-ref') {
+                const buffer = await epub.imageResolver(imageNode.imageRef);
+                if (buffer) {
+                    return {
+                        node: 'image-data',
+                        imageId: imageNode.imageId,
+                        data: buffer,
+                    };
+                } else {
+                    diags.push({ diag: 'couldnt-resolve-image', id: imageNode.imageId });
+                    return imageNode;
+                }
+            } else {
+                return imageNode;
+            }
+        });
+        return yieldLast({ ...book, volume: resolved }, compoundDiagnostic(diags));
     }
 );
 
