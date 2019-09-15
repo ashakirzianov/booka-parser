@@ -31,12 +31,13 @@ function simplifyNode(node: BookContentNode): BookContentNode | undefined {
         case 'paragraph':
             return simplifyParagraph(node);
         case 'group':
+        case 'table':
+        case 'list':
             // TODO: implement
             return node;
         case 'image-data':
         case 'image-ref':
-        case 'table':
-        case 'list':
+        case 'separator':
             return node;
         default:
             assertNever(node);

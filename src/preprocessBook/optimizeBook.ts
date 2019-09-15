@@ -41,6 +41,7 @@ function optimizeNode(node: BookContentNode): BookContentNode {
             return node;
         case 'image-ref':
         case 'image-data':
+        case 'separator':
             return node;
         default:
             assertNever(node);

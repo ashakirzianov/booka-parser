@@ -1,8 +1,8 @@
-import { ParagraphNode, compoundSpan, flatten } from 'booka-common';
+import { ParagraphNode, compoundSpan, flatten, GroupNode } from 'booka-common';
 import {
     yieldLast, headParser, reject, choice, oneOrMore, translate,
     namedParser, envParser, fullParser, expectEmpty,
-    compoundDiagnostic, ParserDiagnostic,
+    compoundDiagnostic, ParserDiagnostic, projectFirst, seq, some,
 } from '../combinators';
 import { isWhitespaces } from '../utils';
 import { xmlElementParser } from './treeParser';
@@ -49,6 +49,26 @@ const pphElement: Tree2ElementsParser = namedParser('pph', translate(
         content: pNode,
     }],
 ));
+
+const blockquote: Tree2ElementsParser = xmlElementParser(
+    'blockquote',
+    {
+        cite: null,
+    },
+    projectFirst(seq(some(pphNode), expectEmpty)),
+    ([xml, pphs], e) => {
+        const node: GroupNode = {
+            node: 'group',
+            nodes: pphs,
+            semantic: 'quote',
+            source: xml.attributes.cite,
+        };
+        return yieldLast([{
+            element: 'content',
+            content: node,
+        }]);
+    }
+);
 
 const containerElement: Tree2ElementsParser = namedParser('container', envParser(env => {
     return xmlElementParser(
@@ -151,6 +171,7 @@ const nodeParsers: Tree2ElementsParser[] = [
     skipWhitespaces,
     pphElement,
     img, image, header, svg,
+    blockquote,
     containerElement,
     ignore, skip,
 ];
