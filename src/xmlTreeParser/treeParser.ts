@@ -1,4 +1,4 @@
-import { XmlTree, hasChildren, XmlAttributes, XmlTreeElement } from '../xmlStringParser';
+import { XmlTree, hasChildren, XmlAttributes, XmlTreeElement, tree2String } from '../xmlStringParser';
 import { caseInsensitiveEq, isWhitespaces } from '../utils';
 import {
     Result, yieldNext, reject, seq, some, translate,
@@ -59,7 +59,7 @@ export function xmlAttributes<E = any>(attrs: ConstraintMap<XmlAttributes>): Tre
             if (checks.length === 0) {
                 return yieldLast(tree);
             } else {
-                return reject({ diag: 'expected-attrs', checks, tree });
+                return reject({ diag: 'expected-attrs', checks, xml: tree2String(tree) });
             }
         }
         return reject({ diag: 'expected-xml-element' });

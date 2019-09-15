@@ -5,6 +5,7 @@ import { extname, join } from 'path';
 import { parseEpub } from '.';
 import { promisify, inspect } from 'util';
 import { extractNodeText } from 'booka-common';
+import { topDiagnostic } from './combinators';
 
 exec();
 
@@ -39,8 +40,9 @@ async function exec() {
             console.log(`Book length: ${bookText && bookText.length} symbols`);
         }
         if (result.diagnostic) {
+            const top = topDiagnostic(result.diagnostic, 10);
             logRed('Diagnostics:');
-            console.log(inspect(result.diagnostic, false, 8, true));
+            console.log(inspect(top, false, 8, true));
         }
     }
 }

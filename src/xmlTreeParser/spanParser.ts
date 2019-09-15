@@ -38,6 +38,18 @@ const brSpan: Tree2SpanParser = xmlElementParser(
     () => yieldLast('/n'),
 );
 
+const correctionSpan: Tree2SpanParser = xmlElementParser(
+    'ins',
+    { title: null },
+    expectSpanContent,
+    ([xml, content]) => yieldLast({
+        span: 'compound',
+        spans: [content],
+        semantic: 'correction',
+        note: xml.attributes.title,
+    }),
+);
+
 const spanSpan: Tree2SpanParser = xmlElementParser(
     'span',
     {
@@ -67,7 +79,10 @@ const aSpan: Tree2SpanParser = xmlElementParser(
         }
     });
 
-span.implementation = choice(text, attr, brSpan, aSpan, spanSpan);
+span.implementation = choice(
+    text, attr, brSpan,
+    correctionSpan, aSpan, spanSpan,
+);
 
 function attrsSpanParser(tagNames: string[], attrs: AttributeName[], contentParser: Tree2SpanParser): Tree2SpanParser {
     return xmlElementParser(
