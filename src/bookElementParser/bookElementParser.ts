@@ -3,7 +3,7 @@ import {
 } from 'booka-common';
 import {
     AsyncStreamParser, yieldLast, ParserDiagnostic,
-    compoundDiagnostic, ResultLast, SuccessLast, reject,
+    compoundDiagnostic, reject, StreamParser, headParser, yieldOne, choice, some, makeStream, seq, expectEmpty, projectFirst,
 } from '../combinators';
 import { BookElement, TitleOrContentElement } from './bookElement';
 
@@ -13,12 +13,17 @@ export const elementParser: ElementParser = async ({ stream }) => {
     const diags: ParserDiagnostic[] = [];
     const result = parseMeta(stream);
     diags.push(result.diagnostic);
-    const nodes = buildChapters(result.value.titleOrContent);
-    diags.push(nodes.diagnostic);
+    const volumeNodes = volumeContent(makeStream(result.value.titleOrContent, {
+        level: undefined,
+    }));
+    diags.push(volumeNodes.diagnostic);
+    if (!volumeNodes.success) {
+        return reject(compoundDiagnostic(diags));
+    }
 
     const volume: VolumeNode = {
         node: 'volume',
-        nodes: nodes.value,
+        nodes: volumeNodes.value,
         meta: result.value.meta,
     };
 
@@ -67,65 +72,43 @@ function parseMeta(elements: BookElement[]) {
     }, compoundDiagnostic(diags));
 }
 
-function buildChapters(elements: BookElement[]): SuccessLast<BookContentNode[]> {
-    const { nodes, next, diag } = buildChaptersImpl(elements, undefined);
-
-    const tailDiag = next.length !== 0
-        ? { diag: 'extra-nodes-tail', nodes: elements }
-        : undefined;
-
-    return yieldLast(nodes, compoundDiagnostic([diag, tailDiag]));
-}
-
-type BuildChaptersResult = {
-    nodes: BookContentNode[],
-    next: BookElement[],
-    diag: ParserDiagnostic,
+type BuildChaptersEnv = {
+    level: number | undefined,
 };
-function buildChaptersImpl(elements: BookElement[], level: number | undefined): BuildChaptersResult {
-    if (elements.length === 0) {
-        return { nodes: [], next: [], diag: undefined };
-    }
-    const headNode = elements[0];
-    if (headNode.element === 'chapter-title') {
-        if (level === undefined || level > headNode.level) {
-            const content = buildChaptersImpl(elements.slice(1), headNode.level);
+type BuildChaptersParser = StreamParser<TitleOrContentElement, BookContentNode, BuildChaptersEnv>;
+
+const contentNode: BuildChaptersParser = headParser(head =>
+    head.element === 'content'
+        ? yieldLast(head.content)
+        : reject()
+);
+const titleNode: BuildChaptersParser = input => {
+    const head = input.stream[0];
+    if (head && head.element === 'chapter-title') {
+        if (input.env.level === undefined || input.env.level > head.level) {
+            const inside = content(makeStream(input.stream.slice(1), {
+                level: head.level,
+            }));
             const chapter: ChapterNode = {
                 node: 'chapter',
-                nodes: content.nodes,
-                title: headNode.title,
-                level: headNode.level,
+                level: head.level,
+                title: head.title,
+                nodes: inside.value,
             };
-            const after = buildChaptersImpl(content.next, level);
-            return {
-                nodes: [chapter as BookContentNode].concat(after.nodes),
-                next: after.next,
-                diag: after.diag,
-            };
+            return yieldOne(chapter, inside.next && makeStream(inside.next.stream, input.env));
         } else {
-            return {
-                nodes: [],
-                next: elements,
-                diag: undefined,
-            };
+            return reject();
         }
     } else {
-        const node = resolveRawNode(headNode);
-        const after = buildChaptersImpl(elements.slice(1), level);
-        return {
-            nodes: node.success
-                ? [node.value, ...after.nodes]
-                : after.nodes,
-            next: after.next,
-            diag: compoundDiagnostic([after.diag, node.diagnostic]),
-        };
+        return reject();
     }
-}
+};
 
-// TODO: propagate diags
-function resolveRawNode(rawNode: BookElement): ResultLast<BookContentNode> {
-    switch (rawNode.element) {
-        default:
-            return reject({ diag: 'unexpected-raw-node', node: rawNode, context: 'node' });
-    }
-}
+const content = some(choice(contentNode, titleNode));
+
+const volumeContent = projectFirst(
+    seq(
+        content,
+        expectEmpty,
+    )
+);

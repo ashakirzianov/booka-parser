@@ -44,7 +44,7 @@ export function headParser<In, Out, Env = any>(f: HeadFn<In, Out, Env>): StreamP
 export function empty<T = any, E = any>(): StreamParser<T, undefined, E> {
     return input => input.stream.length === 0
         ? yieldOne(undefined, input)
-        : reject({ diag: `Expected end of input`, rest: input });
+        : reject();
 }
 
 export const expectEmpty = expected(empty(), undefined, i => ({ diag: 'expected-eoi', nodes: i }));
