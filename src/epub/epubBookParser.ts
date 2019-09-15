@@ -3,7 +3,7 @@ import { equalsToOneOf } from '../utils';
 import {
     makeStream, yieldLast, StreamParser, andAsync, AsyncFullParser, pipeAsync, ParserDiagnostic, compoundDiagnostic,
 } from '../combinators';
-import { elementParser, BookElement } from '../bookElementParser';
+import { elements2volume, BookElement } from '../bookElementParser';
 import { EpubBook, EpubKind } from './epubBook';
 import { sectionsParser } from './sectionParser';
 import { metadataParser } from './metaParser';
@@ -35,7 +35,7 @@ export const epubBookParser: EpubBookParser = pipeAsync(
         const metaNodes = buildMetaElementsFromTags(tags);
         const allNodes = elements.concat(metaNodes);
 
-        const volumeResult = await elementParser(makeStream(allNodes));
+        const volumeResult = await elements2volume(makeStream(allNodes));
 
         if (!volumeResult.success) {
             return volumeResult;

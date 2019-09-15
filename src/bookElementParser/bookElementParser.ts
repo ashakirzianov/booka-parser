@@ -3,32 +3,31 @@ import {
 } from 'booka-common';
 import {
     AsyncStreamParser, yieldLast, ParserDiagnostic,
-    compoundDiagnostic, reject, StreamParser, headParser, yieldOne, choice, some, makeStream, seq, expectEmpty, projectFirst,
+    compoundDiagnostic, reject, StreamParser, headParser, yieldOne, choice, some, makeStream, seq, expectEmpty, projectFirst, pipeAsync,
 } from '../combinators';
 import { BookElement, TitleOrContentElement } from './bookElement';
 
-export type ElementParser = AsyncStreamParser<BookElement, VolumeNode>;
+export const elements2volume: AsyncStreamParser<BookElement, VolumeNode> = pipeAsync(
+    async ({ stream }) => {
+        return parseMeta(stream);
+    },
+    async ({ meta, titleOrContent }) => {
+        const volumeNodes = allElements(makeStream(titleOrContent, {
+            level: undefined,
+        }));
+        if (!volumeNodes.success) {
+            return volumeNodes;
+        }
 
-export const elementParser: ElementParser = async ({ stream }) => {
-    const diags: ParserDiagnostic[] = [];
-    const result = parseMeta(stream);
-    diags.push(result.diagnostic);
-    const volumeNodes = volumeContent(makeStream(result.value.titleOrContent, {
-        level: undefined,
-    }));
-    diags.push(volumeNodes.diagnostic);
-    if (!volumeNodes.success) {
-        return reject(compoundDiagnostic(diags));
+        const volume: VolumeNode = {
+            node: 'volume',
+            nodes: volumeNodes.value,
+            meta: meta,
+        };
+
+        return yieldLast(volume, volumeNodes.diagnostic);
     }
-
-    const volume: VolumeNode = {
-        node: 'volume',
-        nodes: volumeNodes.value,
-        meta: result.value.meta,
-    };
-
-    return yieldLast(volume, compoundDiagnostic(diags));
-};
+);
 
 function parseMeta(elements: BookElement[]) {
     const meta: VolumeMeta = {};
@@ -72,21 +71,21 @@ function parseMeta(elements: BookElement[]) {
     }, compoundDiagnostic(diags));
 }
 
-type BuildChaptersEnv = {
+type BookElementsEnv = {
     level: number | undefined,
 };
-type BuildChaptersParser = StreamParser<TitleOrContentElement, BookContentNode, BuildChaptersEnv>;
+type BookElementParser = StreamParser<TitleOrContentElement, BookContentNode, BookElementsEnv>;
 
-const contentNode: BuildChaptersParser = headParser(head =>
+const contentElement: BookElementParser = headParser(head =>
     head.element === 'content'
         ? yieldLast(head.content)
         : reject()
 );
-const titleNode: BuildChaptersParser = input => {
+const titleElement: BookElementParser = input => {
     const head = input.stream[0];
     if (head && head.element === 'chapter-title') {
         if (input.env.level === undefined || input.env.level > head.level) {
-            const inside = content(makeStream(input.stream.slice(1), {
+            const inside = bookElement(makeStream(input.stream.slice(1), {
                 level: head.level,
             }));
             const chapter: ChapterNode = {
@@ -104,11 +103,8 @@ const titleNode: BuildChaptersParser = input => {
     }
 };
 
-const content = some(choice(contentNode, titleNode));
+const bookElement = some(choice(contentElement, titleElement));
 
-const volumeContent = projectFirst(
-    seq(
-        content,
-        expectEmpty,
-    )
+const allElements = projectFirst(
+    seq(bookElement, expectEmpty)
 );
