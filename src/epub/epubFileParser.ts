@@ -2,13 +2,11 @@ import { EPub } from 'epub2';
 import {
     EpubBook, EpubSection, EpubKind, EpubKindResolver, resolveEpubKind, EpubMetadata,
 } from './epubBook';
-import { XmlStringParser } from '../xmlStringParser';
 import { last } from '../utils';
 import { AsyncParser, yieldLast } from '../combinators';
 
 export type EpubFileParserInput = {
     filePath: string,
-    stringParser: XmlStringParser,
 };
 export type EpubParser = AsyncParser<EpubFileParserInput, EpubBook>;
 
@@ -34,17 +32,12 @@ export const epubFileParser: EpubParser = async input => {
                     // TODO: find better solution
                     const href = last(el.href.split('/'));
                     const chapter = await epub.chapterForId(el.id);
-                    const xmlResult = input.stringParser(chapter);
-
-                    // TODO: report parsing issues
-                    if (xmlResult.success) {
-                        const section: EpubSection = {
-                            id: el.id,
-                            filePath: href,
-                            content: xmlResult.value,
-                        };
-                        yield section;
-                    }
+                    const section: EpubSection = {
+                        id: el.id,
+                        filePath: href,
+                        content: chapter,
+                    };
+                    yield section;
                 }
             }
         },

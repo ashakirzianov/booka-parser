@@ -1,8 +1,8 @@
 import * as parseXmlLib from '@rgrove/parse-xml';
 import { assertNever, isWhitespaces } from '../utils';
-import { yieldLast, Parser } from '../combinators';
+import { yieldLast, FullParser } from '../combinators';
 
-export type XmlStringParser = Parser<string, XmlTreeDocument>;
+export type XmlStringParser = FullParser<string, XmlTreeDocument>;
 
 export const xmlStringParser: XmlStringParser = xmlString => {
     try {

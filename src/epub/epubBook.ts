@@ -1,11 +1,9 @@
-import { XmlTreeDocument } from '../xmlStringParser';
-
 export type EpubCollection<T> = AsyncIterableIterator<T>;
 
 export type EpubSection = {
     filePath: string,
     id: string,
-    content: XmlTreeDocument,
+    content: string,
 };
 
 export type EpubMetadata = {
