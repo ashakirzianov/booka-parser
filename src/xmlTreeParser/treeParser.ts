@@ -1,7 +1,7 @@
 import { XmlTree, hasChildren, XmlAttributes, XmlTreeElement } from '../xmlStringParser';
 import { caseInsensitiveEq, isWhitespaces } from '../utils';
 import {
-    Result, yieldOne, reject, seq, some, translate,
+    Result, yieldNext, reject, seq, some, translate,
     StreamParser, headParser, makeStream, nextStream, not, Stream, projectLast, and, HeadFn, expected, yieldLast,
 } from '../combinators';
 import { Constraint, ConstraintMap, checkObject, checkValue } from './constraint';
@@ -33,7 +33,7 @@ export function xmlElementParser<R, Ch, E = any>(
         const proj = projection([head as XmlTreeElement, elResult.value], input.env);
         const diag = compoundDiagnostic([proj.diagnostic, elResult.diagnostic]);
         return proj.success
-            ? yieldOne(proj.value, nextStream(input), diag)
+            ? yieldNext(proj.value, nextStream(input), diag)
             : reject(diag);
     };
 }
@@ -94,7 +94,7 @@ export function xmlChildren<T, E>(parser: TreeParser<T, E>): TreeParser<T, E> {
 
         const result = parser(makeStream(head.children, input.env));
         if (result.success) {
-            return yieldOne(result.value, nextStream(input), result.diagnostic);
+            return yieldNext(result.value, nextStream(input), result.diagnostic);
         } else {
             return result;
         }
@@ -113,7 +113,7 @@ export function xmlParent<T, E>(parser: TreeParser<T, E>): TreeParser<T, E> {
 
         const result = parser(makeStream([head.parent], input.env));
         if (result.success) {
-            return yieldOne(result.value, nextStream(input), result.diagnostic);
+            return yieldNext(result.value, nextStream(input), result.diagnostic);
         } else {
             return result;
         }

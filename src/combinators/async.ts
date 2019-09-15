@@ -1,4 +1,4 @@
-import { Result, yieldOne, ResultLast, reject } from './base';
+import { Result, yieldNext, ResultLast, reject } from './base';
 import { ParserDiagnostic, compoundDiagnostic } from './diagnostics';
 
 export type AsyncParser<I, O> = (input: I) => Promise<Result<I, O>>;
@@ -30,7 +30,7 @@ export function andAsync<T>(...ps: Array<AsyncParser<T, any>>): AsyncParser<T, a
         }
 
         const diagnostic = compoundDiagnostic(diagnostics);
-        return yieldOne(results, lastNext, diagnostic);
+        return yieldNext(results, lastNext, diagnostic);
     };
 }
 
@@ -84,7 +84,7 @@ export function pipeAsync(...ps: Array<AsyncFullParser<any, any>>): AsyncFullPar
 export function alwaysYieldAsync<In, Out>(f: (input: In) => Promise<Out>): AsyncParser<In, Out> {
     return async input => {
         const result = await f(input);
-        return yieldOne(result, input);
+        return yieldNext(result, input);
     };
 }
 

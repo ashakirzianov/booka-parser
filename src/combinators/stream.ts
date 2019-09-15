@@ -1,4 +1,4 @@
-import { Parser, yieldOne, reject, SuccessParser, some, ResultLast, expected } from './base';
+import { Parser, yieldNext, reject, SuccessParser, some, ResultLast, expected } from './base';
 import { compoundDiagnostic } from './diagnostics';
 
 export type Stream<T, E = undefined> = {
@@ -43,7 +43,7 @@ export function headParser<In, Out, Env = any>(f: HeadFn<In, Out, Env>): StreamP
 
 export function empty<T = any, E = any>(): StreamParser<T, undefined, E> {
     return input => input.stream.length === 0
-        ? yieldOne(undefined, input)
+        ? yieldNext(undefined, input)
         : reject();
 }
 
@@ -58,7 +58,7 @@ export function not<T, E>(parser: StreamParser<T, any, E>): StreamParser<T, T, E
 
         const result = parser(input);
         return !result.success
-            ? yieldOne(head, nextStream(input))
+            ? yieldNext(head, nextStream(input))
             : reject();
     };
 }

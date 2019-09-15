@@ -30,7 +30,7 @@ export function yieldLast<Out>(value: Out, diagnostic?: ParserDiagnostic): Succe
     };
 }
 
-export function yieldOne<TIn, TOut>(value: TOut, next: TIn, diagnostic?: ParserDiagnostic): SuccessNext<TIn, TOut> {
+export function yieldNext<TIn, TOut>(value: TOut, next: TIn, diagnostic?: ParserDiagnostic): SuccessNext<TIn, TOut> {
     return {
         value, next, diagnostic,
         success: true,
@@ -57,7 +57,7 @@ export function and<T>(...ps: Array<Parser<T, any>>): Parser<T, any[]> {
         }
 
         const diagnostic = compoundDiagnostic(diagnostics);
-        return yieldOne(results, lastInput, diagnostic);
+        return yieldNext(results, lastInput, diagnostic);
     };
 }
 
@@ -84,7 +84,7 @@ export function seq<TI>(...ps: Array<Parser<TI, any>>): Parser<TI, any[]> {
         }
 
         const diagnostic = compoundDiagnostic(diagnostics);
-        return yieldOne(results, currentInput, diagnostic);
+        return yieldNext(results, currentInput, diagnostic);
     };
 }
 
@@ -145,7 +145,7 @@ export function some<In, Out>(parser: Parser<In, Out>): SuccessParser<In, Out[]>
         } while (currentResult.success);
 
         const diagnostic = compoundDiagnostic(diagnostics);
-        return yieldOne(results, currentInput, diagnostic);
+        return yieldNext(results, currentInput, diagnostic);
     };
 }
 
@@ -154,7 +154,7 @@ export function maybe<TIn, TOut>(parser: Parser<TIn, TOut>): SuccessParser<TIn, 
         const result = parser(input);
         return result.success
             ? result
-            : yieldOne(undefined, input);
+            : yieldNext(undefined, input);
     };
 }
 
@@ -183,7 +183,7 @@ export function translate<TI, From, To>(parser: Parser<TI, From>, f: (from: From
         const from = parser(input);
         if (from.success) {
             const translated = f(from.value);
-            return yieldOne(translated, from.next, from.diagnostic);
+            return yieldNext(translated, from.next, from.diagnostic);
         } else {
             return from;
         }
@@ -210,9 +210,9 @@ export function translateAndWarn<TI, From, To>(parser: Parser<TI, From>, f: Warn
         if (translated === null) {
             return reject();
         } else if (isWarnPair(translated)) {
-            return yieldOne(translated.result, from.next, compoundDiagnostic([translated.diagnostic, from.diagnostic]));
+            return yieldNext(translated.result, from.next, compoundDiagnostic([translated.diagnostic, from.diagnostic]));
         } else {
-            return yieldOne(translated, from.next, from.diagnostic);
+            return yieldNext(translated, from.next, from.diagnostic);
         }
     };
 }
@@ -239,7 +239,7 @@ export function expected<TI, TO>(parser: Parser<TI, TO>, value: TO, diagFn?: (i:
         const result = parser(input);
         return result.success
             ? result
-            : yieldOne(
+            : yieldNext(
                 value,
                 input,
                 compoundDiagnostic([result.diagnostic, diagFn && diagFn(input)]),
@@ -272,7 +272,7 @@ export function tagged<TIn, TOut>(parser: Parser<TIn, TOut>, f: (x: TIn) => stri
 }
 
 export function alwaysYield<In, Out>(f: (x: In) => Out): Parser<In, Out> {
-    return input => yieldOne(f(input), input);
+    return input => yieldNext(f(input), input);
 }
 
 export function expectEnd<In, Out>(parser: Parser<In, Out>): FullParser<In, Out> {

@@ -3,7 +3,7 @@ import {
 } from 'booka-common';
 import {
     AsyncStreamParser, yieldLast, ParserDiagnostic,
-    compoundDiagnostic, reject, StreamParser, headParser, yieldOne, choice, some, makeStream, seq, expectEmpty, projectFirst, pipeAsync,
+    compoundDiagnostic, reject, StreamParser, headParser, yieldNext, choice, some, makeStream, seq, expectEmpty, projectFirst, pipeAsync,
 } from '../combinators';
 import { BookElement, TitleOrContentElement } from './bookElement';
 
@@ -94,7 +94,7 @@ const titleElement: BookElementParser = input => {
                 title: head.title,
                 nodes: inside.value,
             };
-            return yieldOne(chapter, inside.next && makeStream(inside.next.stream, input.env));
+            return yieldNext(chapter, inside.next && makeStream(inside.next.stream, input.env));
         } else {
             return reject();
         }
