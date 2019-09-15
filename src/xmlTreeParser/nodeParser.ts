@@ -6,7 +6,7 @@ import {
 } from '../combinators';
 import { isWhitespaces } from '../utils';
 import { xmlElementParser } from './treeParser';
-import { spanContent, span } from './spanParser';
+import { spanContent, span, expectSpanContent } from './spanParser';
 import { XmlTree, tree2String } from '../xmlStringParser';
 import { Tree2ElementsParser, EpubTreeParser, buildRef } from './utils';
 import { BookElement, ContentElement, TitleElement, TitleOrContentElement, isTitleOrContentElement } from '../bookElementParser';
@@ -68,6 +68,26 @@ const blockquote: Tree2ElementsParser = xmlElementParser(
             content: node,
         }]);
     }
+);
+
+const listItem = xmlElementParser(
+    'li',
+    {},
+    expectSpanContent,
+    ([_, itemSpan]) => yieldLast(itemSpan),
+);
+const listElement = xmlElementParser(
+    ['ol', 'ul'],
+    {},
+    projectFirst(seq(some(listItem), expectEmpty)),
+    ([xml, items]) => yieldLast<BookElement[]>([{
+        element: 'content',
+        content: {
+            node: 'list',
+            kind: xml.name === 'ol' ? 'ordered' : 'basic',
+            items,
+        },
+    }]),
 );
 
 const containerElement: Tree2ElementsParser = namedParser('container', envParser(env => {
@@ -171,6 +191,7 @@ const nodeParsers: Tree2ElementsParser[] = [
     skipWhitespaces,
     pphElement,
     img, image, header, svg,
+    listElement,
     blockquote,
     containerElement,
     ignore, skip,

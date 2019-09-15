@@ -10,7 +10,7 @@ import { TreeParserEnv, Tree2SpanParser } from './utils';
 export const span = declare<Stream<XmlTree, TreeParserEnv>, Span>('span');
 
 export const spanContent = projectFirst(seq(some(span), empty()));
-const expectSpanContent: Tree2SpanParser = translate(
+export const expectSpanContent: Tree2SpanParser = translate(
     some(choice(span, headParser(
         el =>
             yieldLast('', { diag: 'unexpected-xml', tree: el })
