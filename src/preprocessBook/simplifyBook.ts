@@ -1,8 +1,6 @@
 import {
     VolumeNode, BookContentNode, ChapterNode, ParagraphNode,
-    Span, isChapter, isParagraph, isImage, isGroup,
-    isSimpleSpan, isAttributedSpan, isCompoundSpan, Book, isRefSpan,
-    assertNever, filterUndefined,
+    Span, Book, assertNever, filterUndefined,
 } from 'booka-common';
 import { isWhitespaces } from '../utils';
 
@@ -27,15 +25,22 @@ function simplifyNodes(nodes: BookContentNode[]): BookContentNode[] {
 }
 
 function simplifyNode(node: BookContentNode): BookContentNode | undefined {
-    if (isChapter(node)) {
-        return simplifyChapter(node);
-    } else if (isParagraph(node)) {
-        return simplifyParagraph(node);
-    } else if (isImage(node) || isGroup(node)) {
-        return node;
-    } else {
-        assertNever(node);
-        return node;
+    switch (node.node) {
+        case 'chapter':
+            return simplifyChapter(node);
+        case 'paragraph':
+            return simplifyParagraph(node);
+        case 'group':
+            // TODO: implement
+            return node;
+        case 'image-data':
+        case 'image-ref':
+        case 'table':
+        case 'list':
+            return node;
+        default:
+            assertNever(node);
+            return node;
     }
 }
 
@@ -60,28 +65,30 @@ function simplifyParagraph(paragraph: ParagraphNode): BookContentNode | undefine
 }
 
 function simplifySpan(span: Span): Span | undefined {
-    if (isSimpleSpan(span)) {
-        return isWhitespaces(span)
-            ? undefined
-            : span;
-    } else if (isAttributedSpan(span) || isRefSpan(span)) {
-        const content = simplifySpan(span.content);
-        return content === undefined
-            ? undefined
-            : {
-                ...span,
-                content,
-            };
-    } else if (isCompoundSpan(span)) {
-        const spans = filterUndefined(span.spans.map(simplifySpan));
-        return spans.length === 0
-            ? undefined
-            : {
-                ...span,
-                spans,
-            };
-    } else {
-        assertNever(span);
-        return span;
+    switch (span.span) {
+        case undefined:
+            return isWhitespaces(span)
+                ? undefined
+                : span;
+        case 'attrs':
+        case 'ref':
+            const content = simplifySpan(span.content);
+            return content === undefined
+                ? undefined
+                : {
+                    ...span,
+                    content,
+                };
+        case 'compound':
+            const spans = filterUndefined(span.spans.map(simplifySpan));
+            return spans.length === 0
+                ? undefined
+                : {
+                    ...span,
+                    spans,
+                };
+        default:
+            assertNever(span);
+            return span;
     }
 }

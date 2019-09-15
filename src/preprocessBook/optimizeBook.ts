@@ -1,8 +1,7 @@
 import {
     VolumeNode, BookContentNode,
     Span, AttributeName, ParagraphNode, CompoundSpan,
-    isChapter, isParagraph, isImage,
-    isSimpleSpan, isAttributedSpan, isRefSpan, isCompoundSpan, Book, isGroup, assertNever,
+    isSimpleSpan, isAttributedSpan, isRefSpan, isCompoundSpan, Book, assertNever,
 } from 'booka-common';
 
 export function optimizeBook(book: Book): Book {
@@ -27,18 +26,25 @@ function optimizeNodes(nodes: BookContentNode[]) {
 }
 
 function optimizeNode(node: BookContentNode): BookContentNode {
-    if (isChapter(node)) {
-        return {
-            ...node,
-            nodes: optimizeNodes(node.nodes),
-        };
-    } else if (isParagraph(node)) {
-        return optimizeParagraph(node);
-    } else if (isImage(node) || isGroup(node)) {
-        return node;
-    } else {
-        assertNever(node);
-        return node;
+    switch (node.node) {
+        case 'chapter':
+            return {
+                ...node,
+                nodes: optimizeNodes(node.nodes),
+            };
+        case 'paragraph':
+            return optimizeParagraph(node);
+        case 'group':
+        case 'table':
+        case 'list':
+            // TODO: implement
+            return node;
+        case 'image-ref':
+        case 'image-data':
+            return node;
+        default:
+            assertNever(node);
+            return node;
     }
 }
 
