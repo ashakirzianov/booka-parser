@@ -2,18 +2,18 @@ import { buildDocumentParser, span, nodeParser } from '../xmlTreeParser';
 import {
     makeStream, headParser,
     translate, expected, yieldLast,
-    StreamParser, pipe, fullParser,
+    StreamParser, pipe, fullParser, AsyncFullParser,
 } from '../combinators';
 import { flatten, AsyncIter } from '../utils';
-import { EpubSection } from './epubBook';
-import { EpubBookParser } from './epubBookParser';
+import { EpubSection, EpubBook } from './epubBook';
 import { BookElement } from '../bookElementParser';
 import { xmlStringParser } from '../xmlStringParser';
+import { epubParserHooks } from './hooks';
 
 export type SectionsParser = StreamParser<EpubSection, BookElement[], undefined>;
 
-export const sectionsParser: EpubBookParser<BookElement[]> = async input => {
-    const hooks = input.options[input.epub.kind];
+export const sectionsParser: AsyncFullParser<EpubBook, BookElement[]> = async epub => {
+    const hooks = epubParserHooks[epub.kind];
     const documentParser = buildDocumentParser(hooks.nodeHooks);
     const withDiags = expected(documentParser, [], stream => ({
         diag: 'couldnt-parse-document',
@@ -50,6 +50,6 @@ export const sectionsParser: EpubBookParser<BookElement[]> = async input => {
         els => flatten(els),
     );
 
-    const sections = await AsyncIter.toArray(input.epub.sections());
+    const sections = await AsyncIter.toArray(epub.sections());
     return full(makeStream(sections));
 };

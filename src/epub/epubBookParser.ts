@@ -1,33 +1,26 @@
 import { Book, KnownTag, processNodeAsync } from 'booka-common';
 import { equalsToOneOf } from '../utils';
 import {
-    makeStream, yieldLast, StreamParser, andAsync, AsyncFullParser, pipeAsync, ParserDiagnostic, compoundDiagnostic,
+    makeStream, yieldLast, andAsync, AsyncFullParser, pipeAsync, ParserDiagnostic, compoundDiagnostic, StreamParser,
 } from '../combinators';
 import { elements2volume, BookElement } from '../bookElementParser';
-import { EpubBook, EpubKind } from './epubBook';
+import { EpubBook } from './epubBook';
 import { sectionsParser } from './sectionParser';
 import { metadataParser } from './metaParser';
 import { Tree2ElementsParser } from '../xmlTreeParser';
 
+export type MetadataRecordParser = StreamParser<[string, any], KnownTag[]>;
 export type EpubBookParserHooks = {
     nodeHooks: Tree2ElementsParser[],
     metadataHooks: MetadataRecordParser[],
 };
-export type EpubBookParserInput = {
-    epub: EpubBook,
-    options: {
-        [key in EpubKind]: EpubBookParserHooks;
-    },
-};
-export type EpubBookParser<R = Book> = AsyncFullParser<EpubBookParserInput, R>;
-export type MetadataRecordParser = StreamParser<[string, any], KnownTag[]>;
 
-const diagnoseKind: EpubBookParser<EpubBook> = async input =>
-    input.epub.kind === 'unknown'
-        ? yieldLast(input.epub, { diag: 'unknown-kind' })
-        : yieldLast(input.epub);
+const diagnoseKind: AsyncFullParser<EpubBook, EpubBook> = async epub =>
+    epub.kind === 'unknown'
+        ? yieldLast(epub, { diag: 'unknown-kind' })
+        : yieldLast(epub);
 
-export const epubBookParser: EpubBookParser = pipeAsync(
+export const epubBookParser: AsyncFullParser<EpubBook, Book> = pipeAsync(
     // Diagnose book kind, parse metadata and sections
     andAsync(diagnoseKind, metadataParser, sectionsParser),
     // Parse book elements
