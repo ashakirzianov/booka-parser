@@ -1,7 +1,7 @@
 import { Book } from 'booka-common';
 import { epubFileParser } from './epubFileParser';
 import { epubBookParser } from './epubBookParser';
-import { converterHooks } from './hooks';
+import { epubParserHooks } from './hooks';
 import { xmlStringParser } from '../xmlStringParser';
 import { pipeAsync, translateAsync, AsyncFullParser } from '../combinators';
 
@@ -19,7 +19,7 @@ export const epubParser: AsyncFullParser<EpubParserInput, Book> = pipeAsync(
         }),
         book => ({
             epub: book,
-            options: converterHooks,
+            options: epubParserHooks,
         }),
     ),
     epubBookParser,
