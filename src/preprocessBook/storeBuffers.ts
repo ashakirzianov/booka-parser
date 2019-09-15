@@ -1,5 +1,6 @@
-import { VolumeNode, BookContentNode, Book, ImageRefNode, ImageDataNode, ImageNode } from 'booka-common';
-import { filterUndefined } from '../utils';
+import {
+    Book, ImageRefNode, ImageDataNode, ImageNode, processImagesAsync,
+} from 'booka-common';
 
 export type StoreBufferFn = (buffer: Buffer, id: string, title?: string) => Promise<string | undefined>;
 export type RestoreBufferFn = (imageRef: string, id: string) => Promise<Buffer | undefined>;
@@ -13,20 +14,15 @@ export async function storeBuffers(book: Book, args: ProcessImagesArgs): Promise
         args,
         resolved: {},
     };
-    const processed = await processNodes(book.volume.nodes, env);
-    const coverImageNode = book.volume.meta.coverImageNode && await resolveImageNode(book.volume.meta.coverImageNode, env);
-    const volume: VolumeNode = {
-        ...book.volume,
-        meta: {
-            ...book.volume.meta,
-            coverImageNode: coverImageNode,
-        },
-        nodes: processed,
-    };
+
+    const processedVolume = await processImagesAsync(
+        book.volume,
+        imageNode => resolveImageNode(imageNode, env),
+    );
 
     return {
         ...book,
-        volume,
+        volume: processedVolume,
     };
 }
 
@@ -37,26 +33,6 @@ type StoreBufferEnv = {
         [key: string]: string | undefined,
     },
 };
-async function processNodes(nodes: BookContentNode[], env: StoreBufferEnv): Promise<BookContentNode[]> {
-    const result = await Promise.all(nodes.map(n => processNode(n, env)));
-
-    return filterUndefined(result);
-}
-
-async function processNode(node: BookContentNode, env: StoreBufferEnv): Promise<BookContentNode | undefined> {
-    switch (node.node) {
-        case 'image-data':
-        case 'image-ref':
-            return resolveImageNode(node, env);
-        case 'chapter':
-            return {
-                ...node,
-                nodes: await processNodes(node.nodes, env),
-            };
-        default:
-            return node;
-    }
-}
 
 async function resolveImageNode(node: ImageNode, env: StoreBufferEnv) {
     if (node.node === 'image-ref') {
@@ -66,7 +42,7 @@ async function resolveImageNode(node: ImageNode, env: StoreBufferEnv) {
     }
 }
 
-async function resolveImageRef(node: ImageRefNode, env: StoreBufferEnv): Promise<ImageNode | undefined> {
+async function resolveImageRef(node: ImageRefNode, env: StoreBufferEnv): Promise<ImageNode> {
     if (env.args.restoreBuffer === undefined) {
         return node;
     }
@@ -79,12 +55,11 @@ async function resolveImageRef(node: ImageRefNode, env: StoreBufferEnv): Promise
             data: buffer,
         };
     } else {
-        // TODO: report errors ?
-        return undefined;
+        return node;
     }
 }
 
-async function resolveImageData(node: ImageDataNode, env: StoreBufferEnv): Promise<ImageNode | undefined> {
+async function resolveImageData(node: ImageDataNode, env: StoreBufferEnv): Promise<ImageNode> {
     if (env.args.storeBuffer === undefined) {
         return node;
     }
@@ -99,6 +74,6 @@ async function resolveImageData(node: ImageDataNode, env: StoreBufferEnv): Promi
             imageRef: url,
         };
     } else {
-        return undefined;
+        return node;
     }
 }
