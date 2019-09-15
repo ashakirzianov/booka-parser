@@ -4,7 +4,7 @@ import {
     Result, yieldOne, reject, seq, some, translate,
     StreamParser, headParser, makeStream, nextStream, not, Stream, projectLast, and, HeadFn, expected, yieldLast,
 } from '../combinators';
-import { Constraint, ConstraintMap, checkObject, checkValue } from '../constraint';
+import { Constraint, ConstraintMap, checkObject, checkValue } from './constraint';
 import { compoundDiagnostic } from '../combinators/diagnostics';
 
 export type TreeParser<Out = XmlTree, Env = undefined> = StreamParser<XmlTree, Out, Env>;

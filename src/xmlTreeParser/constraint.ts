@@ -1,4 +1,4 @@
-import { equalsToOneOf } from './utils';
+import { equalsToOneOf } from '../utils';
 
 export type Constraint<TV, TC extends TV = TV> =
     | TC
