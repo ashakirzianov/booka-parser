@@ -1,5 +1,6 @@
 import * as parseXmlLib from '@rgrove/parse-xml';
-import { assertNever, isWhitespaces } from '../utils';
+import { assertNever } from 'booka-common';
+import { isWhitespaces } from '../utils';
 import { yieldLast, FullParser } from '../combinators';
 
 export type XmlStringParser = FullParser<string, XmlTreeDocument>;
@@ -142,6 +143,7 @@ export function tree2String(n: XmlTree): string {
         case 'cdata':
             return '<![CDATA[ ... ]]>';
         default:
-            return assertNever(n);
+            assertNever(n);
+            return '<!>';
     }
 }

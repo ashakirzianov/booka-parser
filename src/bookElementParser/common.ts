@@ -1,5 +1,4 @@
 import { Span } from 'booka-common';
-import { assertNever } from '../utils';
 import { ResultLast, reject } from '../combinators';
 import { BookElement } from './bookElement';
 
@@ -21,7 +20,6 @@ export function spanFromRawNode(
         case 'content':
             return reject({ diag: 'unexpected-raw-node', node: rawNode, context: 'span' });
         default:
-            assertNever(rawNode);
             return reject({ diag: 'unexpected-raw-node', node: rawNode, context: 'span' });
     }
 }

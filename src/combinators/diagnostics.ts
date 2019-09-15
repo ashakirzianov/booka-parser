@@ -1,5 +1,3 @@
-import { filterUndefined } from '../utils';
-
 export type Severity =
     | 'error' | undefined // NOTE: treat undefined as 'error'
     | 'info'
@@ -84,4 +82,8 @@ function isCompound(d: ParserDiagnostic): d is CompoundParserDiagnostic {
 
 function isContext(d: ParserDiagnostic): d is ContextParserDiagnostic {
     return d !== undefined && (d as any).context !== undefined;
+}
+
+function filterUndefined<T>(arr: Array<T | undefined>): T[] {
+    return arr.filter((x): x is T => x !== undefined);
 }

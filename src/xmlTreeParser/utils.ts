@@ -1,8 +1,8 @@
 import { XmlTree } from '../xmlStringParser';
-import { Stream, alwaysYield, reject, yieldLast, headParser, choice, flattenResult, fullParser } from '../combinators';
+import { Stream, alwaysYield, reject, yieldLast, headParser, choice, fullParser, translate, Parser } from '../combinators';
 import { equalsToOneOf } from '../utils';
 import { TreeParser, xmlChildren, path } from './treeParser';
-import { Span } from 'booka-common';
+import { Span, flatten } from 'booka-common';
 import { BookElement } from '../bookElementParser';
 import { nodeParser } from './nodeParser';
 
@@ -58,4 +58,8 @@ export function logWhileParsing(message?: string, dontLogTree?: boolean) {
         }
         return;
     });
+}
+
+export function flattenResult<I, O>(parser: Parser<I, O[][]>): Parser<I, O[]> {
+    return translate(parser, flatten);
 }

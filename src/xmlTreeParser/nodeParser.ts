@@ -1,10 +1,10 @@
-import { ParagraphNode, compoundSpan } from 'booka-common';
+import { ParagraphNode, compoundSpan, flatten } from 'booka-common';
 import {
     yieldLast, headParser, reject, choice, oneOrMore, translate,
     namedParser, envParser, fullParser, expectEmpty,
     compoundDiagnostic, ParserDiagnostic,
 } from '../combinators';
-import { isWhitespaces, flatten } from '../utils';
+import { isWhitespaces } from '../utils';
 import { xmlElementParser } from './treeParser';
 import { spanContent, span } from './spanParser';
 import { XmlTree, tree2String } from '../xmlStringParser';

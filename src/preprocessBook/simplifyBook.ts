@@ -2,10 +2,9 @@ import {
     VolumeNode, BookContentNode, ChapterNode, ParagraphNode,
     Span, isChapter, isParagraph, isImage, isGroup,
     isSimpleSpan, isAttributedSpan, isCompoundSpan, Book, isRefSpan,
+    assertNever, filterUndefined,
 } from 'booka-common';
-import {
-    filterUndefined, assertNever, isWhitespaces,
-} from '../utils';
+import { isWhitespaces } from '../utils';
 
 export function simplifyBook(book: Book): Book {
     const volume = simplifyVolume(book.volume);
@@ -82,6 +81,7 @@ function simplifySpan(span: Span): Span | undefined {
                 spans,
             };
     } else {
-        return assertNever(span);
+        assertNever(span);
+        return span;
     }
 }

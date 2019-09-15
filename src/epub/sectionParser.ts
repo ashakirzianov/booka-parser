@@ -1,10 +1,11 @@
+import { flatten } from 'booka-common';
 import { buildDocumentParser, span, nodeParser } from '../xmlTreeParser';
 import {
     makeStream, headParser,
     translate, expected, yieldLast,
     StreamParser, pipe, fullParser, AsyncFullParser,
 } from '../combinators';
-import { flatten, AsyncIter } from '../utils';
+import { AsyncIter } from '../utils';
 import { EpubSection, EpubBook } from './epubBook';
 import { BookElement } from '../bookElementParser';
 import { xmlStringParser } from '../xmlStringParser';

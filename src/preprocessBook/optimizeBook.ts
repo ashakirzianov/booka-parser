@@ -2,9 +2,8 @@ import {
     VolumeNode, BookContentNode,
     Span, AttributeName, ParagraphNode, CompoundSpan,
     isChapter, isParagraph, isImage,
-    isSimpleSpan, isAttributedSpan, isRefSpan, isCompoundSpan, Book, isGroup,
+    isSimpleSpan, isAttributedSpan, isRefSpan, isCompoundSpan, Book, isGroup, assertNever,
 } from 'booka-common';
-import { assertNever } from '../utils';
 
 export function optimizeBook(book: Book): Book {
     const volume = optimizeVolume(book.volume);
@@ -64,7 +63,8 @@ function optimizeSpan(span: Span): Span {
     } else if (isCompoundSpan(span)) {
         return optimizeCompound(span);
     } else {
-        return assertNever(span);
+        assertNever(span);
+        return span;
     }
 }
 

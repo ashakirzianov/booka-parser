@@ -1,3 +1,4 @@
+import { BookContentNode, filterUndefined } from 'booka-common';
 import { EpubBookParserHooks, MetadataRecordParser } from './epubBookParser';
 import {
     textNode, xmlChildren, whitespaced, extractText,
@@ -6,9 +7,7 @@ import {
 import {
     some, translate, choice, seq, and, headParser, envParser, reject, yieldLast,
 } from '../combinators';
-import { filterUndefined } from '../utils';
 import { BookElement } from '../bookElementParser';
-import { BookContentNode } from 'booka-common';
 import { XmlTree, isElementTree } from '../xmlStringParser';
 
 export const fb2epubHooks: EpubBookParserHooks = {
