@@ -41,9 +41,9 @@ async function processEpubFile(filePath: string, reportMeta: boolean) {
     if (reportMeta) {
         console.log('Tags:');
         console.log(result.value.tags);
-        const bookText = extractNodeText(result.value.volume);
-        console.log(`Book length: ${bookText && bookText.length} symbols`);
     }
+    const bookText = extractNodeText(result.value.volume);
+    console.log(`Book length: ${bookText && bookText.length} symbols`);
     if (result.diagnostic) {
         const top = topDiagnostic(result.diagnostic, 10);
         logRed('Diagnostics:');

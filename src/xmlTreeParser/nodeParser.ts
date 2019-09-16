@@ -73,7 +73,7 @@ const blockquote: Tree2ElementsParser = xmlElementParser(
     }
 );
 
-const listItem = xmlElementParser(
+const li = xmlElementParser(
     'li',
     {},
     expectSpanContent,
@@ -81,8 +81,8 @@ const listItem = xmlElementParser(
 );
 const listElement = xmlElementParser(
     ['ol', 'ul'],
-    {},
-    expectParseAll(some(whitespaced(listItem)), stream2string),
+    { class: ['none', 'nonetn'] },
+    expectParseAll(some(whitespaced(li)), stream2string),
     ([xml, items]) => yieldLast<BookElement[]>([{
         element: 'content',
         content: {
