@@ -20,7 +20,7 @@ export function xmlElementParser<R, Ch, E = any>(
             projectLast(and(
                 xmlName(name),
                 expected(xmlAttributes(expectedAttributes), undefined),
-                diagnosticContext(xmlChildren(children), 'children'),
+                xmlChildren(children),
             )),
             name,
         );
