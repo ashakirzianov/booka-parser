@@ -16,11 +16,14 @@ export function xmlElementParser<R, Ch, E = any>(
     projection: HeadFn<[XmlTreeElement, Ch], R, E>,
 ): TreeParser<R, E> {
     return input => {
-        const elParser = diagnosticContext(projectLast(and(
-            xmlName(name),
-            expected(xmlAttributes(expectedAttributes), undefined),
-            xmlChildren(children),
-        )), name);
+        const elParser = diagnosticContext(
+            projectLast(and(
+                xmlName(name),
+                expected(xmlAttributes(expectedAttributes), undefined),
+                diagnosticContext(xmlChildren(children), 'children'),
+            )),
+            name,
+        );
         const elResult = elParser(input);
         if (!elResult.success) {
             return elResult;

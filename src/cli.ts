@@ -12,7 +12,7 @@ exec();
 async function exec() {
     const args = process.argv;
     const path = args[2];
-    const reportMeta = args[3] ? false : true;
+    const reportMeta = args[3] ? true : false;
     if (!path) {
         console.log('You need to pass epub path as an arg');
         return;
@@ -26,24 +26,28 @@ async function exec() {
     const epubs = files.filter(isEpub);
     console.log(epubs);
     for (const epubPath of epubs) {
-        const result = await parseEpub({ filePath: epubPath });
-        if (!result.success) {
-            logRed(`Couldn't parse epub: '${epubPath}'`);
-            console.log(result.diagnostic);
-            continue;
-        }
-        console.log(`---- ${epubPath}:`);
-        if (reportMeta) {
-            console.log('Tags:');
-            console.log(result.value.tags);
-            const bookText = extractNodeText(result.value.volume);
-            console.log(`Book length: ${bookText && bookText.length} symbols`);
-        }
-        if (result.diagnostic) {
-            const top = topDiagnostic(result.diagnostic, 10);
-            logRed('Diagnostics:');
-            console.log(inspect(top, false, 6, true));
-        }
+        await processEpubFile(epubPath, reportMeta);
+    }
+}
+
+async function processEpubFile(filePath: string, reportMeta: boolean) {
+    const result = await parseEpub({ filePath });
+    if (!result.success) {
+        logRed(`Couldn't parse epub: '${filePath}'`);
+        console.log(result.diagnostic);
+        return;
+    }
+    console.log(`---- ${filePath}:`);
+    if (reportMeta) {
+        console.log('Tags:');
+        console.log(result.value.tags);
+        const bookText = extractNodeText(result.value.volume);
+        console.log(`Book length: ${bookText && bookText.length} symbols`);
+    }
+    if (result.diagnostic) {
+        const top = topDiagnostic(result.diagnostic, 10);
+        logRed('Diagnostics:');
+        console.log(inspect(top, false, 8, true));
     }
 }
 

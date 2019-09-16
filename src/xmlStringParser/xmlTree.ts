@@ -1,13 +1,26 @@
 import * as parseXmlLib from '@rgrove/parse-xml';
 import { assertNever } from 'booka-common';
-import { isWhitespaces } from '../utils';
 import { yieldLast, FullParser } from '../combinators';
+import { isWhitespaces } from '../utils';
 
-export type XmlStringParser = FullParser<string, XmlTreeDocument>;
+export type XmlStringParserInput = {
+    xmlString: string,
+    preserveComments?: boolean,
+    removeTrailingWhitespaces?: boolean,
+};
+export type XmlStringParser = FullParser<XmlStringParserInput, XmlTreeDocument>;
 
-export const xmlStringParser: XmlStringParser = xmlString => {
+export const xmlStringParser: XmlStringParser = input => {
     try {
-        const tree = parseXmlLib(xmlString, { preserveComments: false });
+        let tree = parseXmlLib(input.xmlString, {
+            preserveComments: input.preserveComments || false,
+        });
+        if (input.removeTrailingWhitespaces) {
+            tree = {
+                ...tree,
+                children: removeTrailingWhitespaces(tree.children),
+            };
+        }
         return yieldLast(tree);
     } catch (e) {
         return fail(e);
@@ -135,9 +148,10 @@ export function tree2String(n: XmlTree): string {
                 ? `<${name}${attrsStr}>${chs}</${name}>`
                 : `<${name}${attrsStr}/>`;
         case 'text':
-            return isWhitespaces(n.text)
-                ? '*' + n.text
-                : n.text;
+            // return isWhitespaces(n.text)
+            //     ? '*' + n.text
+            //     : n.text;
+            return n.text;
         case 'comment':
             return `<!--${n.content}-->`;
         case 'cdata':
@@ -146,4 +160,29 @@ export function tree2String(n: XmlTree): string {
             assertNever(n);
             return '<!>';
     }
+}
+
+export function removeTrailingWhitespaces(trees: XmlTree[]): XmlTree[] {
+    const head = trees[0];
+    if (!head) {
+        return trees;
+    }
+
+    if (head.type === 'text' && isWhitespaces(head.text)) {
+        return removeTrailingWhitespaces(trees.slice(1));
+    }
+
+    const result: XmlTree[] = [];
+    for (const tree of trees) {
+        if (tree.type === 'element' || tree.type === 'document') {
+            result.push({
+                ...tree,
+                children: removeTrailingWhitespaces(tree.children),
+            });
+        } else {
+            result.push(tree);
+        }
+    }
+
+    return result;
 }

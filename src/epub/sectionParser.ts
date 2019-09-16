@@ -23,7 +23,10 @@ export const sectionsParser: AsyncFullParser<EpubBook, BookElement[]> = async ep
 
     const singleSection = pipe(
         (section: EpubSection) => {
-            const xmlDocument = xmlStringParser(section.content);
+            const xmlDocument = xmlStringParser({
+                xmlString: section.content,
+                removeTrailingWhitespaces: true,
+            });
             if (!xmlDocument.success) {
                 return xmlDocument;
             }
