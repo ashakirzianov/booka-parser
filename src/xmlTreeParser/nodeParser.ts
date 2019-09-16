@@ -93,8 +93,8 @@ const listElement = xmlElementParser(
     }]),
 );
 
-const td = xmlElementParser(
-    'td',
+const tableCell = xmlElementParser(
+    ['td', 'th'],
     { class: null },
     expected(pphSpans, []),
     ([_, s]) => yieldLast(compoundSpan(s)),
@@ -103,7 +103,7 @@ const td = xmlElementParser(
 const tr = xmlElementParser(
     'tr',
     { class: null },
-    expectParseAll(some(whitespaced(td)), stream2string),
+    expectParseAll(some(whitespaced(tableCell)), stream2string),
     ([_, cells]) => yieldLast(cells),
 );
 
