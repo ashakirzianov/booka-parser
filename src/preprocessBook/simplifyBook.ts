@@ -33,7 +33,6 @@ function simplifyNode(node: BookContentNode): BookContentNode | undefined {
         case 'group':
         case 'table':
         case 'list':
-            // TODO: implement
             return node;
         case 'image-data':
         case 'image-ref':

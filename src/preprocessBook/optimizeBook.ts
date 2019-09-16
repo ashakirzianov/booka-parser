@@ -37,7 +37,6 @@ function optimizeNode(node: BookContentNode): BookContentNode {
         case 'group':
         case 'table':
         case 'list':
-            // TODO: implement
             return node;
         case 'image-ref':
         case 'image-data':
