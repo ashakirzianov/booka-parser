@@ -132,6 +132,15 @@ const table: Tree2ElementsParser = xmlElementParser(
     })),
 );
 
+const hr = xmlElementParser(
+    'hr',
+    { class: ['short'] },
+    expectEoi(stream2string),
+    () => yieldLast(fromContent({
+        node: 'separator',
+    })),
+);
+
 const containerElement: Tree2ElementsParser = namedParser('container', envParser(env => {
     return xmlElementParser(
         ['p', 'div', 'span'],
@@ -226,7 +235,7 @@ const nodeParsers: Tree2ElementsParser[] = [
     skipWhitespaces,
     pphElement,
     img, image, header, svg,
-    listElement, table,
+    listElement, table, hr,
     blockquote,
     containerElement,
     skip,
