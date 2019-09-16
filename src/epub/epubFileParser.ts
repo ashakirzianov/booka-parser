@@ -29,7 +29,8 @@ export const epubFileParser: EpubParser = async input => {
         sections: async function* () {
             for (const el of epub.flow) {
                 if (el.id && el.href) {
-                    // NOTE: couldn't find better solution                    const href = last(el.href.split('/'));
+                    // NOTE: couldn't find better solution
+                    const href = last(el.href.split('/'));
                     const chapter = await epub.chapterForId(el.id);
                     const section: EpubSection = {
                         id: el.id,

@@ -2,7 +2,7 @@ import { ParagraphNode, compoundSpan, flatten, GroupNode, BookContentNode } from
 import {
     yieldLast, headParser, reject, choice, oneOrMore, translate,
     namedParser, envParser, fullParser, expectEoi,
-    compoundDiagnostic, ParserDiagnostic, expectParseAll, some, expected, projectFirst, endOfInput, seq,
+    compoundDiagnostic, ParserDiagnostic, expectParseAll, some, expected, projectFirst, endOfInput, seq, Stream, makeStream,
 } from '../combinators';
 import { isWhitespaces } from '../utils';
 import { xmlElementParser, whitespaced } from './treeParser';
@@ -196,16 +196,8 @@ const image: Tree2ElementsParser = xmlElementParser(
         } else {
             return yieldLast([], { diag: 'image-must-have-xlinkhref', node: xml });
         }
-    });
-
-const headerTitleParser: EpubTreeParser<string[]> = input => {
-    const result = extractTitle(input ? input.stream : []);
-
-    const emptyTitleDiag = result.lines.length === 0
-        ? { diag: 'no-title', nodes: input && input.stream }
-        : undefined;
-    return yieldLast(result.lines, compoundDiagnostic([...result.diags, emptyTitleDiag]));
-};
+    }
+);
 
 const header: Tree2ElementsParser = xmlElementParser(
     ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'],
@@ -243,11 +235,10 @@ const nodeParsers: Tree2ElementsParser[] = [
 
 export const nodeParser = choice(...nodeParsers);
 
-// TODO: remove ?
-function extractTitle(nodes: XmlTree[]) {
+function headerTitleParser({ stream }: Stream<XmlTree, any>) {
     const lines: string[] = [];
     const diags: ParserDiagnostic[] = [];
-    for (const node of nodes) {
+    for (const node of stream) {
         switch (node.type) {
             case 'text':
                 if (!isWhitespaces(node.text)) {
@@ -259,9 +250,9 @@ function extractTitle(nodes: XmlTree[]) {
                     case 'em': case 'strong': case 'big':
                     case 'a': case 'b':
                     case 'span': case 'div': case 'p':
-                        const fromElement = extractTitle(node.children);
-                        lines.push(fromElement.lines.join(''));
-                        diags.push(...fromElement.diags);
+                        const fromElement = headerTitleParser(makeStream(node.children));
+                        lines.push(fromElement.value.join(''));
+                        diags.push(fromElement.diagnostic);
                         break;
                     case 'br':
                         break;
@@ -276,7 +267,7 @@ function extractTitle(nodes: XmlTree[]) {
         }
     }
 
-    return { lines, diags };
+    return yieldLast(lines, compoundDiagnostic(diags));
 }
 
 function buildContainerElements(elements: BookElement[], refId?: string): BookElement[] {
