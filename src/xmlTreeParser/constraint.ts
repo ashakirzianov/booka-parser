@@ -1,6 +1,6 @@
 export type Constraint<TV, TC extends TV = TV> =
     | TC
-    | Array<TC | null>
+    | TC[]
     | ((x: TV) => boolean)
     | null
     ;
@@ -67,11 +67,8 @@ export function checkObject<T>(obj: T, constraintMap: ConstraintMap<T>): Constra
     return reasons;
 }
 
-function equalsToOneOf<TX, TO extends TX>(x: TX, opts: Array<TO | null>): boolean {
+function equalsToOneOf<TX, TO extends TX>(x: TX, opts: TO[]): boolean {
     for (const o of opts) {
-        if (opts === null) {
-            return true;
-        }
         if (x === o) {
             return true;
         }

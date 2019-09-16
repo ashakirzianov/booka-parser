@@ -81,7 +81,7 @@ const li = xmlElementParser(
 );
 const listElement = xmlElementParser(
     ['ol', 'ul'],
-    { class: ['none', 'nonetn'] },
+    { class: ['none', 'nonetn', 'c9', undefined] },
     expectParseAll(some(whitespaced(li)), stream2string),
     ([xml, items]) => yieldLast<BookElement[]>([{
         element: 'content',
@@ -134,7 +134,7 @@ const table: Tree2ElementsParser = xmlElementParser(
 
 const hr = xmlElementParser(
     'hr',
-    { class: ['main', 'short', 'tiny', 'break', null] },
+    { class: ['main', 'short', 'tiny', 'break', undefined] },
     expectEoi(stream2string),
     () => yieldLast(fromContent({
         node: 'separator',
