@@ -5,7 +5,7 @@ import {
     compoundDiagnostic, ParserDiagnostic, expectParseAll, some,
 } from '../combinators';
 import { isWhitespaces } from '../utils';
-import { xmlElementParser } from './treeParser';
+import { xmlElementParser, whitespaced } from './treeParser';
 import { spanContent, span, expectSpanContent } from './spanParser';
 import { XmlTree, tree2String } from '../xmlStringParser';
 import { Tree2ElementsParser, EpubTreeParser, buildRef, stream2string } from './utils';
@@ -15,7 +15,7 @@ import {
 } from '../bookElementParser';
 import { partition } from 'lodash';
 
-export const skipWhitespaces: Tree2ElementsParser = headParser(node => {
+const skipWhitespaces: Tree2ElementsParser = headParser(node => {
     if (node.type !== 'text') {
         return reject();
     }
@@ -82,7 +82,7 @@ const listItem = xmlElementParser(
 const listElement = xmlElementParser(
     ['ol', 'ul'],
     {},
-    expectParseAll(some(listItem), stream2string),
+    expectParseAll(some(whitespaced(listItem)), stream2string),
     ([xml, items]) => yieldLast<BookElement[]>([{
         element: 'content',
         content: {
@@ -103,11 +103,11 @@ const td = xmlElementParser(
 const tr = xmlElementParser(
     'tr',
     {},
-    expectParseAll(some(td), stream2string),
+    expectParseAll(some(whitespaced(td)), stream2string),
     ([_, cells]) => yieldLast(cells),
 );
 
-const tableBodyContent = expectParseAll(some(tr), stream2string);
+const tableBodyContent = expectParseAll(some(whitespaced(tr)), stream2string);
 
 const tbody = xmlElementParser(
     'tbody',
@@ -121,7 +121,7 @@ const tableBody = choice(tbody, tableBodyContent);
 const table: Tree2ElementsParser = xmlElementParser(
     'table',
     {},
-    expectParseAll(tableBody, stream2string),
+    expectParseAll(whitespaced(tableBody), stream2string),
     ([_, rows]) => yieldLast(fromContent({
         node: 'table',
         rows,
@@ -226,7 +226,7 @@ const skip: Tree2ElementsParser = headParser((node, env) => {
 });
 
 const nodeParsers: Tree2ElementsParser[] = [
-    // skipWhitespaces,
+    skipWhitespaces,
     pphElement,
     img, image, header, svg,
     listElement, table,

@@ -25,7 +25,7 @@ export const sectionsParser: AsyncFullParser<EpubBook, BookElement[]> = async ep
         (section: EpubSection) => {
             const xmlDocument = xmlStringParser({
                 xmlString: section.content,
-                removeTrailingWhitespaces: true,
+                removeTrailingWhitespaces: false,
             });
             if (!xmlDocument.success) {
                 return xmlDocument;

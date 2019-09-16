@@ -2,7 +2,7 @@ import { XmlTree, hasChildren, XmlAttributes, XmlTreeElement, tree2String } from
 import { caseInsensitiveEq, isWhitespaces } from '../utils';
 import {
     Result, yieldNext, reject, seq, some, translate,
-    StreamParser, headParser, makeStream, nextStream, not, Stream, projectLast, and, HeadFn, expected, yieldLast, diagnosticContext,
+    StreamParser, headParser, makeStream, nextStream, not, Stream, projectLast, and, HeadFn, expected, yieldLast, diagnosticContext, maybe,
 } from '../combinators';
 import { Constraint, ConstraintMap, checkObject, checkValue } from './constraint';
 import { compoundDiagnostic } from '../combinators/diagnostics';
@@ -200,8 +200,8 @@ export const whitespaces = textNode<boolean, any>(text => isWhitespaces(text) ? 
 
 export function whitespaced<T, E>(parser: TreeParser<T, E>): TreeParser<T, E> {
     return translate(
-        seq(whitespaces, parser),
-        ([_, result]) => result,
+        seq(maybe(whitespaces), parser, maybe(whitespaces)),
+        ([_, result, __]) => result,
     );
 }
 
