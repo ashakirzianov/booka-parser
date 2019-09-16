@@ -1,6 +1,6 @@
 {
   "name": "booka-parser",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "Booka parser",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
