@@ -2,7 +2,7 @@ import { ParagraphNode, compoundSpan, flatten, GroupNode, BookContentNode } from
 import {
     yieldLast, headParser, reject, choice, oneOrMore, translate,
     namedParser, envParser, fullParser, expectEoi,
-    compoundDiagnostic, ParserDiagnostic, expectParseAll, some, expected,
+    compoundDiagnostic, ParserDiagnostic, expectParseAll, some, expected, projectFirst, endOfInput, seq,
 } from '../combinators';
 import { isWhitespaces } from '../utils';
 import { xmlElementParser, whitespaced } from './treeParser';
@@ -58,7 +58,7 @@ const blockquote: Tree2ElementsParser = xmlElementParser(
     {
         cite: null,
     },
-    expectParseAll(some(pphNode), stream2string),
+    projectFirst(seq(some(pphNode), endOfInput())),
     ([xml, pphs], e) => {
         const node: GroupNode = {
             node: 'group',
@@ -143,7 +143,7 @@ const hr = xmlElementParser(
 
 const containerElement: Tree2ElementsParser = namedParser('container', envParser(env => {
     return xmlElementParser(
-        ['p', 'div', 'span'],
+        ['p', 'div', 'span', 'blockquote'],
         {
             id: null, class: null,
             'xml:space': 'preserve',

@@ -41,20 +41,20 @@ export function headParser<In, Out, Env = any>(f: HeadFn<In, Out, Env>): StreamP
     };
 }
 
-export function endOfInput<T = any, E = any>(): StreamParser<T, undefined, E> {
+export type StringOrFn<T = unknown> = string | ((x: Stream<T, any>) => string);
+export function endOfInput<T = any, E = any>(messageOrFn?: StringOrFn<T>): StreamParser<T, undefined, E> {
     return input => input.stream.length === 0
         ? yieldNext(undefined, input)
-        : reject();
+        : reject({
+            diag: 'expected-eoi',
+            message: typeof messageOrFn === 'function'
+                ? messageOrFn(input)
+                : messageOrFn,
+        });
 }
 
-export type StringOrFn<T = unknown> = string | ((x: Stream<T>) => string);
 export function expectEoi<T = unknown>(messageOrFn: StringOrFn<T>) {
-    return expected(endOfInput(), undefined, stream => ({
-        diag: 'expected-eoi',
-        message: typeof messageOrFn === 'function'
-            ? messageOrFn(stream)
-            : messageOrFn,
-    }));
+    return expected(endOfInput(messageOrFn), undefined);
 }
 
 export function expectParseAll<In, Out, E>(single: StreamParser<In, Out, E>, messageOrFn: StringOrFn<In>) {

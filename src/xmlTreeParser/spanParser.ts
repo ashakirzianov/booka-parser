@@ -9,7 +9,7 @@ import { TreeParserEnv, Tree2SpanParser, stream2string } from './utils';
 
 export const span = declare<Stream<XmlTree, TreeParserEnv>, Span>('span');
 
-export const spanContent = projectFirst(seq(some(span), endOfInput()));
+export const spanContent = projectFirst(seq(some(span), endOfInput(stream2string)));
 export const expectSpanContent: Tree2SpanParser = translate(
     some(choice(span, headParser(
         el =>

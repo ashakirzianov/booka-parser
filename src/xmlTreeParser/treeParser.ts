@@ -15,15 +15,15 @@ export function xmlElementParser<R, Ch, E = any>(
     children: TreeParser<Ch, E>,
     projection: HeadFn<[XmlTreeElement, Ch], R, E>,
 ): TreeParser<R, E> {
+    const elParser = diagnosticContext(
+        projectLast(and(
+            xmlName(name),
+            expected(xmlAttributes(expectedAttributes), undefined),
+            xmlChildren(children),
+        )),
+        name,
+    );
     return input => {
-        const elParser = diagnosticContext(
-            projectLast(and(
-                xmlName(name),
-                expected(xmlAttributes(expectedAttributes), undefined),
-                xmlChildren(children),
-            )),
-            name,
-        );
         const elResult = elParser(input);
         if (!elResult.success) {
             return elResult;
