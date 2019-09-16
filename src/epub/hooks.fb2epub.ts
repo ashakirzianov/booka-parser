@@ -1,8 +1,8 @@
 import { BookContentNode, filterUndefined } from 'booka-common';
 import { EpubBookParserHooks, MetadataRecordParser } from './epubBookParser';
 import {
-    textNode, xmlChildren, whitespaced, extractText,
-    nameEq, xmlNameAttrs, xmlNameAttrsChildren, xmlAttributes, xmlNameChildren, ignoreClass, buildRef, Tree2ElementsParser,
+    textNode, xmlChildren, extractText,
+    nameEq, xmlNameAttrs, xmlNameAttrsChildren, xmlAttributes, xmlNameChildren, ignoreClass, buildRef, Tree2ElementsParser, whitespaced,
 } from '../xmlTreeParser';
 import {
     some, translate, choice, seq, and, headParser, envParser, reject, yieldLast,
@@ -43,12 +43,12 @@ function footnoteSection(): Tree2ElementsParser {
             xmlNameAttrs('div', { class: 'section2', id: id => id !== undefined }),
             el => el.attributes.id!,
         );
-        const h = whitespaced(xmlNameChildren(n => n.startsWith('h'), textNode()));
-        const title = whitespaced(xmlNameAttrsChildren(
+        const h = xmlNameChildren(n => n.startsWith('h'), textNode());
+        const title = xmlNameAttrsChildren(
             'div',
             { class: 'note_section' },
-            some(h),
-        ));
+            some(whitespaced(h)),
+        );
         const back = translate(
             xmlNameAttrs('a', { class: 'note_anchor' }),
             () => undefined,
@@ -70,7 +70,7 @@ function footnoteSection(): Tree2ElementsParser {
         const parser = translate(
             and(
                 divId,
-                xmlChildren(seq(title, content)),
+                xmlChildren(seq(whitespaced(title), content)),
             ),
             ([id, [tls, footnoteContent]]) => {
                 const ref = buildRef(env.filePath, id);
