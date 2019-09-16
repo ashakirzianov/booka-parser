@@ -1,7 +1,7 @@
 import { EpubBookParserHooks, MetadataRecordParser } from './epubBookParser';
 import {
     xmlName, xmlNameAttrs, xmlChildren, textNode,
-    whitespaces, buildRef, ignoreTags, Tree2ElementsParser,
+    whitespaces, buildRef, Tree2ElementsParser,
 } from '../xmlTreeParser';
 import {
     and, translate, seq, maybe, envParser, headParser, reject, yieldLast, some,
@@ -10,12 +10,6 @@ import { ParagraphNode } from 'booka-common';
 
 export const gutenbergHooks: EpubBookParserHooks = {
     nodeHooks: [
-        // TODO: do not ignore?
-        ignoreTags([
-            'hr', 'blockquote', 'table',
-            'ins',
-            'ol', 'ul',
-        ]),
         footnote(),
     ],
     metadataHooks: [metaHook()],

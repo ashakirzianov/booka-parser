@@ -2,7 +2,7 @@ import { ParagraphNode, compoundSpan, flatten, GroupNode, BookContentNode } from
 import {
     yieldLast, headParser, reject, choice, oneOrMore, translate,
     namedParser, envParser, fullParser, expectEoi,
-    compoundDiagnostic, ParserDiagnostic, expectParseAll, some,
+    compoundDiagnostic, ParserDiagnostic, expectParseAll, some, expected,
 } from '../combinators';
 import { isWhitespaces } from '../utils';
 import { xmlElementParser, whitespaced } from './treeParser';
@@ -95,14 +95,14 @@ const listElement = xmlElementParser(
 
 const td = xmlElementParser(
     'td',
-    {},
-    expectSpanContent,
-    ([_, s]) => yieldLast(s),
+    { class: null },
+    expected(pphSpans, []),
+    ([_, s]) => yieldLast(compoundSpan(s)),
 );
 
 const tr = xmlElementParser(
     'tr',
-    {},
+    { class: null },
     expectParseAll(some(whitespaced(td)), stream2string),
     ([_, cells]) => yieldLast(cells),
 );
@@ -120,7 +120,11 @@ const tableBody = choice(tbody, tableBodyContent);
 
 const table: Tree2ElementsParser = xmlElementParser(
     'table',
-    {},
+    {
+        summary: null,
+        class: null,
+        border: null, cellpadding: null,
+    },
     expectParseAll(whitespaced(tableBody), stream2string),
     ([_, rows]) => yieldLast(fromContent({
         node: 'table',
@@ -214,13 +218,6 @@ const svg: Tree2ElementsParser = xmlElementParser(
     () => yieldLast([])
 );
 
-const ignore: Tree2ElementsParser = xmlElementParser(
-    ['sup', 'sub', 'ul', 'li', 'br', 'hr'], // TODO: do not ignore
-    { class: null },
-    () => yieldLast(undefined), // TODO: do not ignore children
-    () => yieldLast([]),
-);
-
 const skip: Tree2ElementsParser = headParser((node, env) => {
     return yieldLast([], { diag: 'unexpected-node', xml: tree2String(node) });
 });
@@ -232,7 +229,7 @@ const nodeParsers: Tree2ElementsParser[] = [
     listElement, table,
     blockquote,
     containerElement,
-    ignore, skip,
+    skip,
 ];
 
 export const nodeParser = choice(...nodeParsers);
