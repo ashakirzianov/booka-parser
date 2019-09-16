@@ -5,6 +5,11 @@ import { Book } from 'booka-common';
 
 export { storeBuffers } from './preprocessBook';
 
+export {
+    Result, ResultLast,
+    isCompoundDiagnostic, isEmptyDiagnostic, ParserDiagnostic,
+} from './combinators';
+
 export const parserVersion = '1.1.2';
 
 export type ParseEpubInput = {

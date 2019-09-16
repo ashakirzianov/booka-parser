@@ -24,7 +24,7 @@ export type ParserDiagnostic = SimpleDiagnostic | SimpleDiagnostic[];
 export function compoundDiagnostic(diags: ParserDiagnostic[]): ParserDiagnostic {
     const result = diags.reduce<SimpleDiagnostic[]>(
         (all, one) => {
-            if (isCompound(one)) {
+            if (isCompoundDiagnostic(one)) {
                 all.push(...one);
             } else if (one !== undefined) {
                 all.push(one);
@@ -39,7 +39,7 @@ export function compoundDiagnostic(diags: ParserDiagnostic[]): ParserDiagnostic 
 
 export function topDiagnostic(diag: ParserDiagnostic, top: number): ParserDiagnostic {
     const flattened = flattenDiagnostic(diag);
-    if (isCompound(flattened)) {
+    if (isCompoundDiagnostic(flattened)) {
         return flattened.slice(0, top);
     } else if (isContext(flattened)) {
         const inside = topDiagnostic(flattened.diagnostic, top);
@@ -53,7 +53,7 @@ export function topDiagnostic(diag: ParserDiagnostic, top: number): ParserDiagno
 }
 
 export function flattenDiagnostic(diag: ParserDiagnostic): ParserDiagnostic {
-    if (isCompound(diag)) {
+    if (isCompoundDiagnostic(diag)) {
         const inside = filterUndefined(diag.map(flattenDiagnostic));
         return inside.length === 0 ? undefined
             : inside.length === 1 ? inside[0]
@@ -72,7 +72,7 @@ export function flattenDiagnostic(diag: ParserDiagnostic): ParserDiagnostic {
 export function isEmptyDiagnostic(diag: ParserDiagnostic): boolean {
     if (diag === undefined) {
         return true;
-    } else if (isCompound(diag)) {
+    } else if (isCompoundDiagnostic(diag)) {
         return diag.every(isEmptyDiagnostic);
     } else if (isContext(diag)) {
         return isEmptyDiagnostic(diag.diagnostic);
@@ -81,7 +81,7 @@ export function isEmptyDiagnostic(diag: ParserDiagnostic): boolean {
     }
 }
 
-function isCompound(d: ParserDiagnostic): d is CompoundParserDiagnostic {
+export function isCompoundDiagnostic(d: ParserDiagnostic): d is CompoundParserDiagnostic {
     return Array.isArray(d);
 }
 
