@@ -25,9 +25,11 @@ async function exec() {
     const files = await listFiles(path);
     const epubs = files.filter(isEpub);
     console.log(epubs);
-    for (const epubPath of epubs) {
-        await processEpubFile(epubPath, reportMeta);
-    }
+    logTimeAsync('parsing', async () => {
+        for (const epubPath of epubs) {
+            await processEpubFile(epubPath, reportMeta);
+        }
+    });
 }
 
 async function processEpubFile(filePath: string, reportMeta: boolean) {
@@ -67,4 +69,16 @@ function isEpub(path: string): boolean {
 
 function logRed(message: string) {
     console.log(`\x1b[31m${message}\x1b[0m`);
+}
+
+async function logTimeAsync(marker: string, f: () => Promise<void>) {
+    console.log(`Start: ${marker}`);
+    const start = new Date();
+    await f();
+    const finish = new Date();
+    console.log(`Finish: ${marker}, ${finish.valueOf() - start.valueOf()}ms`);
+}
+
+export async function wait(n: number) {
+    return new Promise(res => setTimeout(() => res(), n));
 }

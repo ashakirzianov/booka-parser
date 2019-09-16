@@ -1,8 +1,12 @@
-export type Constraint<TV, TC extends TV = TV> =
+type SimpleConstraint<TV, TC extends TV = TV> =
     | TC
-    | TC[]
     | ((x: TV) => boolean)
     | null
+    ;
+type CompoundConstraint<TV, TC extends TV = TV> = Array<SimpleConstraint<TV, TC>>;
+export type Constraint<TV, TC extends TV = TV> =
+    | SimpleConstraint<TV, TC>
+    | CompoundConstraint<TV, TC>
     ;
 export type ConstraintMap<T> = {
     [K in keyof T]: Constraint<T[K]> | undefined;
@@ -16,10 +20,8 @@ export type ConstraintFailReason = {
     constraint: string,
 };
 
-export function checkValue<T, C extends T>(value: T, constraint: Constraint<T, C>): boolean {
-    if (Array.isArray(constraint)) {
-        return equalsToOneOf(value, constraint);
-    } else if (typeof constraint === 'function') {
+function checkValueSimple<T, C extends T>(value: T, constraint: SimpleConstraint<T, C>): boolean {
+    if (typeof constraint === 'function') {
         const fn = constraint as (x: T) => boolean;
         const result = fn(value);
         return result;
@@ -27,6 +29,14 @@ export function checkValue<T, C extends T>(value: T, constraint: Constraint<T, C
         return true;
     } else {
         return value === constraint;
+    }
+}
+
+export function checkValue<T, C extends T>(value: T, constraint: Constraint<T, C>): boolean {
+    if (Array.isArray(constraint)) {
+        return constraint.some(c => checkValueSimple(value, c));
+    } else {
+        return checkValueSimple(value, constraint);
     }
 }
 
@@ -65,13 +75,4 @@ export function checkObject<T>(obj: T, constraintMap: ConstraintMap<T>): Constra
     }
 
     return reasons;
-}
-
-function equalsToOneOf<TX, TO extends TX>(x: TX, opts: TO[]): boolean {
-    for (const o of opts) {
-        if (x === o) {
-            return true;
-        }
-    }
-    return false;
 }
