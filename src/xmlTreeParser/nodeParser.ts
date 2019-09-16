@@ -134,7 +134,7 @@ const table: Tree2ElementsParser = xmlElementParser(
 
 const hr = xmlElementParser(
     'hr',
-    { class: ['short'] },
+    { class: ['main', 'short', 'tiny', 'break', null] },
     expectEoi(stream2string),
     () => yieldLast(fromContent({
         node: 'separator',
