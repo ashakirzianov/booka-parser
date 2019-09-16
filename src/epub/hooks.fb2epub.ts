@@ -1,18 +1,16 @@
-import { KnownTag, RawBookNode, IgnoreNode } from 'booka-common';
+import { BookContentNode, filterUndefined } from 'booka-common';
+import { EpubBookParserHooks, MetadataRecordParser } from './epubBookParser';
 import {
-    EpubConverterHooks, MetadataRecord,
-} from './epubConverter.types';
+    textNode, xmlChildren, extractText,
+    nameEq, xmlNameAttrs, xmlNameAttrsChildren, xmlAttributes, xmlNameChildren, ignoreClass, buildRef, Tree2ElementsParser, whitespaced,
+} from '../xmlTreeParser';
 import {
-    nameChildren, textNode, nameAttrsChildren, some,
-    translate, nameAttrs, choice,
-    seq, children, and, whitespaced, attrs,
-    attrsChildren, extractText, isElementTree, nameEq, headParser, XmlTree, envParser,
-} from '../xml';
-import { flatten } from '../utils';
-import { ignoreClass, EpubNodeParser, buildRef } from './nodeParser';
-import { ParserDiagnoser } from '../log';
+    some, translate, choice, seq, and, headParser, envParser, reject, yieldLast,
+} from '../combinators';
+import { BookElement } from '../bookElementParser';
+import { XmlTree, isElementTree } from '../xmlStringParser';
 
-export const fb2epubHooks: EpubConverterHooks = {
+export const fb2epubHooks: EpubBookParserHooks = {
     nodeHooks: [
         ignoreClass('about'),
         ignoreClass('annotation'),
@@ -22,52 +20,71 @@ export const fb2epubHooks: EpubConverterHooks = {
         footnoteSection(),
         titlePage(),
     ],
-    metadataHooks: [metaHook],
+    metadataHooks: [metaHook()],
 };
 
-function metaHook({ key, value }: MetadataRecord, ds: ParserDiagnoser): KnownTag[] | undefined {
-    switch (key) {
-        case 'calibre:timestamp':
-        case 'calibre:title_sort':
-        case 'calibre:series':
-        case 'calibre:series_index':
-            return [];
-        default:
-            return undefined;
-    }
+function metaHook(): MetadataRecordParser {
+    return headParser(([key, value]) => {
+        switch (key) {
+            case 'calibre:timestamp':
+            case 'calibre:title_sort':
+            case 'calibre:series':
+            case 'calibre:series_index':
+                return yieldLast([]);
+            default:
+                return reject();
+        }
+    });
 }
 
-function footnoteSection(): EpubNodeParser {
+function footnoteSection(): Tree2ElementsParser {
     return envParser(env => {
         const divId = translate(
-            nameAttrs('div', { class: 'section2', id: id => id !== undefined }),
-            el => el.attributes.id,
+            xmlNameAttrs('div', { class: 'section2', id: id => id !== undefined }),
+            el => el.attributes.id!,
         );
-        const h = whitespaced(nameChildren(n => n.startsWith('h'), textNode()));
-        const title = whitespaced(nameAttrsChildren(
+        const h = xmlNameChildren(n => n.startsWith('h'), textNode());
+        const title = xmlNameAttrsChildren(
             'div',
             { class: 'note_section' },
-            some(h),
-        ));
-        const back = translate(
-            nameAttrs('a', { class: 'note_anchor' }),
-            () => [{ node: 'ignore' } as IgnoreNode]
+            some(whitespaced(h)),
         );
-        const rec = env.recursive;
+        const back = translate(
+            xmlNameAttrs('a', { class: 'note_anchor' }),
+            () => undefined,
+        );
+        const content = translate(
+            some(choice(back, env.span)),
+            (spans): BookContentNode[] => {
+                const defined = filterUndefined(spans);
+                return [{
+                    node: 'paragraph',
+                    span: {
+                        span: 'compound',
+                        spans: defined,
+                    },
+                }];
+            }
+        );
 
         const parser = translate(
             and(
                 divId,
-                children(seq(title, some(choice(back, rec)))),
+                xmlChildren(seq(whitespaced(title), content)),
             ),
-            ([id, [tls, bs]]) => {
-                const ref = id && buildRef(env.filePath, id); // TODO: report missing id
-                return [{
-                    node: 'compound-raw',
-                    ref: ref,
-                    // title: tls || [], // TODO: use title
-                    nodes: flatten(bs),
-                } as RawBookNode];
+            ([id, [tls, footnoteContent]]) => {
+                const ref = buildRef(env.filePath, id);
+                const node: BookElement = {
+                    element: 'content',
+                    content: {
+                        node: 'group',
+                        nodes: footnoteContent,
+                        refId: ref,
+                        semantic: 'footnote',
+                        title: tls || [],
+                    },
+                };
+                return [node];
             },
         );
 
@@ -75,26 +92,27 @@ function footnoteSection(): EpubNodeParser {
     });
 }
 
-function titlePage(): EpubNodeParser {
+function titlePage(): Tree2ElementsParser {
     const bookTitle = translate(
-        extractText(attrs({ class: 'title1' })),
+        extractText(xmlAttributes({ class: 'title1' })),
         t => ({
-            node: 'tag',
+            element: 'tag',
             tag: { tag: 'title', value: t },
-        } as RawBookNode),
+        } as BookElement),
     );
     const bookAuthor = translate(
-        extractText(attrs({ class: 'title_authors' })),
+        extractText(xmlAttributes({ class: 'title_authors' })),
         a => ({
-            node: 'tag',
+            element: 'tag',
             tag: { tag: 'author', value: a },
-        } as RawBookNode),
+        } as BookElement),
     );
     const ignore = headParser(
-        (x: XmlTree) => ({ node: 'ignore' } as RawBookNode),
+        (x: XmlTree) => yieldLast({ element: 'ignore' } as BookElement),
     );
 
-    const parser = attrsChildren(
+    const parser = xmlNameAttrsChildren(
+        null,
         { class: 'titlepage' },
         some(choice(bookTitle, bookAuthor, ignore)),
     );
@@ -102,7 +120,7 @@ function titlePage(): EpubNodeParser {
     return parser;
 }
 
-function divTitle(): EpubNodeParser {
+function divTitle(): Tree2ElementsParser {
     const divLevel = headParser((n: XmlTree) => {
         if (isElementTree(n) && nameEq('div', n.name)
             && n.attributes.class && n.attributes.class.startsWith('title')) {
@@ -110,22 +128,22 @@ function divTitle(): EpubNodeParser {
             const level = parseInt(levelString, 10);
 
             return isNaN(level)
-                ? null
-                : level;
+                ? reject()
+                : yieldLast(level);
         }
 
-        return null;
+        return reject();
     });
-    const h = whitespaced(nameChildren(n => n.startsWith('h'), textNode()));
+    const h = whitespaced(xmlNameChildren(n => n.startsWith('h'), textNode()));
     const content = some(h);
 
     const parser = translate(
-        and(divLevel, children(content)),
+        and(divLevel, xmlChildren(content)),
         ([level, ts]) => [{
-            node: 'chapter-title',
+            element: 'chapter-title',
             title: ts,
             level: 4 - level,
-        } as RawBookNode],
+        } as BookElement],
     );
 
     return parser;

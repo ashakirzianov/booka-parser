@@ -1,11 +1,8 @@
 import {
     VolumeNode, BookContentNode,
     Span, AttributeName, ParagraphNode, CompoundSpan,
-    isChapter, isParagraph, isImage,
-    isSimpleSpan, isAttributedSpan, isFootnoteSpan, isCompoundSpan, isSemanticSpan, Book,
+    isSimpleSpan, isAttributedSpan, isRefSpan, isCompoundSpan, Book, assertNever,
 } from 'booka-common';
-import { assertNever } from '../utils';
-import { logger } from '../log';
 
 export function optimizeBook(book: Book): Book {
     const volume = optimizeVolume(book.volume);
@@ -21,12 +18,6 @@ function optimizeVolume(volume: VolumeNode): VolumeNode {
         nodes: optimizeNodes(volume.nodes),
     };
 
-    const before = JSON.stringify(volume).length;
-    const after = JSON.stringify(optimized).length;
-    const won = Math.floor((before - after) / before * 100);
-    const length = Math.floor(after / 1000);
-    logger().info(`Optimized by ${won}%, length: ${length}kCh`);
-
     return optimized;
 }
 
@@ -35,33 +26,31 @@ function optimizeNodes(nodes: BookContentNode[]) {
 }
 
 function optimizeNode(node: BookContentNode): BookContentNode {
-    if (isChapter(node)) {
-        return {
-            ...node,
-            nodes: optimizeNodes(node.nodes),
-        };
-    } else if (isParagraph(node)) {
-        return optimizeParagraph(node);
-    } else if (isImage(node)) {
-        return node;
-    } else {
-        assertNever(node);
-        return node;
+    switch (node.node) {
+        case 'chapter':
+            return {
+                ...node,
+                nodes: optimizeNodes(node.nodes),
+            };
+        case 'paragraph':
+            return optimizeParagraph(node);
+        case 'group':
+        case 'table':
+        case 'list':
+            return node;
+        case 'image-ref':
+        case 'image-data':
+        case 'separator':
+            return node;
+        default:
+            assertNever(node);
+            return node;
     }
 }
 
 function optimizeParagraph(p: ParagraphNode): BookContentNode {
     const optimized = optimizeSpan(p.span);
 
-    // Handle case of single string attributed with 'line'
-    // (this is same as just a string paragraph)
-    // if (isAttributed(optimized)) {
-    //     if (optimized.content.length === 1) {
-    //         if (!optimized.attrs || (optimized.attrs.length === 1 && optimized.attrs[0] === 'line')) {
-    //             return createParagraph(optimized.content[0]);
-    //         }
-    //     }
-    // }
     return {
         node: 'paragraph',
         span: optimized,
@@ -71,24 +60,17 @@ function optimizeParagraph(p: ParagraphNode): BookContentNode {
 function optimizeSpan(span: Span): Span {
     if (isSimpleSpan(span)) {
         return span;
-    } else if (isAttributedSpan(span) || isSemanticSpan(span)) {
+    } else if (isAttributedSpan(span) || isRefSpan(span)) {
         const optimizedContent = optimizeSpan(span.content);
         return {
             ...span,
             content: optimizedContent,
         };
-    } else if (isFootnoteSpan(span)) {
-        const content = optimizeSpan(span.content);
-        const footnote = optimizeSpan(span.footnote);
-        return {
-            ...span,
-            content,
-            footnote,
-        };
     } else if (isCompoundSpan(span)) {
         return optimizeCompound(span);
     } else {
-        return assertNever(span);
+        assertNever(span);
+        return span;
     }
 }
 

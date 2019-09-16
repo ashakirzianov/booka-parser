@@ -1,72 +1,81 @@
-import { VolumeNode, BookContentNode, ImageUrlNode, ImageNode, Book } from 'booka-common';
-import { filterUndefined } from '../utils';
+import {
+    Book, ImageRefNode, ImageDataNode, ImageNode, processNodeAsync, Node,
+} from 'booka-common';
 
 export type StoreBufferFn = (buffer: Buffer, id: string, title?: string) => Promise<string | undefined>;
-export async function storeBuffers(book: Book, fn: StoreBufferFn): Promise<Book> {
+export type RestoreBufferFn = (imageRef: string, id: string) => Promise<Buffer | undefined>;
+export type ProcessImagesArgs = {
+    storeBuffer?: StoreBufferFn,
+    restoreBuffer?: RestoreBufferFn,
+};
+export async function storeBuffers(book: Book, args: ProcessImagesArgs): Promise<Book> {
     const env: StoreBufferEnv = {
         title: book.volume.meta.title,
-        fn,
+        args,
         resolved: {},
     };
-    const processed = await processNodes(book.volume.nodes, env);
-    const coverImageNode = book.volume.meta.coverImageNode && await resolveImageData(book.volume.meta.coverImageNode, env);
-    const volume: VolumeNode = {
-        ...book.volume,
-        meta: {
-            ...book.volume.meta,
-            coverImageNode: coverImageNode,
+
+    const processedVolume = await processNodeAsync(
+        book.volume,
+        async node => {
+            const n = node as Node;
+            switch (n.node) {
+                case 'image-ref':
+                    return resolveImageRef(n, env);
+                case 'image-data':
+                    return resolveImageData(n, env);
+                default:
+                    return node;
+            }
         },
-        nodes: processed,
-    };
+    );
 
     return {
         ...book,
-        volume,
+        volume: processedVolume,
     };
 }
 
 type StoreBufferEnv = {
     title?: string,
-    fn: StoreBufferFn,
+    args: ProcessImagesArgs,
     resolved: {
         [key: string]: string | undefined,
     },
 };
-async function processNodes(nodes: BookContentNode[], env: StoreBufferEnv): Promise<BookContentNode[]> {
-    const result = await Promise.all(nodes.map(n => processNode(n, env)));
 
-    return filterUndefined(result);
-}
-
-async function processNode(node: BookContentNode, env: StoreBufferEnv): Promise<BookContentNode | undefined> {
-    switch (node.node) {
-        case 'image-data':
-            return resolveImageData(node, env);
-        case 'chapter':
-            return {
-                ...node,
-                nodes: await processNodes(node.nodes, env),
-            };
-        default:
-            return node;
-    }
-}
-
-async function resolveImageData(node: ImageNode, env: StoreBufferEnv): Promise<ImageUrlNode | undefined> {
-    if (node.node === 'image-url') {
+async function resolveImageRef(node: ImageRefNode, env: StoreBufferEnv): Promise<ImageNode> {
+    if (env.args.restoreBuffer === undefined) {
         return node;
     }
 
-    const stored = env.resolved[node.id];
-    const url = stored || await env.fn(node.data, node.id, env.title);
-    if (url) {
-        env.resolved[node.id] = url;
+    const buffer = await env.args.restoreBuffer(node.imageRef, node.imageId);
+    if (buffer) {
         return {
-            node: 'image-url',
-            id: node.id,
-            url: url,
+            node: 'image-data',
+            imageId: node.imageId,
+            data: buffer,
         };
     } else {
-        return undefined;
+        return node;
+    }
+}
+
+async function resolveImageData(node: ImageDataNode, env: StoreBufferEnv): Promise<ImageNode> {
+    if (env.args.storeBuffer === undefined) {
+        return node;
+    }
+
+    const stored = env.resolved[node.imageId];
+    const url = stored || await env.args.storeBuffer(node.data, node.imageId, env.title);
+    if (url) {
+        env.resolved[node.imageId] = url;
+        return {
+            node: 'image-ref',
+            imageId: node.imageId,
+            imageRef: url,
+        };
+    } else {
+        return node;
     }
 }

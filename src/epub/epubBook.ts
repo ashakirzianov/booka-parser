@@ -1,15 +1,9 @@
-import { XmlTree } from '../xml';
-
-export type Image = {
-    buffer: Buffer,
-    mimeType?: string,
-};
 export type EpubCollection<T> = AsyncIterableIterator<T>;
 
 export type EpubSection = {
     filePath: string,
     id: string,
-    content: XmlTree,
+    content: string,
 };
 
 export type EpubMetadata = {
@@ -38,8 +32,4 @@ export type EpubBook = {
     metadata: EpubMetadata,
     imageResolver(id: string): Promise<Buffer | undefined>,
     sections(): EpubCollection<EpubSection>,
-};
-
-export type EpubParser = {
-    parseFile: (filePath: string) => Promise<EpubBook>,
 };

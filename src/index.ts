@@ -1,26 +1,37 @@
-import { parsePath, EpubConverterResult } from './epub';
+import { epubParser } from './epub';
 import { preprocessBook, StoreBufferFn } from './preprocessBook';
+import { AsyncParser, reject } from './combinators';
+import { Book } from 'booka-common';
 
 export { storeBuffers } from './preprocessBook';
 
+export {
+    Result, ResultLast,
+    isCompoundDiagnostic, isEmptyDiagnostic, ParserDiagnostic,
+} from './combinators';
+
 export const parserVersion = '1.1.2';
 
-export type ParsingResult = EpubConverterResult;
-export type ParsingOptions = {
+export type ParseEpubInput = {
+    filePath: string,
     storeImages?: StoreBufferFn,
 };
-export async function parseEpubAtPath(path: string, options?: ParsingOptions): Promise<ParsingResult> {
-    const converterResult = await parsePath(path);
-    if (converterResult.success) {
-        const preprocessed = await preprocessBook(converterResult.book, {
-            storeBuffer: options && options.storeImages,
-        });
+export const parseEpub: AsyncParser<ParseEpubInput, Book> = async ({ filePath, storeImages }) => {
+    try {
+        const result = await epubParser({ filePath });
+        if (result.success) {
+            const preprocessed = await preprocessBook(result.value, {
+                storeBuffer: storeImages,
+            });
 
-        return {
-            ...converterResult,
-            book: preprocessed,
-        };
-    } else {
-        return converterResult;
+            return {
+                ...result,
+                value: preprocessed,
+            };
+        } else {
+            return result;
+        }
+    } catch (e) {
+        return reject({ diag: 'exception', err: e });
     }
-}
+};

@@ -1,47 +1,46 @@
-import { KnownTag } from 'booka-common';
-import { EpubConverterHooks, MetadataRecord } from './epubConverter.types';
-import { ignoreTags, EpubNodeParser, buildRef, logWhileParsing } from './nodeParser';
-import { ParserDiagnoser } from '../log';
-import { name, and, children, nameAttrs, translate, textNode, seq, maybe, envParser, yieldOne, whitespaces } from '../xml';
+import { EpubBookParserHooks, MetadataRecordParser } from './epubBookParser';
+import {
+    xmlName, xmlNameAttrs, xmlChildren, textNode,
+    whitespaces, buildRef, Tree2ElementsParser,
+} from '../xmlTreeParser';
+import {
+    and, translate, seq, maybe, envParser, headParser, reject, yieldLast, some,
+} from '../combinators';
+import { ParagraphNode } from 'booka-common';
 
-export const gutenbergHooks: EpubConverterHooks = {
+export const gutenbergHooks: EpubBookParserHooks = {
     nodeHooks: [
-        // TODO: do not ignore?
-        ignoreTags([
-            'hr', 'blockquote', 'table',
-            'ins',
-            'ol', 'ul',
-        ]),
         footnote(),
     ],
-    metadataHooks: [metaHook],
+    metadataHooks: [metaHook()],
 };
 
-function metaHook({ key, value }: MetadataRecord, ds: ParserDiagnoser): KnownTag[] | undefined {
-    switch (key) {
-        case 'dc:identifier':
-            const id = value['#'];
-            if (id && typeof id === 'string') {
-                const matches = id.match(/http:\/\/www.gutenberg\.org\/ebooks\/([0-9]*)/);
-                if (matches && matches[1]) {
-                    const index = parseInt(matches[1], 10);
-                    if (index) {
-                        return [{ tag: 'pg-index', value: index }];
+function metaHook(): MetadataRecordParser {
+    return headParser(([key, value]) => {
+        switch (key) {
+            case 'dc:identifier':
+                const id = value['#'];
+                if (id && typeof id === 'string') {
+                    const matches = id.match(/http:\/\/www.gutenberg\.org\/ebooks\/([0-9]*)/);
+                    if (matches && matches[1]) {
+                        const index = parseInt(matches[1], 10);
+                        if (index) {
+                            return yieldLast([{ tag: 'pg-index', value: index }]);
+                        }
                     }
                 }
-            }
 
-            ds.add({ diag: 'bad-meta', meta: { key, value } });
-            return [];
-        default:
-            return undefined;
-    }
+                return yieldLast([], { diag: 'bad-meta', meta: { key, value } });
+            default:
+                return reject();
+        }
+    });
 }
 
-function footnote(): EpubNodeParser {
+function footnote(): Tree2ElementsParser {
     return envParser(env => {
         const footnoteId = translate(
-            nameAttrs(
+            xmlNameAttrs(
                 'a',
                 {
                     id: i => i
@@ -51,7 +50,7 @@ function footnote(): EpubNodeParser {
             el => el.attributes.id || null,
         );
         const footnoteMarker = translate(
-            and(name('p'), children(footnoteId)),
+            and(xmlName('p'), xmlChildren(footnoteId)),
             ([_, id]) => id,
         );
 
@@ -66,27 +65,42 @@ function footnote(): EpubNodeParser {
         const footnoteTitleLine = translate(
             seq(
                 footnoteTitle,
-                name('a'),
+                xmlName('a'),
                 textNode(),
-                name('br'),
+                xmlName('br'),
             ),
             ([title]) => title,
         );
 
-        const footnoteContent = seq(maybe(footnoteTitleLine), env.recursive);
-        const footnoteP = nameAttrs('p', { class: 'foot' });
+        const pph = translate(
+            some(env.span),
+            (spans): ParagraphNode => ({
+                node: 'paragraph',
+                span: {
+                    span: 'compound',
+                    spans,
+                },
+            })
+        );
+        const footnoteContent = seq(maybe(footnoteTitleLine), pph);
+        const footnoteP = xmlNameAttrs('p', { class: 'foot' });
 
         const footnoteContainer = translate(
-            and(footnoteP, children(footnoteContent)),
-            ([_, [title, content]]) => content,
+            and(footnoteP, xmlChildren(footnoteContent)),
+            ([_, [title, content]]) => ({ title, content }),
         );
 
-        const fullFootnote: EpubNodeParser = translate(
+        const fullFootnote: Tree2ElementsParser = translate(
             seq(footnoteMarker, whitespaces, footnoteContainer),
-            ([id, _, content]) => [{
-                node: 'compound-raw',
-                ref: buildRef(env.filePath, id),
-                nodes: content,
+            ([id, _, { content, title }]) => [{
+                element: 'content',
+                content: {
+                    node: 'group',
+                    refId: buildRef(env.filePath, id),
+                    nodes: [content],
+                    semantic: 'footnote',
+                    title: title ? [title] : [],
+                },
             }],
         );
 

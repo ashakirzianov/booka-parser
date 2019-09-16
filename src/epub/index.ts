@@ -1,18 +1,15 @@
-import { createEpubParser } from './epubParser';
-import { createConverter } from './epubConverter';
-import { converterHooks } from './hooks';
-import { string2tree } from '../xml';
+import { Book } from 'booka-common';
+import { epubFileParser } from './epubFileParser';
+import { epubBookParser } from './epubBookParser';
+import { pipeAsync, AsyncFullParser } from '../combinators';
 
-export { EpubConverterResult } from './epubConverter.types';
-export { Image } from './epubParser.types';
+export { EpubKind } from './epubBook';
 
-export async function parsePath(path: string) {
-    const parser = createEpubParser(string2tree);
-    const converter = createConverter({
-        options: converterHooks,
-    });
-    const epub = await parser.parseFile(path);
-    const result = converter.convertEpub(epub);
+export type EpubParserInput = {
+    filePath: string,
+};
 
-    return result;
-}
+export const epubParser: AsyncFullParser<EpubParserInput, Book> = pipeAsync(
+    epubFileParser,
+    epubBookParser,
+);

@@ -1,74 +1,55 @@
 import { KnownTag } from 'booka-common';
-import { EpubMetadata } from './epubParser.types';
-import { flatten } from '../utils';
-import { MetadataHook, MetadataRecord } from './epubConverter.types';
-import { ParserDiagnoser } from '../log';
+import {
+    headParser, yieldLast, makeStream, choice,
+    fullParser,
+    AsyncFullParser,
+} from '../combinators';
+import { epubParserHooks } from './hooks';
+import { EpubBook } from './epubBook';
+import { MetadataRecordParser } from './epubBookParser';
+import { flattenResult } from '../xmlTreeParser';
 
-export function parseMeta(meta: EpubMetadata, hooks: MetadataHook[], ds: ParserDiagnoser): KnownTag[] {
-    const tags = buildMetaTags(meta, hooks, ds);
+export const metadataParser: AsyncFullParser<EpubBook, KnownTag[]> = async epub => {
+    const hooks = epubParserHooks[epub.kind].metadataHooks;
+    const allParsers = hooks.concat(defaultMetadataParser);
+    const singleParser = choice(...allParsers);
+    const full = flattenResult(fullParser(singleParser));
+    const records = Object
+        .entries(epub.metadata);
+    const metaStream = makeStream(records);
+    const result = full(metaStream);
+    return result.success
+        ? yieldLast(result.value, result.diagnostic)
+        : result;
+};
 
-    return tags;
-}
-
-function defaultMetadataHook({ key, value }: MetadataRecord): KnownTag[] | undefined {
+const defaultMetadataParser: MetadataRecordParser = headParser(([key, value]) => {
     switch (key) {
         case 'title':
-            return [{ tag: 'title', value }];
+            return yieldLast([{ tag: 'title', value }]);
         case 'creator':
-            return [{ tag: 'author', value }];
+            return yieldLast([{ tag: 'author', value }]);
         case 'cover':
-            return [{ tag: 'cover-ref', value }];
+            return yieldLast([{ tag: 'cover-ref', value }]);
         case 'subject':
-            return [{ tag: 'subject', value }];
+            return yieldLast([{ tag: 'subject', value }]);
         case 'language':
-            return [{ tag: 'language', value }];
+            return yieldLast([{ tag: 'language', value }]);
         case 'publisher':
-            return [{ tag: 'publisher', value }];
+            return yieldLast([{ tag: 'publisher', value }]);
         case 'description':
-            return [{ tag: 'description', value }];
+            return yieldLast([{ tag: 'description', value }]);
         case 'series':
-            return [{ tag: 'series', value }];
+            return yieldLast([{ tag: 'series', value }]);
         case 'ISBN':
-            return [{ tag: 'ISBN', value }];
+            return yieldLast([{ tag: 'ISBN', value }]);
         case 'dc:rights':
-            return [{ tag: 'rights', value }];
+            return yieldLast([{ tag: 'rights', value }]);
         case 'creatorFileAs':
         case 'date':
         case 'dc:identifier':
-            return [];
+            return yieldLast([] as KnownTag[]);
         default:
-            return undefined;
+            return fail();
     }
-}
-
-function buildMetaTags(meta: EpubMetadata, metadataHooks: MetadataHook[], ds: ParserDiagnoser): KnownTag[] {
-    const allHooks = metadataHooks.concat(defaultMetadataHook);
-    const result: KnownTag[] = [];
-    for (const [key, value] of Object.entries(meta)) {
-        if (Array.isArray(value)) {
-            const tags = flatten(
-                value.map(v => buildMetaTagsForRecord(key, v, allHooks, ds))
-            );
-            result.push(...tags);
-        } else if (value) {
-            const tags = buildMetaTagsForRecord(key, value, allHooks, ds);
-            result.push(...tags);
-        }
-    }
-
-    return result;
-}
-
-function buildMetaTagsForRecord(key: string, value: string, allHooks: MetadataHook[], ds: ParserDiagnoser): KnownTag[] {
-    const record = { key, value };
-    const tags = allHooks.reduce<KnownTag[] | undefined>(
-        (res, hook) => res || hook(record, ds),
-        undefined,
-    );
-    if (!tags) {
-        ds.add({ diag: 'unknown-meta', key, value });
-        return [];
-    } else {
-        return tags;
-    }
-}
+});

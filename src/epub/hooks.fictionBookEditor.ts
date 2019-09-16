@@ -1,48 +1,57 @@
 import { KnownTag } from 'booka-common';
-import { isTextTree, isElementTree, XmlTreeWithChildren } from '../xml';
-import { ParserDiagnoser } from '../log';
-import { EpubConverterHooks, MetadataRecord } from './epubConverter.types';
-import { headNode } from './nodeParser';
+import { reject, headParser, yieldLast } from '../combinators';
+import { isTextTree, isElementTree, XmlTreeWithChildren } from '../xmlStringParser';
+import { EpubBookParserHooks, MetadataRecordParser } from './epubBookParser';
+import { Tree2ElementsParser } from '../xmlTreeParser';
 
-export const fictionBookEditorHooks: EpubConverterHooks = {
+export const fictionBookEditorHooks: EpubBookParserHooks = {
     nodeHooks: [
         titleElement(),
     ],
-    metadataHooks: [metaHook],
+    metadataHooks: [metaHook()],
 };
 
-function metaHook({ key, value }: MetadataRecord, ds: ParserDiagnoser): KnownTag[] | undefined {
-    switch (key) {
-        case 'FB2EPUB.conversionDate':
-        case 'FB2EPUB.version':
-        case 'FB2.book-info.date':
-        case 'FB2.document-info.date':
-        case 'FB2.document-info.program-used':
-        case 'FB2.document-info.src-url':
-        case 'FB2.document-info.src-ocr':
-        case 'FB2.document-info.history':
-        case 'FB2.document-info.version':
-        case 'FB2.document-info.id':
-            return [];
-        case 'FB2.book-info.translator':
-            return [{ tag: 'translator', value }];
-        case 'FB2.publish-info.book-name':
-            return [{ tag: 'title', value }];
-        case 'FB2.publish-info.city':
-            return [{ tag: 'publish-city', value }];
-        case 'FB2.publish-info.year':
-            const year = parseInt(value, 10);
-            if (!year) {
-                ds.add({ diag: 'bad-meta', meta: { key, value } });
-            } else {
-                return [{ tag: 'publish-year', value: year }];
-            }
-        default:
-            return undefined;
-    }
+function metaHook(): MetadataRecordParser {
+    return headParser(([key, value]) => {
+        switch (key) {
+            case 'FB2.book-info.translator':
+                return yieldLast([{ tag: 'translator', value }]);
+            case 'FB2.publish-info.book-name':
+                return yieldLast([{ tag: 'title', value }]);
+            case 'FB2.publish-info.city':
+                return yieldLast([{ tag: 'publish-city', value }]);
+            case 'FB2.publish-info.year':
+                const year = parseInt(value, 10);
+                if (!year) {
+                    return {
+                        success: true,
+                        value: [],
+                        diagnostic: {
+                            diag: 'bad-meta',
+                            meta: { key, value },
+                        },
+                    };
+                } else {
+                    return yieldLast([{ tag: 'publish-year', value: year }]);
+                }
+            case 'FB2EPUB.conversionDate':
+            case 'FB2EPUB.version':
+            case 'FB2.book-info.date':
+            case 'FB2.document-info.date':
+            case 'FB2.document-info.program-used':
+            case 'FB2.document-info.src-url':
+            case 'FB2.document-info.src-ocr':
+            case 'FB2.document-info.history':
+            case 'FB2.document-info.version':
+            case 'FB2.document-info.id':
+                return yieldLast([] as KnownTag[]);
+            default:
+                return reject();
+        }
+    });
 }
 
-function titleElement() {
+function titleElement(): Tree2ElementsParser {
     function extractTextLines(node: XmlTreeWithChildren): string[] {
         const result: string[] = [];
         for (const ch of node.children) {
@@ -58,9 +67,9 @@ function titleElement() {
         return result;
     }
 
-    return headNode(el => {
+    return headParser(el => {
         if (!isElementTree(el) || el.name !== 'div') {
-            return null;
+            return reject();
         }
 
         const className = el.attributes.class;
@@ -69,19 +78,18 @@ function titleElement() {
                 ? '0'
                 : className.substr('title'.length);
             const level = parseInt(levelStr, 10);
-            // TODO: add diagnostics here ?
             if (!isNaN(level)) {
                 const title = extractTextLines(el);
                 if (title) {
-                    return [{
-                        node: 'chapter-title',
+                    return yieldLast([{
+                        element: 'chapter-title',
                         level: 1 - level,
                         title,
-                    }];
+                    }]);
                 }
             }
         }
 
-        return null;
+        return reject();
     });
 }

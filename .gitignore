@@ -72,3 +72,4 @@ server.crt
 
 # epub examples
 epub/*
+pg/*
