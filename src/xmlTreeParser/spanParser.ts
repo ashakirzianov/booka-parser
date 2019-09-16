@@ -1,19 +1,19 @@
 import { Span, compoundSpan, AttributeName } from 'booka-common';
 import {
-    declare, translate, seq, some, empty, choice,
-    headParser, yieldLast, reject, Stream, expectEmpty, projectFirst,
+    declare, translate, seq, some, endOfInput, choice,
+    headParser, yieldLast, reject, Stream, expectEoi, projectFirst,
 } from '../combinators';
 import { xmlElementParser } from './treeParser';
-import { XmlTree } from '../xmlStringParser';
-import { TreeParserEnv, Tree2SpanParser } from './utils';
+import { XmlTree, tree2String } from '../xmlStringParser';
+import { TreeParserEnv, Tree2SpanParser, stream2string } from './utils';
 
 export const span = declare<Stream<XmlTree, TreeParserEnv>, Span>('span');
 
-export const spanContent = projectFirst(seq(some(span), empty()));
+export const spanContent = projectFirst(seq(some(span), endOfInput()));
 export const expectSpanContent: Tree2SpanParser = translate(
     some(choice(span, headParser(
         el =>
-            yieldLast('', { diag: 'unexpected-xml', tree: el })
+            yieldLast('', { diag: 'unexpected-xml', xml: tree2String(el) })
     ))),
     compoundSpan,
 );
@@ -34,7 +34,7 @@ const sub = attrsSpanParser(['sub'], ['subscript'], expectSpanContent);
 const attr = choice(italic, bold, quote, small, big, sup, sub);
 
 const brSpan: Tree2SpanParser = xmlElementParser(
-    'br', {}, expectEmpty,
+    'br', {}, expectEoi(stream2string),
     () => yieldLast('/n'),
 );
 

@@ -1,4 +1,4 @@
-import { Parser, yieldNext, reject, SuccessParser, some, ResultLast, expected } from './base';
+import { Parser, yieldNext, reject, SuccessParser, some, ResultLast, expected, projectFirst, seq } from './base';
 import { compoundDiagnostic } from './diagnostics';
 
 export type Stream<T, E = undefined> = {
@@ -41,13 +41,25 @@ export function headParser<In, Out, Env = any>(f: HeadFn<In, Out, Env>): StreamP
     };
 }
 
-export function empty<T = any, E = any>(): StreamParser<T, undefined, E> {
+export function endOfInput<T = any, E = any>(): StreamParser<T, undefined, E> {
     return input => input.stream.length === 0
         ? yieldNext(undefined, input)
         : reject();
 }
 
-export const expectEmpty = expected(empty(), undefined, i => ({ diag: 'expected-eoi', nodes: i }));
+export type StringOrFn<T = unknown> = string | ((x: Stream<T>) => string);
+export function expectEoi<T = unknown>(messageOrFn: StringOrFn<T>) {
+    return expected(endOfInput(), undefined, stream => ({
+        diag: 'expected-eoi',
+        message: typeof messageOrFn === 'function'
+            ? messageOrFn(stream)
+            : messageOrFn,
+    }));
+}
+
+export function expectParseAll<In, Out, E>(single: StreamParser<In, Out, E>, messageOrFn: StringOrFn<In>) {
+    return projectFirst(seq(single, expectEoi(messageOrFn)));
+}
 
 export function not<T, E>(parser: StreamParser<T, any, E>): StreamParser<T, T, E> {
     return input => {

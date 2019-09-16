@@ -2,7 +2,7 @@ import { XmlTree, hasChildren, XmlAttributes, XmlTreeElement, tree2String } from
 import { caseInsensitiveEq, isWhitespaces } from '../utils';
 import {
     Result, yieldNext, reject, seq, some, translate,
-    StreamParser, headParser, makeStream, nextStream, not, Stream, projectLast, and, HeadFn, expected, yieldLast,
+    StreamParser, headParser, makeStream, nextStream, not, Stream, projectLast, and, HeadFn, expected, yieldLast, diagnosticContext,
 } from '../combinators';
 import { Constraint, ConstraintMap, checkObject, checkValue } from './constraint';
 import { compoundDiagnostic } from '../combinators/diagnostics';
@@ -16,11 +16,11 @@ export function xmlElementParser<R, Ch, E = any>(
     projection: HeadFn<[XmlTreeElement, Ch], R, E>,
 ): TreeParser<R, E> {
     return input => {
-        const elParser = projectLast(and(
+        const elParser = diagnosticContext(projectLast(and(
             xmlName(name),
             expected(xmlAttributes(expectedAttributes), undefined),
             xmlChildren(children),
-        ));
+        )), name);
         const elResult = elParser(input);
         if (!elResult.success) {
             return elResult;
@@ -190,6 +190,8 @@ export function textNode<T, E>(f?: (text: string) => T | null): TreeParser<T | s
         }
     });
 }
+
+// Whitespaces:
 
 export const whitespaces = textNode<boolean, any>(text => isWhitespaces(text) ? true : null);
 

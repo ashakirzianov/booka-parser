@@ -1,15 +1,18 @@
-import { ParagraphNode, compoundSpan, flatten, GroupNode } from 'booka-common';
+import { ParagraphNode, compoundSpan, flatten, GroupNode, BookContentNode } from 'booka-common';
 import {
     yieldLast, headParser, reject, choice, oneOrMore, translate,
-    namedParser, envParser, fullParser, expectEmpty,
-    compoundDiagnostic, ParserDiagnostic, projectFirst, seq, some,
+    namedParser, envParser, fullParser, expectEoi,
+    compoundDiagnostic, ParserDiagnostic, expectParseAll, some,
 } from '../combinators';
 import { isWhitespaces } from '../utils';
-import { xmlElementParser } from './treeParser';
+import { xmlElementParser, whitespaced } from './treeParser';
 import { spanContent, span, expectSpanContent } from './spanParser';
 import { XmlTree, tree2String } from '../xmlStringParser';
-import { Tree2ElementsParser, EpubTreeParser, buildRef } from './utils';
-import { BookElement, ContentElement, TitleElement, TitleOrContentElement, isTitleOrContentElement } from '../bookElementParser';
+import { Tree2ElementsParser, EpubTreeParser, buildRef, stream2string } from './utils';
+import {
+    BookElement, ContentElement, TitleElement,
+    TitleOrContentElement, isTitleOrContentElement,
+} from '../bookElementParser';
 import { partition } from 'lodash';
 
 const skipWhitespaces: Tree2ElementsParser = headParser(node => {
@@ -55,7 +58,7 @@ const blockquote: Tree2ElementsParser = xmlElementParser(
     {
         cite: null,
     },
-    projectFirst(seq(some(pphNode), expectEmpty)),
+    expectParseAll(some(pphNode), stream2string),
     ([xml, pphs], e) => {
         const node: GroupNode = {
             node: 'group',
@@ -79,7 +82,7 @@ const listItem = xmlElementParser(
 const listElement = xmlElementParser(
     ['ol', 'ul'],
     {},
-    projectFirst(seq(some(listItem), expectEmpty)),
+    expectParseAll(whitespaced(some(listItem)), stream2string),
     ([xml, items]) => yieldLast<BookElement[]>([{
         element: 'content',
         content: {
@@ -88,6 +91,41 @@ const listElement = xmlElementParser(
             items,
         },
     }]),
+);
+
+const td = xmlElementParser(
+    'td',
+    {},
+    expectSpanContent,
+    ([_, s]) => yieldLast(s),
+);
+
+const tr = xmlElementParser(
+    'tr',
+    {},
+    expectParseAll(some(td), stream2string),
+    ([_, cells]) => yieldLast(cells),
+);
+
+const tableBodyContent = expectParseAll(some(tr), stream2string);
+
+const tbody = xmlElementParser(
+    'tbody',
+    {},
+    tableBodyContent,
+    ([_, rows]) => yieldLast(rows),
+);
+
+const tableBody = choice(tbody, tableBodyContent);
+
+const table: Tree2ElementsParser = xmlElementParser(
+    'table',
+    {},
+    expectParseAll(whitespaced(tableBody), stream2string),
+    ([_, rows]) => yieldLast(fromContent({
+        node: 'table',
+        rows,
+    })),
 );
 
 const containerElement: Tree2ElementsParser = namedParser('container', envParser(env => {
@@ -110,7 +148,7 @@ const containerElement: Tree2ElementsParser = namedParser('container', envParser
 const img: Tree2ElementsParser = xmlElementParser(
     'img',
     { src: null, alt: null, class: null },
-    expectEmpty,
+    expectEoi('img-children'),
     ([xml]) => {
         const src = xml.attributes['src'];
         if (src) {
@@ -130,7 +168,7 @@ const img: Tree2ElementsParser = xmlElementParser(
 const image: Tree2ElementsParser = xmlElementParser(
     'image',
     {},
-    expectEmpty,
+    expectEoi('image-children'),
     ([xml]) => {
         const xlinkHref = xml.attributes['xlink:href'];
         if (xlinkHref) {
@@ -191,7 +229,7 @@ const nodeParsers: Tree2ElementsParser[] = [
     skipWhitespaces,
     pphElement,
     img, image, header, svg,
-    listElement,
+    listElement, table,
     blockquote,
     containerElement,
     ignore, skip,
@@ -275,4 +313,11 @@ function buildContainerElementsHelper(elements: TitleOrContentElement[], refId: 
         const after = elements.slice(indexOfFirstTitle + 1);
         return [group, title, ...after];
     }
+}
+
+function fromContent(node: BookContentNode): BookElement[] {
+    return [{
+        element: 'content',
+        content: node,
+    }];
 }

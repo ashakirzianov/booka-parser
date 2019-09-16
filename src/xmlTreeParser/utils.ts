@@ -1,4 +1,4 @@
-import { XmlTree } from '../xmlStringParser';
+import { XmlTree, tree2String } from '../xmlStringParser';
 import { Stream, alwaysYield, reject, yieldLast, headParser, choice, fullParser, translate, Parser } from '../combinators';
 import { equalsToOneOf } from '../utils';
 import { TreeParser, xmlChildren, path } from './treeParser';
@@ -62,4 +62,11 @@ export function logWhileParsing(message?: string, dontLogTree?: boolean) {
 
 export function flattenResult<I, O>(parser: Parser<I, O[][]>): Parser<I, O[]> {
     return translate(parser, flatten);
+}
+
+export function stream2string(input: Stream<XmlTree>): string {
+    return input
+        .stream
+        .map(tree2String)
+        .join('\n');
 }
