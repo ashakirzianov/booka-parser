@@ -37,7 +37,7 @@ const wrappedSpans = xmlElementParser(
 );
 const pphSpans = choice(wrappedSpans, oneOrMore(span));
 
-const pphNode: EpubTreeParser<ParagraphNode> = translate(
+export const paragraphNode: EpubTreeParser<ParagraphNode> = translate(
     pphSpans,
     spans => ({
         node: 'paragraph',
@@ -46,7 +46,7 @@ const pphNode: EpubTreeParser<ParagraphNode> = translate(
 );
 
 const pphElement: Tree2ElementsParser = namedParser('pph', translate(
-    pphNode,
+    paragraphNode,
     pNode => [{
         element: 'content',
         content: pNode,
@@ -58,7 +58,7 @@ const blockquote: Tree2ElementsParser = xmlElementParser(
     {
         cite: null,
     },
-    projectFirst(seq(some(pphNode), endOfInput())),
+    projectFirst(seq(some(paragraphNode), endOfInput())),
     ([xml, pphs], e) => {
         const node: GroupNode = {
             node: 'group',
@@ -148,7 +148,7 @@ const containerElement: Tree2ElementsParser = namedParser('container', envParser
             id: null, class: null,
             'xml:space': 'preserve',
         },
-        fullParser(env.recursive),
+        fullParser(env.nodeParser),
         ([xml, ch], e) => {
             return yieldLast(buildContainerElements(
                 flatten(ch),

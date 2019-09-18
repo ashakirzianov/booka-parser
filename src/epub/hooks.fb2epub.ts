@@ -54,16 +54,10 @@ function footnoteSection(): Tree2ElementsParser {
             () => undefined,
         );
         const content = translate(
-            some(choice(back, env.span)),
-            (spans): BookContentNode[] => {
-                const defined = filterUndefined(spans);
-                return [{
-                    node: 'paragraph',
-                    span: {
-                        span: 'compound',
-                        spans: defined,
-                    },
-                }];
+            some(choice(back, env.paragraphParser)),
+            (pNodes): BookContentNode[] => {
+                const defined = filterUndefined(pNodes);
+                return defined;
             }
         );
 

@@ -2,18 +2,20 @@ import { XmlTree, tree2String } from '../xmlStringParser';
 import { Stream, alwaysYield, reject, yieldLast, headParser, choice, fullParser, translate, Parser } from '../combinators';
 import { equalsToOneOf } from '../utils';
 import { TreeParser, xmlChildren, path } from './treeParser';
-import { Span, flatten } from 'booka-common';
+import { Span, flatten, BookContentNode } from 'booka-common';
 import { BookElement } from '../bookElementParser';
 import { nodeParser } from './nodeParser';
 
 export type TreeParserEnv = {
-    span: Tree2SpanParser,
-    recursive: Tree2ElementsParser,
+    spanParser: Tree2SpanParser,
+    nodeParser: Tree2ElementsParser,
+    paragraphParser: Tree2NodeParser,
     filePath: string,
 };
 export type EpubTreeParser<T> = TreeParser<T, TreeParserEnv>;
 export type Tree2ElementsParser = EpubTreeParser<BookElement[]>;
 export type Tree2SpanParser = EpubTreeParser<Span>;
+export type Tree2NodeParser = EpubTreeParser<BookContentNode>;
 
 export function buildDocumentParser(hooks: Tree2ElementsParser[]): Tree2ElementsParser {
     const nodeParser2 = choice(...hooks, nodeParser);

@@ -73,7 +73,7 @@ function footnote(): Tree2ElementsParser {
         );
 
         const pph = translate(
-            some(env.span),
+            some(env.spanParser),
             (spans): ParagraphNode => ({
                 node: 'paragraph',
                 span: {
