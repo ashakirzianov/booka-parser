@@ -1,6 +1,6 @@
 import { epubParser } from './epub';
 import { preprocessBook, StoreBufferFn } from './preprocessBook';
-import { reject, ResultLast, translateAsync } from './combinators';
+import { reject, ResultLast, translateAsync, catchExceptionsAsync } from './combinators';
 import { Book } from 'booka-common';
 
 export { storeBuffers } from './preprocessBook';
@@ -21,7 +21,7 @@ export type ParseEpubOutput = {
 };
 
 export async function parseEpub({ filePath, storeImages }: ParseEpubInput): Promise<ResultLast<ParseEpubOutput>> {
-    const parser = translateAsync(
+    const parser = catchExceptionsAsync(translateAsync(
         epubParser,
         async book => {
             const preprocessed = await preprocessBook(book, {
@@ -34,12 +34,7 @@ export async function parseEpub({ filePath, storeImages }: ParseEpubInput): Prom
 
             return output;
         }
-    );
+    ));
 
-    try {
-        const result = parser({ filePath });
-        return result;
-    } catch (e) {
-        return reject({ diag: 'exception', err: e });
-    }
+    return parser({ filePath });
 }

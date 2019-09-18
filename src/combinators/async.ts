@@ -102,3 +102,16 @@ export function declareAsync<TIn, TOut>(): DeclaredAsyncParser<TIn, TOut> {
 
     return declared as DeclaredAsyncParser<TIn, TOut>;
 }
+
+export function catchExceptionsAsync<In, Out>(parser: AsyncFullParser<In, Out>): AsyncFullParser<In, Out>;
+export function catchExceptionsAsync<In, Out>(parser: AsyncParser<In, Out>): AsyncParser<In, Out>;
+export function catchExceptionsAsync<In, Out>(parser: AsyncParser<In, Out>): AsyncParser<In, Out> {
+    return async input => {
+        try {
+            const result = parser(input);
+            return result;
+        } catch (err) {
+            return reject({ diag: 'exception', err });
+        }
+    };
+}
