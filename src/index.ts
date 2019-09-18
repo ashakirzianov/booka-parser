@@ -1,8 +1,7 @@
 import { epubParser } from './epub';
 import { preprocessBook, StoreBufferFn } from './preprocessBook';
 import { reject, ResultLast, translateAsync } from './combinators';
-import { Book } from 'booka-common';
-import { bookHash, fileHash } from './utils';
+import { Book, bookHash, fileHash } from 'booka-common';
 
 export { storeBuffers } from './preprocessBook';
 
