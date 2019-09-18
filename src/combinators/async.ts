@@ -34,13 +34,13 @@ export function andAsync<T>(...ps: Array<AsyncParser<T, any>>): AsyncParser<T, a
     };
 }
 
-export function translateAsync<TI, From, To>(parser: AsyncFullParser<TI, From>, f: (from: From) => To): AsyncFullParser<TI, To>;
-export function translateAsync<TI, From, To>(parser: AsyncParser<TI, From>, f: (from: From) => To): AsyncParser<TI, To>;
-export function translateAsync<TI, From, To>(parser: AsyncParser<TI, From>, f: (from: From) => To): AsyncParser<TI, To> {
+export function translateAsync<TI, From, To>(parser: AsyncFullParser<TI, From>, f: (from: From) => Promise<To>): AsyncFullParser<TI, To>;
+export function translateAsync<TI, From, To>(parser: AsyncParser<TI, From>, f: (from: From) => Promise<To>): AsyncParser<TI, To>;
+export function translateAsync<TI, From, To>(parser: AsyncParser<TI, From>, f: (from: From) => Promise<To>): AsyncParser<TI, To> {
     return async input => {
         const from = await parser(input);
         if (from.success) {
-            const translated = f(from.value);
+            const translated = await f(from.value);
             return {
                 ...from,
                 value: translated,
@@ -101,4 +101,17 @@ export function declareAsync<TIn, TOut>(): DeclaredAsyncParser<TIn, TOut> {
     };
 
     return declared as DeclaredAsyncParser<TIn, TOut>;
+}
+
+export function catchExceptionsAsync<In, Out>(parser: AsyncFullParser<In, Out>): AsyncFullParser<In, Out>;
+export function catchExceptionsAsync<In, Out>(parser: AsyncParser<In, Out>): AsyncParser<In, Out>;
+export function catchExceptionsAsync<In, Out>(parser: AsyncParser<In, Out>): AsyncParser<In, Out> {
+    return async input => {
+        try {
+            const result = parser(input);
+            return result;
+        } catch (err) {
+            return reject({ diag: 'exception', err });
+        }
+    };
 }

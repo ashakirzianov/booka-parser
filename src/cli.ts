@@ -39,12 +39,13 @@ async function processEpubFile(filePath: string, reportMeta: boolean) {
         console.log(result.diagnostic);
         return;
     }
+    const book = result.value.book;
     console.log(`---- ${filePath}:`);
     if (reportMeta) {
         console.log('Tags:');
-        console.log(result.value.tags);
+        console.log(book.tags);
     }
-    const bookText = extractNodeText(result.value.volume);
+    const bookText = extractNodeText(book.volume);
     console.log(`Book length: ${bookText && bookText.length} symbols`);
     if (result.diagnostic) {
         const top = topDiagnostic(result.diagnostic, 10);
