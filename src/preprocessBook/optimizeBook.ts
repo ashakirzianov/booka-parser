@@ -32,7 +32,7 @@ function optimizeNode(node: BookContentNode): BookContentNode {
                 ...node,
                 nodes: optimizeNodes(node.nodes),
             };
-        case 'paragraph':
+        case undefined:
             return optimizeParagraph(node);
         case 'group':
         case 'table':
@@ -49,12 +49,7 @@ function optimizeNode(node: BookContentNode): BookContentNode {
 }
 
 function optimizeParagraph(p: ParagraphNode): BookContentNode {
-    const optimized = optimizeSpan(p.span);
-
-    return {
-        node: 'paragraph',
-        span: optimized,
-    };
+    return optimizeSpan(p);
 }
 
 function optimizeSpan(span: Span): Span {

@@ -6,7 +6,7 @@ import {
 import {
     and, translate, seq, maybe, envParser, headParser, reject, yieldLast, some,
 } from '../combinators';
-import { ParagraphNode } from 'booka-common';
+import { ParagraphNode, makePph } from 'booka-common';
 
 export const gutenbergHooks: EpubBookParserHooks = {
     nodeHooks: [
@@ -74,13 +74,10 @@ function footnote(): Tree2ElementsParser {
 
         const pph = translate(
             some(env.spanParser),
-            (spans): ParagraphNode => ({
-                node: 'paragraph',
-                span: {
-                    span: 'compound',
-                    spans,
-                },
-            })
+            (spans): ParagraphNode => makePph({
+                span: 'compound',
+                spans,
+            }),
         );
         const footnoteContent = seq(maybe(footnoteTitleLine), pph);
         const footnoteP = xmlNameAttrs('p', { class: 'foot' });

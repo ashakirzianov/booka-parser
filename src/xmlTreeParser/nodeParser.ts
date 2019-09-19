@@ -1,4 +1,4 @@
-import { ParagraphNode, compoundSpan, flatten, GroupNode, BookContentNode } from 'booka-common';
+import { ParagraphNode, compoundSpan, flatten, GroupNode, BookContentNode, makePph } from 'booka-common';
 import {
     yieldLast, headParser, reject, choice, oneOrMore, translate,
     namedParser, envParser, fullParser, expectEoi,
@@ -39,10 +39,7 @@ const pphSpans = choice(wrappedSpans, oneOrMore(span));
 
 export const paragraphNode: EpubTreeParser<ParagraphNode> = translate(
     pphSpans,
-    spans => ({
-        node: 'paragraph',
-        span: compoundSpan(spans),
-    })
+    spans => makePph(compoundSpan(spans)),
 );
 
 const pphElement: Tree2ElementsParser = namedParser('pph', translate(
