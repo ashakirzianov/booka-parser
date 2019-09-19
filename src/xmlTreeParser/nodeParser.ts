@@ -1,4 +1,4 @@
-import { ParagraphNode, compoundSpan, flatten, GroupNode, BookContentNode } from 'booka-common';
+import { ParagraphNode, compoundSpan, flatten, GroupNode, BookContentNode, makePph } from 'booka-common';
 import {
     yieldLast, headParser, reject, choice, oneOrMore, translate,
     namedParser, envParser, fullParser, expectEoi,
@@ -37,16 +37,13 @@ const wrappedSpans = xmlElementParser(
 );
 const pphSpans = choice(wrappedSpans, oneOrMore(span));
 
-const pphNode: EpubTreeParser<ParagraphNode> = translate(
+export const paragraphNode: EpubTreeParser<ParagraphNode> = translate(
     pphSpans,
-    spans => ({
-        node: 'paragraph',
-        span: compoundSpan(spans),
-    })
+    spans => makePph(compoundSpan(spans)),
 );
 
 const pphElement: Tree2ElementsParser = namedParser('pph', translate(
-    pphNode,
+    paragraphNode,
     pNode => [{
         element: 'content',
         content: pNode,
@@ -58,7 +55,7 @@ const blockquote: Tree2ElementsParser = xmlElementParser(
     {
         cite: null,
     },
-    projectFirst(seq(some(pphNode), endOfInput())),
+    projectFirst(seq(some(paragraphNode), endOfInput())),
     ([xml, pphs], e) => {
         const node: GroupNode = {
             node: 'group',
@@ -148,7 +145,7 @@ const containerElement: Tree2ElementsParser = namedParser('container', envParser
             id: null, class: null,
             'xml:space': 'preserve',
         },
-        fullParser(env.recursive),
+        fullParser(env.nodeParser),
         ([xml, ch], e) => {
             return yieldLast(buildContainerElements(
                 flatten(ch),

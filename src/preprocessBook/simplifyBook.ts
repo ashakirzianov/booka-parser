@@ -28,7 +28,7 @@ function simplifyNode(node: BookContentNode): BookContentNode | undefined {
     switch (node.node) {
         case 'chapter':
             return simplifyChapter(node);
-        case 'paragraph':
+        case undefined:
             return simplifyParagraph(node);
         case 'group':
         case 'table':
@@ -55,13 +55,7 @@ function simplifyChapter(chapter: ChapterNode): BookContentNode | undefined {
 }
 
 function simplifyParagraph(paragraph: ParagraphNode): BookContentNode | undefined {
-    const span = simplifySpan(paragraph.span);
-    return span === undefined
-        ? undefined
-        : {
-            ...paragraph,
-            span,
-        };
+    return simplifySpan(paragraph);
 }
 
 function simplifySpan(span: Span): Span | undefined {

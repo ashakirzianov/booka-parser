@@ -50,7 +50,7 @@ async function processEpubFile(filePath: string, reportMeta: boolean) {
     if (result.diagnostic) {
         const top = topDiagnostic(result.diagnostic, 10);
         logRed('Diagnostics:');
-        console.log(inspect(top, false, 8, true));
+        console.log(inspect(result.diagnostic, false, 8, true));
     }
 }
 

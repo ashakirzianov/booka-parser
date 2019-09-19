@@ -1,5 +1,5 @@
 import { flatten } from 'booka-common';
-import { buildDocumentParser, span, nodeParser } from '../xmlTreeParser';
+import { buildDocumentParser, span, nodeParser, paragraphNode, TreeParserEnv } from '../xmlTreeParser';
 import {
     makeStream, headParser,
     translate, expected, yieldLast,
@@ -8,7 +8,7 @@ import {
 import { AsyncIter } from '../utils';
 import { EpubSection, EpubBook } from './epubBook';
 import { BookElement } from '../bookElementParser';
-import { xmlStringParser } from '../xmlStringParser';
+import { xmlStringParser, XmlTree } from '../xmlStringParser';
 import { epubParserHooks } from './hooks';
 
 export type SectionsParser = StreamParser<EpubSection, BookElement[], undefined>;
@@ -37,10 +37,11 @@ export const sectionsParser: AsyncFullParser<EpubBook, BookElement[]> = async ep
             });
         },
         ({ filePath, document }) => {
-            const docStream = makeStream(document.children, {
+            const docStream = makeStream<XmlTree, TreeParserEnv>(document.children, {
                 filePath: filePath,
-                recursive: nodeParser,
-                span: span,
+                nodeParser: nodeParser,
+                paragraphParser: paragraphNode,
+                spanParser: span,
             });
             const res = withDiags(docStream);
             return res.success
