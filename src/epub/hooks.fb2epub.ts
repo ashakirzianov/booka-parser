@@ -1,14 +1,16 @@
-import { BookContentNode, filterUndefined } from 'booka-common';
+import { BookContentNode, filterUndefined, makePph, compoundSpan } from 'booka-common';
 import { EpubBookParserHooks, MetadataRecordParser } from './epubBookParser';
 import {
-    textNode, xmlChildren, extractText,
-    nameEq, xmlNameAttrs, xmlNameAttrsChildren, xmlAttributes, xmlNameChildren, ignoreClass, buildRef, Tree2ElementsParser, whitespaced,
+    textNode, xmlChildren, extractText, nameEq, xmlNameAttrs,
+    xmlNameAttrsChildren, xmlAttributes, xmlNameChildren,
+    ignoreClass, buildRef, Tree2ElementsParser,
+    whitespaced, xmlElementParser, xmlName,
 } from '../xmlTreeParser';
 import {
-    some, translate, choice, seq, and, headParser, envParser, reject, yieldLast,
+    some, translate, choice, seq, and, headParser, envParser, reject, yieldLast, expectEoi,
 } from '../combinators';
 import { BookElement } from '../bookElementParser';
-import { XmlTree, isElementTree } from '../xmlStringParser';
+import { XmlTree, isElementTree, tree2String } from '../xmlStringParser';
 
 export const fb2epubHooks: EpubBookParserHooks = {
     nodeHooks: [
@@ -50,11 +52,33 @@ function footnoteSection(): Tree2ElementsParser {
             some(whitespaced(h)),
         );
         const back = translate(
-            xmlNameAttrs('a', { class: 'note_anchor' }),
+            xmlNameAttrs('a', { class: 'note_anchor', href: null }),
             () => undefined,
         );
+        const pph = xmlElementParser(
+            'p',
+            { class: null },
+            seq(some(env.spanParser), expectEoi('footnote-p')),
+            ([_, [spans]]) => yieldLast(makePph(compoundSpan(spans))),
+        );
+        const br = translate(
+            xmlName('br'),
+            () => undefined,
+        );
+        const skipWhitespaces = translate(
+            textNode(),
+            () => undefined,
+        );
+        const ignoreAndReport = headParser((el: XmlTree) =>
+            yieldLast(undefined, {
+                diag: 'unexpected-node',
+                context: 'fb2epub-footnote',
+                xml: tree2String(el),
+            }),
+        );
+        const contentNode = choice(skipWhitespaces, back, br, pph, ignoreAndReport);
         const content = translate(
-            some(choice(back, env.paragraphParser)),
+            some(contentNode),
             (pNodes): BookContentNode[] => {
                 const defined = filterUndefined(pNodes);
                 return defined;
