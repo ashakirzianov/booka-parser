@@ -35,7 +35,7 @@ const attr = choice(italic, bold, quote, small, big, sup, sub);
 
 const brSpan: Tree2SpanParser = xmlElementParser(
     'br', {}, expectEoi(stream2string),
-    () => yieldLast('/n'),
+    () => yieldLast('\n'),
 );
 
 const correctionSpan: Tree2SpanParser = xmlElementParser(
