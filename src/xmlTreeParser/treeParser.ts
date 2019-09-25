@@ -3,19 +3,17 @@ import { caseInsensitiveEq, isWhitespaces } from '../utils';
 import {
     Result, yieldNext, reject, seq, some, translate,
     StreamParser, headParser, makeStream, nextStream, not, Stream,
-    projectLast, and, HeadFn, expected, yieldLast, diagnosticContext,
+    projectLast, and, expected, yieldLast, diagnosticContext,
     maybe,
-    projectFirst,
 } from '../combinators';
 import { Constraint, ConstraintMap, checkObject, checkValue } from './constraint';
-import { compoundDiagnostic } from '../combinators/diagnostics';
 import { filterUndefined } from 'booka-common';
 
 export type XmlElementConstraint = {
     name?: Constraint<string>,
     requiredAttributes?: ConstraintMap<XmlAttributes>,
     expectedAttributes?: ConstraintMap<XmlAttributes>,
-    context: any,
+    context?: any,
 };
 export function xmlElement<E = any>(ec: XmlElementConstraint): TreeParser<XmlTreeElement, E> {
     const name = ec.name === undefined ? undefined
@@ -38,13 +36,21 @@ export function xmlElement<E = any>(ec: XmlElementConstraint): TreeParser<XmlTre
         : diagnosticContext(result, ec.context);
 }
 
-export function xmlElementChildren<TC, T, E = any>(ec: XmlElementConstraint & {
+export function xmlElementChildren<TC, E = any>(ec: XmlElementConstraint & {
     children: TreeParser<TC, E>,
+}): TreeParser<TC, E> {
+    return projectLast(and(xmlElement(ec), xmlChildren(ec.children)));
+}
+
+export function xmlElementChildrenProj<TC, T, E = any>(
+    ec: XmlElementConstraint & {
+        children: TreeParser<TC, E>,
+    },
     project: (x: { element: XmlTreeElement, children: TC }) => T,
-}): TreeParser<T, E> {
+): TreeParser<T, E> {
     return translate(
         and(xmlElement(ec), xmlChildren(ec.children)),
-        ([el, ch]) => ec.project({
+        ([el, ch]) => project({
             element: el,
             children: ch,
         }),
@@ -52,38 +58,6 @@ export function xmlElementChildren<TC, T, E = any>(ec: XmlElementConstraint & {
 }
 
 export type TreeParser<Out = XmlTree, Env = undefined> = StreamParser<XmlTree, Out, Env>;
-
-export function xmlElementParser<R, Ch, E = any>(
-    name: Constraint<string>,
-    expectedAttributes: ConstraintMap<XmlAttributes>,
-    children: TreeParser<Ch, E>,
-    projection: HeadFn<[XmlTreeElement, Ch], R, E>,
-): TreeParser<R, E> {
-    const elParser = diagnosticContext(
-        projectLast(and(
-            xmlName(name),
-            expected(xmlAttributes(expectedAttributes), undefined),
-            xmlChildren(children),
-        )),
-        name,
-    );
-    return input => {
-        const elResult = elParser(input);
-        if (!elResult.success) {
-            return elResult;
-        }
-        const head = input.stream[0];
-        if (!head) {
-            return reject();
-        }
-
-        const proj = projection([head as XmlTreeElement, elResult.value], input.env);
-        const diag = compoundDiagnostic([proj.diagnostic, elResult.diagnostic]);
-        return proj.success
-            ? yieldNext(proj.value, nextStream(input), diag)
-            : reject(diag);
-    };
-}
 
 export function xmlName<E = any>(name: Constraint<string>): TreeParser<XmlTreeElement, E> {
     return headParser(tree => {

@@ -4,7 +4,7 @@ import {
     textNode, xmlChildren, extractText, nameEq, xmlNameAttrs,
     xmlNameAttrsChildren, xmlAttributes, xmlNameChildren,
     ignoreClass, buildRef, Tree2ElementsParser,
-    whitespaced, xmlElementParser, xmlName, paragraphNode, stream2string, span,
+    whitespaced, xmlElementChildrenProj, xmlName, paragraphNode, stream2string, span,
 } from '../xmlTreeParser';
 import {
     some, translate, choice, seq, and, headParser, envParser, reject, yieldLast, expectEoi, expectParseAll,
@@ -107,11 +107,12 @@ function footnoteSection(): Tree2ElementsParser {
             xmlNameAttrs('a', { class: 'note_anchor', href: null }),
             () => undefined,
         );
-        const pph = xmlElementParser(
-            'p',
-            { class: null },
-            seq(some(env.spanParser), expectEoi('footnote-p')),
-            ([_, [spans]]) => yieldLast(makePph(compoundSpan(spans))),
+        const pph = xmlElementChildrenProj({
+            name: 'p',
+            expectedAttributes: { class: null },
+            children: seq(some(env.spanParser), expectEoi('footnote-p')),
+        },
+            ({ children: [spans] }) => makePph(compoundSpan(spans)),
         );
         const br = translate(
             xmlName('br'),

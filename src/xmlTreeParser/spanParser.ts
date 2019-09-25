@@ -3,7 +3,7 @@ import {
     declare, translate, seq, some, endOfInput, choice,
     headParser, yieldLast, reject, Stream, expectEoi, projectFirst,
 } from '../combinators';
-import { xmlElementParser } from './treeParser';
+import { xmlElementChildrenProj } from './treeParser';
 import { XmlTree, tree2String } from '../xmlStringParser';
 import { TreeParserEnv, Tree2SpanParser, stream2string } from './utils';
 
@@ -33,16 +33,19 @@ const sup = attrsSpanParser(['sup'], ['superscript'], expectSpanContent);
 const sub = attrsSpanParser(['sub'], ['subscript'], expectSpanContent);
 const attr = choice(italic, bold, quote, small, big, sup, sub);
 
-const brSpan: Tree2SpanParser = xmlElementParser(
-    'br', {}, expectEoi(stream2string),
-    () => yieldLast('\n'),
+const brSpan: Tree2SpanParser = xmlElementChildrenProj({
+    name: 'br',
+    children: expectEoi(stream2string),
+},
+    () => '\n',
 );
 
-const correctionSpan: Tree2SpanParser = xmlElementParser(
-    'ins',
-    { title: null },
-    expectSpanContent,
-    ([xml, content]) => yieldLast({
+const correctionSpan: Tree2SpanParser = xmlElementChildrenProj({
+    name: 'ins',
+    expectedAttributes: { title: null },
+    children: expectSpanContent,
+},
+    ({ element: xml, children: content }) => ({
         span: 'compound',
         spans: [content],
         semantic: 'correction',
@@ -50,34 +53,37 @@ const correctionSpan: Tree2SpanParser = xmlElementParser(
     }),
 );
 
-const spanSpan: Tree2SpanParser = xmlElementParser(
-    'span',
-    {
+const spanSpan: Tree2SpanParser = xmlElementChildrenProj({
+    name: 'span',
+    expectedAttributes: {
         id: null,
         class: null, href: null, title: null, tag: null,
     },
-    spanContent,
-    ([xml, sp]) => yieldLast(compoundSpan(sp)),
+    children: spanContent,
+},
+    ({ children }) => compoundSpan(children),
 );
-const aSpan: Tree2SpanParser = xmlElementParser(
-    'a',
-    {
+const aSpan: Tree2SpanParser = xmlElementChildrenProj({
+    name: 'a',
+    expectedAttributes: {
         id: null,
         class: null, href: null, title: null, tag: null,
     },
-    spanContent,
-    ([xml, sp]) => {
-        const content = compoundSpan(sp);
-        if (xml.attributes.href !== undefined) {
-            return yieldLast({
+    children: spanContent,
+},
+    ({ element, children }) => {
+        const content = compoundSpan(children);
+        if (element.attributes.href !== undefined) {
+            return {
                 span: 'ref',
-                refToId: xml.attributes.href,
+                refToId: element.attributes.href,
                 content,
-            });
+            };
         } else {
-            return yieldLast(content);
+            return content;
         }
-    });
+    },
+);
 
 span.implementation = choice(
     text, attr, brSpan,
@@ -85,13 +91,15 @@ span.implementation = choice(
 );
 
 function attrsSpanParser(tagNames: string[], attrs: AttributeName[], contentParser: Tree2SpanParser): Tree2SpanParser {
-    return xmlElementParser(
-        tagNames,
-        { class: null, id: null },
-        contentParser,
-        ([_, content]) => yieldLast({
+    return xmlElementChildrenProj({
+        name: tagNames,
+        expectedAttributes: { class: null, id: null },
+        children: contentParser,
+    },
+        ({ children }) => ({
             span: 'attrs',
             attrs,
-            content,
-        }));
+            content: children,
+        }),
+    );
 }
