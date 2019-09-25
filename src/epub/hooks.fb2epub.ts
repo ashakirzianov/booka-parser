@@ -1,4 +1,4 @@
-import { BookContentNode, filterUndefined, makePph, compoundSpan, extractSpanText } from 'booka-common';
+import { BookContentNode, filterUndefined, makePph, compoundSpan, extractSpanText, extractNodeText } from 'booka-common';
 import { EpubBookParserHooks, MetadataRecordParser } from './epubBookParser';
 import {
     textNode, xmlChildren, extractText, nameEq, xmlNameAttrs,
@@ -23,6 +23,7 @@ export const fb2epubHooks: EpubBookParserHooks = {
         titlePage(),
         poem(),
         epigraph(),
+        subtitle(),
     ],
     metadataHooks: [metaHook()],
 };
@@ -39,6 +40,20 @@ function metaHook(): MetadataRecordParser {
                 return reject();
         }
     });
+}
+
+function subtitle(): Tree2ElementsParser {
+    return xmlNameAttrsChildren(
+        'p', { class: 'subtitle' },
+        translate(
+            span,
+            s => [{
+                element: 'chapter-title',
+                level: undefined,
+                title: [extractSpanText(s)],
+            }],
+        ),
+    );
 }
 
 function epigraph(): Tree2ElementsParser {
