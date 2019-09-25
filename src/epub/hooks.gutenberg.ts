@@ -11,7 +11,8 @@ import { ParagraphNode, makePph } from 'booka-common';
 export const gutenbergHooks: EpubBookParserHooks = {
     nodeHooks: [
         footnote(),
-        skipToc(),
+        skipTocP(),
+        skipTocTable(),
         ignoreClass('chapterhead'),
     ],
     metadataHooks: [metaHook()],
@@ -39,9 +40,16 @@ function metaHook(): MetadataRecordParser {
     });
 }
 
-function skipToc(): Tree2ElementsParser {
+function skipTocP(): Tree2ElementsParser {
     return translate(
         xmlNameAttrs('p', { class: 'toc' }),
+        () => [],
+    );
+}
+
+function skipTocTable(): Tree2ElementsParser {
+    return translate(
+        xmlNameAttrs('table', { summary: 'Toc', class: null }),
         () => [],
     );
 }
