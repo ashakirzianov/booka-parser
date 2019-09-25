@@ -12,6 +12,7 @@ export const gutenbergHooks: EpubBookParserHooks = {
     nodeHooks: [
         footnote(),
         skipToc(),
+        skipExtracts(),
     ],
     metadataHooks: [metaHook()],
 };
@@ -41,6 +42,14 @@ function metaHook(): MetadataRecordParser {
 function skipToc(): Tree2ElementsParser {
     return translate(
         xmlNameAttrs('p', { class: 'toc' }),
+        () => [],
+    );
+}
+
+// TODO: do not skip ?
+function skipExtracts(): Tree2ElementsParser {
+    return translate(
+        xmlNameAttrs('div', { class: 'extracts' }),
         () => [],
     );
 }

@@ -29,7 +29,10 @@ const skipWhitespaces: Tree2ElementsParser = headParser(node => {
 const wrappedSpans = xmlElementParser(
     ['p', 'span', 'div'],
     {
-        class: ['p', 'p1', 'v', 'c2', 'empty-line', 'drop'],
+        class: [
+            'p', 'p1', 'v', 'empty-line', 'drop',
+            'c1', 'c2', 'c3', 'pgmonospaced pgheader',
+        ],
         id: null,
         'xml:space': 'preserve',
     },

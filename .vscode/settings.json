@@ -37,6 +37,8 @@
         "nonetn",
         "paren",
         "parens",
+        "pgheader",
+        "pgmonospaced",
         "pphs",
         "preds",
         "preprocessed",
