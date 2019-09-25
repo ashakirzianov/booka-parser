@@ -31,7 +31,10 @@ const wrappedSpans = xmlElementParser(
     {
         class: [
             'p', 'p1', 'v', 'empty-line', 'drop',
-            'c1', 'c2', 'c3', 'pgmonospaced pgheader', 'pgmonospaced',
+            'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'center c1', 'pgmonospaced pgheader', 'pgmonospaced', 'center',
+            // TODO: do not ignore ?
+            'letterdate', 'letter1', 'titlepage', 'footer',
+            'poem1',
         ],
         id: null,
         'xml:space': 'preserve',
@@ -152,7 +155,9 @@ const containerElement: Tree2ElementsParser = namedParser('container', envParser
             class: [
                 'image',
                 'section1', 'section2', 'section3', 'section4', 'section5', 'section6',
-                'extracts', 'mynote', // TODO: do not ignore ?
+                // TODO: do not ignore ?
+                'extracts', 'mynote', 'letterdate', 'letter1', 'titlepage',
+                'contents',
             ],
             'xml:space': 'preserve',
         },
