@@ -186,3 +186,21 @@ export function removeTrailingWhitespaces(trees: XmlTree[]): XmlTree[] {
 
     return result;
 }
+
+export function extractAllText(tree: XmlTree): string {
+    switch (tree.type) {
+        case 'text':
+            return tree.text.trim();
+        case 'document':
+        case 'element':
+            return tree.children
+                .map(extractAllText)
+                .join('\n');
+        case 'comment':
+        case 'cdata':
+            return '';
+        default:
+            assertNever(tree);
+            return '';
+    }
+}

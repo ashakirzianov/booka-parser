@@ -6,6 +6,7 @@ import { parseEpub } from '.';
 import { promisify, inspect } from 'util';
 import { extractNodeText } from 'booka-common';
 import { topDiagnostic } from './combinators';
+import { parseEpubText } from './epub';
 
 exec();
 
@@ -46,7 +47,14 @@ async function processEpubFile(filePath: string, reportMeta: boolean) {
         console.log(book.tags);
     }
     const bookText = extractNodeText(book.volume);
-    console.log(`Book length: ${bookText && bookText.length} symbols`);
+    const allXmlText = await parseEpubText(filePath);
+    const ratio = Math.floor(bookText.length / allXmlText.length * 100);
+    console.log(`Book length: ${bookText.length} symbols, ratio: ${ratio}`);
+    if (ratio < 80) {
+        logRed('Low ratio');
+        await saveString(`${filePath}.original`, allXmlText);
+        await saveString(`${filePath}.parsed`, bookText);
+    }
     if (result.diagnostic) {
         const top = topDiagnostic(result.diagnostic, 10);
         logRed('Diagnostics:');
@@ -78,6 +86,10 @@ async function logTimeAsync(marker: string, f: () => Promise<void>) {
     await f();
     const finish = new Date();
     console.log(`Finish: ${marker}, ${finish.valueOf() - start.valueOf()}ms`);
+}
+
+async function saveString(path: string, content: string) {
+    return promisify(fs.writeFile)(path, content);
 }
 
 export async function wait(n: number) {
