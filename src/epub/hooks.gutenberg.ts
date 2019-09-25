@@ -1,7 +1,7 @@
 import { EpubBookParserHooks, MetadataRecordParser } from './epubBookParser';
 import {
     xmlName, xmlNameAttrs, xmlChildren, textNode,
-    whitespaces, buildRef, Tree2ElementsParser,
+    whitespaces, buildRef, Tree2ElementsParser, xmlNameAttrsChildren,
 } from '../xmlTreeParser';
 import {
     and, translate, seq, maybe, envParser, headParser, reject, yieldLast, some,
@@ -11,6 +11,7 @@ import { ParagraphNode, makePph } from 'booka-common';
 export const gutenbergHooks: EpubBookParserHooks = {
     nodeHooks: [
         footnote(),
+        skipToc(),
     ],
     metadataHooks: [metaHook()],
 };
@@ -35,6 +36,13 @@ function metaHook(): MetadataRecordParser {
                 return reject();
         }
     });
+}
+
+function skipToc(): Tree2ElementsParser {
+    return translate(
+        xmlNameAttrs('p', { class: 'toc' }),
+        () => [],
+    );
 }
 
 function footnote(): Tree2ElementsParser {

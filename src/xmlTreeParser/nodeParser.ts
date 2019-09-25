@@ -29,7 +29,7 @@ const skipWhitespaces: Tree2ElementsParser = headParser(node => {
 const wrappedSpans = xmlElementParser(
     ['p', 'span', 'div'],
     {
-        class: ['p', 'p1', 'v', 'empty-line', 'drop'],
+        class: ['p', 'p1', 'v', 'c2', 'empty-line', 'drop'],
         id: null,
         'xml:space': 'preserve',
     },
@@ -146,7 +146,10 @@ const containerElement: Tree2ElementsParser = namedParser('container', envParser
         ['p', 'div', 'span', 'blockquote'],
         {
             id: null,
-            class: ['image', 'section1', 'section2', 'section3', 'section4', 'section5', 'section6'],
+            class: [
+                'image',
+                'section1', 'section2', 'section3', 'section4', 'section5', 'section6',
+            ],
             'xml:space': 'preserve',
         },
         fullParser(env.nodeParser),
