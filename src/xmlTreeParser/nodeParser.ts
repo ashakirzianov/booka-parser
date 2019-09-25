@@ -146,7 +146,7 @@ const containerElement: Tree2ElementsParser = namedParser('container', envParser
         ['p', 'div', 'span', 'blockquote'],
         {
             id: null,
-            class: ['image', 'section1', 'section2', 'section3'],
+            class: ['image', 'section1', 'section2', 'section3', 'section4', 'section5', 'section6'],
             'xml:space': 'preserve',
         },
         fullParser(env.nodeParser),
