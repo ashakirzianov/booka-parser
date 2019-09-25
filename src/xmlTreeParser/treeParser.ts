@@ -2,10 +2,54 @@ import { XmlTree, hasChildren, XmlAttributes, XmlTreeElement, tree2String } from
 import { caseInsensitiveEq, isWhitespaces } from '../utils';
 import {
     Result, yieldNext, reject, seq, some, translate,
-    StreamParser, headParser, makeStream, nextStream, not, Stream, projectLast, and, HeadFn, expected, yieldLast, diagnosticContext, maybe, SuccessLast,
+    StreamParser, headParser, makeStream, nextStream, not, Stream,
+    projectLast, and, HeadFn, expected, yieldLast, diagnosticContext,
+    maybe,
+    projectFirst,
 } from '../combinators';
 import { Constraint, ConstraintMap, checkObject, checkValue } from './constraint';
 import { compoundDiagnostic } from '../combinators/diagnostics';
+import { filterUndefined } from 'booka-common';
+
+export type XmlElementConstraint = {
+    name?: Constraint<string>,
+    requiredAttributes?: ConstraintMap<XmlAttributes>,
+    expectedAttributes?: ConstraintMap<XmlAttributes>,
+    context: any,
+};
+export function xmlElement<E = any>(ec: XmlElementConstraint): TreeParser<XmlTreeElement, E> {
+    const name = ec.name === undefined ? undefined
+        : xmlName(ec.name);
+    const attrs = ec.requiredAttributes === undefined ? undefined
+        : xmlAttributes(ec.requiredAttributes);
+    const expectedAttrs = ec.expectedAttributes === undefined ? undefined
+        : expected(xmlAttributes(ec.expectedAttributes), undefined);
+    const all = filterUndefined([name, attrs, expectedAttrs]);
+
+    const element: TreeParser<XmlTreeElement, E> = headParser(el =>
+        el.type === 'element'
+            ? yieldLast(el)
+            : reject()
+    );
+
+    const result = projectLast(and(and(...all), element));
+    return ec.context === undefined
+        ? result
+        : diagnosticContext(result, ec.context);
+}
+
+export function xmlElementChildren<TC, T, E = any>(ec: XmlElementConstraint & {
+    children: TreeParser<TC, E>,
+    project: (x: { element: XmlTreeElement, children: TC }) => T,
+}): TreeParser<T, E> {
+    return translate(
+        and(xmlElement(ec), xmlChildren(ec.children)),
+        ([el, ch]) => ec.project({
+            element: el,
+            children: ch,
+        }),
+    );
+}
 
 export type TreeParser<Out = XmlTree, Env = undefined> = StreamParser<XmlTree, Out, Env>;
 
