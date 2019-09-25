@@ -32,7 +32,7 @@ const wrappedSpans = xmlElementChildren({
     expectedAttributes: {
         style: null,
         class: [
-            'p', 'p1', 'v', 'empty-line', 'drop',
+            undefined, 'p', 'p1', 'v', 'empty-line', 'drop',
             // Project Gutenberg:
             'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'c9', 'c10', 'c11',
             'pgmonospaced', 'center',
@@ -47,7 +47,7 @@ const wrappedSpans = xmlElementChildren({
             'footnote', 'toc',
         ],
         id: null,
-        'xml:space': 'preserve',
+        'xml:space': [undefined, 'preserve'],
     },
     children: spanContent,
 });
@@ -120,8 +120,9 @@ const listElement: Tree2ElementsParser = xmlElementChildrenProj({
 const tableCell = xmlElementChildrenProj({
     name: ['td', 'th'],
     expectedAttributes: {
-        align: null, valign: null,
+        align: null, valign: null, colspan: null,
         class: [
+            undefined,
             'c1', 'c2', 'c3', 'c4', 'c5', 'c6',
         ],
     },
@@ -148,8 +149,9 @@ const table: Tree2ElementsParser = xmlElementChildrenProj({
     name: 'table',
     expectedAttributes: {
         border: null, cellpadding: null, cellspacing: null, width: null,
-        summary: '',
+        summary: [undefined, ''],
         class: [
+            undefined,
             'c1', 'c2', 'c3', 'c4', 'c5', 'c6',
         ],
     },
@@ -185,7 +187,7 @@ const containerElement: Tree2ElementsParser = envParser(environment => {
             id: null,
             tag: null,
             class: [
-                'image',
+                undefined, 'image',
                 'section1', 'section2', 'section3', 'section4', 'section5', 'section6',
                 // Project Gutenberg:
                 'fig',
@@ -196,7 +198,7 @@ const containerElement: Tree2ElementsParser = envParser(environment => {
                 'extracts', 'mynote', 'letterdate', 'letter1', 'titlepage',
                 'contents', 'centered', 'poem', 'figcenter', 'blockquot',
             ],
-            'xml:space': 'preserve',
+            'xml:space': [undefined, 'preserve'],
         },
         children: fullParser(environment.nodeParser),
     },
@@ -265,6 +267,7 @@ const header: Tree2ElementsParser = xmlElementChildrenProj({
     expectedAttributes: {
         id: null, style: null,
         class: [
+            undefined,
             // Project Gutenberg:
             'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8',
         ],

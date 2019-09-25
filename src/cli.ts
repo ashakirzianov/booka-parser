@@ -50,7 +50,7 @@ async function processEpubFile(filePath: string, reportMeta: boolean) {
     const allXmlText = await parseEpubText(filePath);
     const ratio = Math.floor(bookText.length / allXmlText.length * 100);
     console.log(`Book length: ${bookText.length} symbols, ratio: ${ratio}`);
-    if (ratio < 80) {
+    if (ratio < 97) {
         logRed('Low ratio');
         await saveString(`${filePath}.original`, allXmlText);
         await saveString(`${filePath}.parsed`, bookText);

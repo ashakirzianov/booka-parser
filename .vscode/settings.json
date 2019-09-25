@@ -29,6 +29,7 @@
         "cellpadding",
         "cellspacing",
         "chapterhead",
+        "colspan",
         "coverpage",
         "deserialize",
         "diags",
