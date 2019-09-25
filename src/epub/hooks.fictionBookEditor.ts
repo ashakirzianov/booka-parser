@@ -1,11 +1,12 @@
-import { KnownTag } from 'booka-common';
-import { reject, headParser, yieldLast } from '../combinators';
+import { KnownTag, extractSpanText } from 'booka-common';
+import { reject, headParser, yieldLast, envParser, translate } from '../combinators';
 import { isTextTree, isElementTree, XmlTreeWithChildren } from '../xmlStringParser';
 import { EpubBookParserHooks, MetadataRecordParser } from './epubBookParser';
-import { Tree2ElementsParser } from '../xmlTreeParser';
+import { Tree2ElementsParser, xmlNameAttrsChildren } from '../xmlTreeParser';
 
 export const fictionBookEditorHooks: EpubBookParserHooks = {
     nodeHooks: [
+        subtitle(),
         titleElement(),
     ],
     metadataHooks: [metaHook()],
@@ -49,6 +50,18 @@ function metaHook(): MetadataRecordParser {
                 return reject();
         }
     });
+}
+
+function subtitle(): Tree2ElementsParser {
+    return envParser(env =>
+        translate(
+            xmlNameAttrsChildren('p', { class: 'subtitle' }, env.spanParser),
+            span => [{
+                element: 'chapter-title',
+                title: [extractSpanText(span)],
+                level: undefined,
+            }],
+        ));
 }
 
 function titleElement(): Tree2ElementsParser {

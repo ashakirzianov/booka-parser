@@ -84,13 +84,16 @@ const contentElement: BookElementParser = headParser(head =>
 const titleElement: BookElementParser = input => {
     const head = input.stream[0];
     if (head && head.element === 'chapter-title') {
-        if (input.env.level === undefined || input.env.level > head.level) {
+        if (input.env.level === undefined || head.level === undefined || input.env.level > head.level) {
             const inside = bookElement(makeStream(input.stream.slice(1), {
                 level: head.level,
             }));
+            const insideLevel = head.level !== undefined ? head.level
+                : input.env.level !== undefined ? input.env.level - 1
+                    : 0;
             const chapter: ChapterNode = {
                 node: 'chapter',
-                level: head.level,
+                level: insideLevel,
                 title: head.title,
                 nodes: inside.value,
             };

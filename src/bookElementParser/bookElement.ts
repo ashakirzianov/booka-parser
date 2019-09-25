@@ -8,7 +8,7 @@ export type ContentElement = DefElement<'content'> & {
 };
 export type TitleElement = DefElement<'chapter-title'> & {
     title: string[],
-    level: number,
+    level: number | undefined,
 };
 export type TagElement = DefElement<'tag'> & {
     tag: KnownTag,
