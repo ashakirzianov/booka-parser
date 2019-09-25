@@ -29,12 +29,21 @@ const skipWhitespaces: Tree2ElementsParser = headParser(node => {
 const wrappedSpans = xmlElementParser(
     ['p', 'span', 'div'],
     {
+        style: null,
         class: [
             'p', 'p1', 'v', 'empty-line', 'drop',
-            'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'center c1', 'pgmonospaced pgheader', 'pgmonospaced', 'center',
+            // Project Gutenberg:
+            'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'c9', 'c10', 'c11',
+            'pgmonospaced', 'center',
+            // TODO: support multiple classes
+            'center c1', 'pgmonospaced pgheader', 'noindent c4',
             // TODO: do not ignore ?
-            'letterdate', 'letter1', 'titlepage', 'footer',
-            'poem1', 'gapspace', 'gapshortline',
+            'letterdate', 'letter1', 'titlepage', 'footer', 'intro',
+            'poem', 'poem1', 'gapspace', 'gapshortline', 'noindent',
+            'figcenter', 'stanza', 'foot', 'letter', 'gutindent', 'poetry',
+            'finis', 'verse', 'gutsumm', 'pfirst',
+            // TODO: handle properly !!!
+            'footnote', 'toc',
         ],
         id: null,
         'xml:space': 'preserve',
@@ -87,7 +96,16 @@ const li = xmlElementParser(
 );
 const listElement = xmlElementParser(
     ['ol', 'ul'],
-    { class: ['none', 'nonetn', 'c9', undefined] },
+    {
+        class: [
+            undefined,
+            // Project Gutenberg:
+            'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'c9',
+            'none', 'nonetn',
+            // TODO: properly support
+            'toc',
+        ],
+    },
     expectParseAll(some(whitespaced(li)), stream2string),
     ([xml, items]) => yieldLast<BookElement[]>([{
         element: 'content',
@@ -101,7 +119,12 @@ const listElement = xmlElementParser(
 
 const tableCell = xmlElementParser(
     ['td', 'th'],
-    {},
+    {
+        align: null, valign: null,
+        class: [
+            'c1', 'c2', 'c3', 'c4', 'c5', 'c6',
+        ],
+    },
     expected(pphSpans, []),
     ([_, s]) => yieldLast(compoundSpan(s)),
 );
@@ -127,9 +150,11 @@ const tableBody = choice(tbody, tableBodyContent);
 const table: Tree2ElementsParser = xmlElementParser(
     'table',
     {
-        border: null, cellpadding: null,
+        border: null, cellpadding: null, cellspacing: null, width: null,
         summary: '',
-        // class: null,
+        class: [
+            'c1', 'c2', 'c3', 'c4', 'c5', 'c6',
+        ],
     },
     expectParseAll(whitespaced(tableBody), stream2string),
     ([_, rows]) => yieldLast(fromContent({
@@ -140,7 +165,14 @@ const table: Tree2ElementsParser = xmlElementParser(
 
 const hr = xmlElementParser(
     'hr',
-    { class: ['main', 'short', 'tiny', 'break', undefined] },
+    {
+        class: [
+            undefined,
+            // Project Gutenberg:
+            'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7',
+            'main', 'short', 'tiny', 'break',
+        ],
+    },
     expectEoi(stream2string),
     () => yieldLast(fromContent({
         node: 'separator',
@@ -156,10 +188,14 @@ const containerElement: Tree2ElementsParser = namedParser('container', envParser
             class: [
                 'image',
                 'section1', 'section2', 'section3', 'section4', 'section5', 'section6',
-                'c1',
+                // Project Gutenberg:
+                'fig',
+                'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'c9',
+                // TODO: support multiple classes
+                'fig c2', 'figleft c7', 'fig c8', 'fig c9', 'fig c10',
                 // TODO: do not ignore ?
                 'extracts', 'mynote', 'letterdate', 'letter1', 'titlepage',
-                'contents',
+                'contents', 'centered', 'poem', 'figcenter', 'blockquot',
             ],
             'xml:space': 'preserve',
         },
@@ -176,7 +212,7 @@ const containerElement: Tree2ElementsParser = namedParser('container', envParser
 const img: Tree2ElementsParser = xmlElementParser(
     'img',
     {
-        src: null, alt: null, tag: null, title: null,
+        src: null, alt: null, tag: null, title: null, width: null,
         class: null,
     },
     expectEoi('img-children'),
@@ -219,7 +255,13 @@ const image: Tree2ElementsParser = xmlElementParser(
 
 const header: Tree2ElementsParser = xmlElementParser(
     ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'],
-    { id: null },
+    {
+        id: null, style: null,
+        class: [
+            // Project Gutenberg:
+            'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8',
+        ],
+    },
     headerTitleParser,
     ([xml, title]) => {
         const level = parseInt(xml.name[1], 10);
@@ -265,7 +307,7 @@ function headerTitleParser({ stream }: Stream<XmlTree, any>) {
                 break;
             case 'element':
                 switch (node.name) {
-                    case 'em': case 'strong': case 'big':
+                    case 'em': case 'strong': case 'big': case 'i':
                     case 'a': case 'b':
                     case 'span': case 'div': case 'p':
                         const fromElement = headerTitleParser(makeStream(node.children));
