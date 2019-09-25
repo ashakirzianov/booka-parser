@@ -10,6 +10,7 @@ export const fictionBookEditorHooks: EpubBookParserHooks = {
         subtitle(),
         titleElement(),
         cite(),
+        epigraph(),
     ],
     metadataHooks: [metaHook()],
 };
@@ -52,6 +53,22 @@ function metaHook(): MetadataRecordParser {
                 return reject();
         }
     });
+}
+
+function epigraph(): Tree2ElementsParser {
+    const content = expectParseAll(some(paragraphNode), stream2string);
+
+    return translate(
+        xmlNameAttrsChildren('div', { class: 'epigraph' }, content),
+        pphs => [{
+            element: 'content',
+            content: {
+                node: 'group',
+                nodes: pphs,
+                semantic: 'epigraph',
+            },
+        }]
+    );
 }
 
 function cite(): Tree2ElementsParser {
