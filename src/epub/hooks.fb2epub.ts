@@ -4,10 +4,10 @@ import {
     textNode, xmlChildren, extractText, nameEq, xmlNameAttrs,
     xmlNameAttrsChildren, xmlAttributes, xmlNameChildren,
     ignoreClass, buildRef, Tree2ElementsParser,
-    whitespaced, xmlElementParser, xmlName,
+    whitespaced, xmlElementParser, xmlName, paragraphNode, stream2string,
 } from '../xmlTreeParser';
 import {
-    some, translate, choice, seq, and, headParser, envParser, reject, yieldLast, expectEoi,
+    some, translate, choice, seq, and, headParser, envParser, reject, yieldLast, expectEoi, expectParseAll,
 } from '../combinators';
 import { BookElement } from '../bookElementParser';
 import { XmlTree, isElementTree, tree2String } from '../xmlStringParser';
@@ -21,6 +21,7 @@ export const fb2epubHooks: EpubBookParserHooks = {
         divTitle(),
         footnoteSection(),
         titlePage(),
+        poem(),
     ],
     metadataHooks: [metaHook()],
 };
@@ -37,6 +38,23 @@ function metaHook(): MetadataRecordParser {
                 return reject();
         }
     });
+}
+
+function poem(): Tree2ElementsParser {
+    const content = expectParseAll(some(paragraphNode), stream2string);
+    const stanza = xmlNameAttrsChildren('div', { class: 'stanza' }, content);
+
+    return translate(
+        xmlNameAttrsChildren('div', { class: 'poem' }, whitespaced(choice(stanza, content))),
+        pphs => [{
+            element: 'content',
+            content: {
+                node: 'group',
+                nodes: pphs,
+                semantic: 'poem',
+            },
+        }],
+    );
 }
 
 function footnoteSection(): Tree2ElementsParser {
