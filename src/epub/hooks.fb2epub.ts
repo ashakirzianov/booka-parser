@@ -1,10 +1,10 @@
-import { BookContentNode, filterUndefined, makePph, compoundSpan } from 'booka-common';
+import { BookContentNode, filterUndefined, makePph, compoundSpan, extractSpanText } from 'booka-common';
 import { EpubBookParserHooks, MetadataRecordParser } from './epubBookParser';
 import {
     textNode, xmlChildren, extractText, nameEq, xmlNameAttrs,
     xmlNameAttrsChildren, xmlAttributes, xmlNameChildren,
     ignoreClass, buildRef, Tree2ElementsParser,
-    whitespaced, xmlElementParser, xmlName, paragraphNode, stream2string,
+    whitespaced, xmlElementParser, xmlName, paragraphNode, stream2string, span,
 } from '../xmlTreeParser';
 import {
     some, translate, choice, seq, and, headParser, envParser, reject, yieldLast, expectEoi, expectParseAll,
@@ -22,6 +22,7 @@ export const fb2epubHooks: EpubBookParserHooks = {
         footnoteSection(),
         titlePage(),
         poem(),
+        epigraph(),
     ],
     metadataHooks: [metaHook()],
 };
@@ -38,6 +39,24 @@ function metaHook(): MetadataRecordParser {
                 return reject();
         }
     });
+}
+
+function epigraph(): Tree2ElementsParser {
+    const signature = whitespaced(xmlNameChildren('p', span));
+    const signatureDiv = xmlNameAttrsChildren('div', { class: 'epigraph_author' }, signature);
+    const content = seq(whitespaced(paragraphNode), whitespaced(signatureDiv));
+    return translate(
+        xmlNameAttrsChildren('div', { class: 'epigraph' }, content),
+        ([pph, sig]) => [{
+            element: 'content',
+            content: {
+                node: 'group',
+                nodes: [pph],
+                semantic: 'epigraph',
+                signature: [extractSpanText(sig)],
+            },
+        }]
+    );
 }
 
 function poem(): Tree2ElementsParser {

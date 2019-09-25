@@ -66,6 +66,7 @@ function epigraph(): Tree2ElementsParser {
                 node: 'group',
                 nodes: pphs,
                 semantic: 'epigraph',
+                signature: [],
             },
         }]
     );
