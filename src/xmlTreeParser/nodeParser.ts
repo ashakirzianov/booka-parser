@@ -127,9 +127,9 @@ const tableBody = choice(tbody, tableBodyContent);
 const table: Tree2ElementsParser = xmlElementParser(
     'table',
     {
-        // summary: null,
+        border: null, cellpadding: null,
+        summary: '',
         // class: null,
-        // border: null, cellpadding: null,
     },
     expectParseAll(whitespaced(tableBody), stream2string),
     ([_, rows]) => yieldLast(fromContent({
@@ -149,12 +149,14 @@ const hr = xmlElementParser(
 
 const containerElement: Tree2ElementsParser = namedParser('container', envParser(env => {
     return xmlElementParser(
-        ['p', 'div', 'span', 'blockquote'],
+        ['p', 'div', 'span', 'blockquote', 'a'],
         {
             id: null,
+            tag: null,
             class: [
                 'image',
                 'section1', 'section2', 'section3', 'section4', 'section5', 'section6',
+                'c1',
                 // TODO: do not ignore ?
                 'extracts', 'mynote', 'letterdate', 'letter1', 'titlepage',
                 'contents',
@@ -173,7 +175,10 @@ const containerElement: Tree2ElementsParser = namedParser('container', envParser
 
 const img: Tree2ElementsParser = xmlElementParser(
     'img',
-    { src: null, alt: null, class: null },
+    {
+        src: null, alt: null, tag: null, title: null,
+        class: null,
+    },
     expectEoi('img-children'),
     ([xml]) => {
         const src = xml.attributes['src'];
