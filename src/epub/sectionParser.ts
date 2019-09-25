@@ -3,7 +3,7 @@ import { buildDocumentParser, span, nodeParser, paragraphNode, TreeParserEnv } f
 import {
     makeStream, headParser,
     translate, expected, yieldLast,
-    StreamParser, pipe, fullParser, AsyncFullParser,
+    StreamParser, pipe, fullParser, AsyncFullParser, choice,
 } from '../combinators';
 import { AsyncIter } from '../utils';
 import { EpubSection, EpubBook } from './epubBook';
@@ -15,7 +15,8 @@ export type SectionsParser = StreamParser<EpubSection, BookElement[], undefined>
 
 export const sectionsParser: AsyncFullParser<EpubBook, BookElement[]> = async epub => {
     const hooks = epubParserHooks[epub.kind];
-    const documentParser = buildDocumentParser(hooks.nodeHooks);
+    const nodeParserWithHooks = choice(...hooks.nodeHooks, nodeParser);
+    const documentParser = buildDocumentParser(nodeParserWithHooks);
     const withDiags = expected(documentParser, [], stream => ({
         diag: 'couldnt-parse-document',
         tree: stream && stream.stream,
@@ -39,7 +40,7 @@ export const sectionsParser: AsyncFullParser<EpubBook, BookElement[]> = async ep
         ({ filePath, document }) => {
             const docStream = makeStream<XmlTree, TreeParserEnv>(document.children, {
                 filePath: filePath,
-                nodeParser: nodeParser,
+                nodeParser: nodeParserWithHooks,
                 paragraphParser: paragraphNode,
                 spanParser: span,
             });

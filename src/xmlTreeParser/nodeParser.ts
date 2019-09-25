@@ -2,7 +2,7 @@ import { ParagraphNode, compoundSpan, flatten, GroupNode, BookContentNode, makeP
 import {
     yieldLast, headParser, reject, choice, oneOrMore, translate,
     namedParser, envParser, fullParser, expectEoi,
-    compoundDiagnostic, ParserDiagnostic, expectParseAll, some, expected, projectFirst, endOfInput, seq, Stream, makeStream,
+    compoundDiagnostic, ParserDiagnostic, expectParseAll, some, expected, projectFirst, endOfInput, seq, Stream, makeStream, diagnosticContext,
 } from '../combinators';
 import { isWhitespaces } from '../utils';
 import { xmlElementParser, whitespaced } from './treeParser';
@@ -29,7 +29,8 @@ const skipWhitespaces: Tree2ElementsParser = headParser(node => {
 const wrappedSpans = xmlElementParser(
     ['p', 'span', 'div'],
     {
-        class: null, id: null,
+        class: ['p', 'p1', 'empty-line'],
+        id: null,
         'xml:space': 'preserve',
     },
     spanContent,
@@ -42,13 +43,13 @@ export const paragraphNode: EpubTreeParser<ParagraphNode> = translate(
     spans => makePph(compoundSpan(spans)),
 );
 
-const pphElement: Tree2ElementsParser = namedParser('pph', translate(
+const pphElement: Tree2ElementsParser = diagnosticContext(translate(
     paragraphNode,
     pNode => [{
         element: 'content',
         content: pNode,
     }],
-));
+), 'pphElement');
 
 const blockquote: Tree2ElementsParser = xmlElementParser(
     'blockquote',

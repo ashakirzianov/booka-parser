@@ -4,7 +4,6 @@ import { equalsToOneOf } from '../utils';
 import { TreeParser, xmlChildren, path } from './treeParser';
 import { Span, flatten, BookContentNode } from 'booka-common';
 import { BookElement } from '../bookElementParser';
-import { nodeParser } from './nodeParser';
 
 export type TreeParserEnv = {
     spanParser: Tree2SpanParser,
@@ -17,9 +16,8 @@ export type Tree2ElementsParser = EpubTreeParser<BookElement[]>;
 export type Tree2SpanParser = EpubTreeParser<Span>;
 export type Tree2NodeParser = EpubTreeParser<BookContentNode>;
 
-export function buildDocumentParser(hooks: Tree2ElementsParser[]): Tree2ElementsParser {
-    const nodeParser2 = choice(...hooks, nodeParser);
-    const insideParser = flattenResult(fullParser(nodeParser2));
+export function buildDocumentParser(nodeParser: Tree2ElementsParser): Tree2ElementsParser {
+    const insideParser = flattenResult(fullParser(nodeParser));
     const bodyParser = xmlChildren(insideParser);
     const documentParser = path(['html', 'body'], bodyParser);
 
