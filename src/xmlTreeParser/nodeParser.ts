@@ -34,7 +34,7 @@ const wrappedSpans = xmlElementParser(
             'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'center c1', 'pgmonospaced pgheader', 'pgmonospaced', 'center',
             // TODO: do not ignore ?
             'letterdate', 'letter1', 'titlepage', 'footer',
-            'poem1',
+            'poem1', 'gapspace', 'gapshortline',
         ],
         id: null,
         'xml:space': 'preserve',
