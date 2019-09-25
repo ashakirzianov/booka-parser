@@ -62,7 +62,9 @@ const blockquote: Tree2ElementsParser = xmlElementParser(
             node: 'group',
             nodes: pphs,
             semantic: 'quote',
-            source: xml.attributes.cite,
+            signature: xml.attributes.cite
+                ? [xml.attributes.cite]
+                : [],
         };
         return yieldLast([{
             element: 'content',
@@ -93,14 +95,14 @@ const listElement = xmlElementParser(
 
 const tableCell = xmlElementParser(
     ['td', 'th'],
-    { class: null },
+    {},
     expected(pphSpans, []),
     ([_, s]) => yieldLast(compoundSpan(s)),
 );
 
 const tr = xmlElementParser(
     'tr',
-    { class: null },
+    {},
     expectParseAll(some(whitespaced(tableCell)), stream2string),
     ([_, cells]) => yieldLast(cells),
 );
@@ -119,9 +121,9 @@ const tableBody = choice(tbody, tableBodyContent);
 const table: Tree2ElementsParser = xmlElementParser(
     'table',
     {
-        summary: null,
-        class: null,
-        border: null, cellpadding: null,
+        // summary: null,
+        // class: null,
+        // border: null, cellpadding: null,
     },
     expectParseAll(whitespaced(tableBody), stream2string),
     ([_, rows]) => yieldLast(fromContent({
@@ -143,7 +145,8 @@ const containerElement: Tree2ElementsParser = namedParser('container', envParser
     return xmlElementParser(
         ['p', 'div', 'span', 'blockquote'],
         {
-            id: null, class: null,
+            id: null,
+            class: ['image'],
             'xml:space': 'preserve',
         },
         fullParser(env.nodeParser),

@@ -1,13 +1,15 @@
-import { KnownTag, extractSpanText } from 'booka-common';
-import { reject, headParser, yieldLast, envParser, translate } from '../combinators';
+import { KnownTag, extractSpanText, ParagraphNode } from 'booka-common';
+import { reject, headParser, yieldLast, envParser, translate, choice, expectParseAll, some } from '../combinators';
 import { isTextTree, isElementTree, XmlTreeWithChildren } from '../xmlStringParser';
 import { EpubBookParserHooks, MetadataRecordParser } from './epubBookParser';
-import { Tree2ElementsParser, xmlNameAttrsChildren } from '../xmlTreeParser';
+import { Tree2ElementsParser, xmlNameAttrsChildren, textNode, span, paragraphNode, stream2string } from '../xmlTreeParser';
+import { BookElement } from '../bookElementParser';
 
 export const fictionBookEditorHooks: EpubBookParserHooks = {
     nodeHooks: [
         subtitle(),
         titleElement(),
+        cite(),
     ],
     metadataHooks: [metaHook()],
 };
@@ -52,16 +54,68 @@ function metaHook(): MetadataRecordParser {
     });
 }
 
-function subtitle(): Tree2ElementsParser {
-    return envParser(env =>
+function cite(): Tree2ElementsParser {
+    const textAuthor = xmlNameAttrsChildren(
+        ['div', 'p'],
+        { class: 'text-author' },
         translate(
-            xmlNameAttrsChildren('p', { class: 'subtitle' }, env.spanParser),
-            span => [{
-                element: 'chapter-title',
-                title: [extractSpanText(span)],
-                level: undefined,
-            }],
-        ));
+            span,
+            s => ({
+                kind: 'signature' as const,
+                line: extractSpanText(s),
+            }),
+        ),
+    );
+    const p = translate(
+        paragraphNode,
+        pn => ({
+            kind: 'pph' as const,
+            paragraph: pn,
+        }),
+    );
+    const content = expectParseAll(some(choice(textAuthor, p)), stream2string);
+
+    const children = translate(
+        content,
+        cs => {
+            const pphs = cs.reduce(
+                (ps, c) =>
+                    c.kind === 'pph' ? ps.concat(c.paragraph) : ps,
+                [] as ParagraphNode[],
+            );
+            const signature = cs.reduce(
+                (ss, c) =>
+                    c.kind === 'signature'
+                        ? ss.concat(c.line)
+                        : ss,
+                [] as string[],
+            );
+
+            const result: BookElement = {
+                element: 'content',
+                content: {
+                    node: 'group',
+                    nodes: pphs,
+                    semantic: 'quote',
+                    signature: signature,
+                },
+            };
+
+            return [result];
+        }
+    );
+    return xmlNameAttrsChildren('div', { class: 'cite' }, children);
+}
+
+function subtitle(): Tree2ElementsParser {
+    return translate(
+        xmlNameAttrsChildren('p', { class: 'subtitle' }, span),
+        s => [{
+            element: 'chapter-title',
+            title: [extractSpanText(s)],
+            level: undefined,
+        }],
+    );
 }
 
 function titleElement(): Tree2ElementsParser {

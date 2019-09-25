@@ -2,7 +2,7 @@ import { XmlTree, hasChildren, XmlAttributes, XmlTreeElement, tree2String } from
 import { caseInsensitiveEq, isWhitespaces } from '../utils';
 import {
     Result, yieldNext, reject, seq, some, translate,
-    StreamParser, headParser, makeStream, nextStream, not, Stream, projectLast, and, HeadFn, expected, yieldLast, diagnosticContext, maybe,
+    StreamParser, headParser, makeStream, nextStream, not, Stream, projectLast, and, HeadFn, expected, yieldLast, diagnosticContext, maybe, SuccessLast,
 } from '../combinators';
 import { Constraint, ConstraintMap, checkObject, checkValue } from './constraint';
 import { compoundDiagnostic } from '../combinators/diagnostics';
@@ -184,9 +184,11 @@ export function textNode<T, E>(f?: (text: string) => T | null): TreeParser<T | s
         if (n.type === 'text') {
             if (f) {
                 const result = f(n.text);
-                return result !== null ? yieldLast(n.text) : reject({ diag: 'xml-text-rejected' });
+                return result !== null
+                    ? yieldLast(result)
+                    : reject({ diag: 'xml-text-rejected' });
             } else {
-                return yieldLast(n.text);
+                return yieldLast(n.text as any);
             }
         } else {
             return reject({ diag: 'expected-xml- text' });
