@@ -11,6 +11,7 @@ import {
 } from '../combinators';
 import { BookElement } from '../bookElementParser';
 import { XmlTree, isElementTree, tree2String } from '../xmlStringParser';
+import { equalsToOneOf } from '../utils';
 
 export const fb2epubHooks: EpubBookParserHooks = {
     nodeHooks: [
@@ -179,6 +180,12 @@ function titlePage(): Tree2ElementsParser {
         } as BookElement),
     );
     const ignore = headParser(
+        (x: XmlTree) =>
+            equalsToOneOf(x.name, [undefined, 'br', 'h3'])
+                ? yieldLast({ element: 'ignore' as const })
+                : reject(),
+    );
+    const report = headParser(
         (x: XmlTree) => yieldLast(
             { element: 'ignore' as const },
             {
@@ -192,7 +199,7 @@ function titlePage(): Tree2ElementsParser {
     const parser = xmlNameAttrsChildren(
         null,
         { class: 'titlepage' },
-        some(choice(bookTitle, bookAuthor, ignore)),
+        some(choice(bookTitle, bookAuthor, ignore, report)),
     );
 
     return parser;
