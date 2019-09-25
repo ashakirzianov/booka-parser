@@ -1,7 +1,7 @@
 import { EpubBookParserHooks, MetadataRecordParser } from './epubBookParser';
 import {
     xmlName, xmlNameAttrs, xmlChildren, textNode,
-    whitespaces, buildRef, Tree2ElementsParser, xmlNameAttrsChildren,
+    whitespaces, buildRef, Tree2ElementsParser, xmlNameAttrsChildren, ignoreClass,
 } from '../xmlTreeParser';
 import {
     and, translate, seq, maybe, envParser, headParser, reject, yieldLast, some,
@@ -12,6 +12,7 @@ export const gutenbergHooks: EpubBookParserHooks = {
     nodeHooks: [
         footnote(),
         skipToc(),
+        ignoreClass('chapterhead'),
     ],
     metadataHooks: [metaHook()],
 };
