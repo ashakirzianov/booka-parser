@@ -16,7 +16,7 @@ export type ConstrainedType<T, C extends ConstraintMap<T>> = {
 };
 export type ConstraintFailReason = {
     key: string,
-    value: string,
+    value: any,
     constraint: string,
 };
 
@@ -54,6 +54,24 @@ export function constraintToString<T>(constraint: Constraint<T>): string {
 
 export function checkObject<T>(obj: T, constraintMap: ConstraintMap<T>): ConstraintFailReason[] {
     const reasons: ConstraintFailReason[] = [];
+    for (const [key, c] of Object.entries(constraintMap)) {
+        const constraint = c as Constraint<T[keyof T]>;
+        const value = obj[key as keyof T];
+        const result = checkValue(value, constraint);
+        if (!result) {
+            reasons.push({
+                key: key,
+                value: value,
+                constraint: constraintToString(constraint),
+            });
+        }
+    }
+
+    return reasons;
+}
+
+export function checkObjectFull<T>(obj: T, constraintMap: ConstraintMap<T>): ConstraintFailReason[] {
+    const reasons: ConstraintFailReason[] = checkObject(obj, constraintMap);
     for (const [key, value] of Object.entries(obj)) {
         const constraint = constraintMap[key as keyof T] as Constraint<T[keyof T]>;
         if (constraint === undefined) {
@@ -62,15 +80,6 @@ export function checkObject<T>(obj: T, constraintMap: ConstraintMap<T>): Constra
                 value: value,
                 constraint: 'should not be set',
             });
-        } else {
-            const result = checkValue(value, constraint);
-            if (!result) {
-                reasons.push({
-                    key: key,
-                    value: value,
-                    constraint: constraintToString(constraint),
-                });
-            }
         }
     }
 

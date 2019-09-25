@@ -201,8 +201,9 @@ const containerElement: Tree2ElementsParser = envParser(environment => {
         children: fullParser(environment.nodeParser),
     },
         ({ element, children }) => {
+            const flatChildren = flatten(children);
             return buildContainerElements(
-                flatten(children),
+                flatChildren,
                 buildRef(environment.filePath, element.attributes.id),
             );
         },

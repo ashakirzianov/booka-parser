@@ -179,7 +179,14 @@ function titlePage(): Tree2ElementsParser {
         } as BookElement),
     );
     const ignore = headParser(
-        (x: XmlTree) => yieldLast({ element: 'ignore' } as BookElement),
+        (x: XmlTree) => yieldLast(
+            { element: 'ignore' as const },
+            {
+                diag: 'unexpected-node',
+                xml: tree2String(x),
+                context: 'titlepage',
+            },
+        ),
     );
 
     const parser = xmlNameAttrsChildren(

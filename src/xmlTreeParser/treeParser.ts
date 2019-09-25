@@ -6,7 +6,7 @@ import {
     projectLast, and, expected, yieldLast, diagnosticContext,
     maybe,
 } from '../combinators';
-import { Constraint, ConstraintMap, checkObject, checkValue } from './constraint';
+import { Constraint, ConstraintMap, checkObject, checkValue, checkObjectFull } from './constraint';
 import { filterUndefined } from 'booka-common';
 
 export type XmlElementConstraint = {
@@ -21,7 +21,7 @@ export function xmlElement<E = any>(ec: XmlElementConstraint): TreeParser<XmlTre
     const attrs = ec.requiredAttributes === undefined ? undefined
         : xmlAttributes(ec.requiredAttributes);
     const expectedAttrs = ec.expectedAttributes === undefined ? undefined
-        : expected(xmlAttributes(ec.expectedAttributes), undefined);
+        : expected(xmlAttributesFull(ec.expectedAttributes), undefined);
     const all = filterUndefined([name, attrs, expectedAttrs]);
 
     const element: TreeParser<XmlTreeElement, E> = headParser(el =>
@@ -77,6 +77,20 @@ export function xmlAttributes<E = any>(attrs: ConstraintMap<XmlAttributes>): Tre
     return headParser(tree => {
         if (tree.type === 'element') {
             const checks = checkObject(tree.attributes, attrs);
+            if (checks.length === 0) {
+                return yieldLast(tree);
+            } else {
+                return reject({ diag: 'expected-attrs', checks, xml: tree2String(tree) });
+            }
+        }
+        return reject({ diag: 'expected-xml-element' });
+    });
+}
+
+export function xmlAttributesFull<E = any>(attrs: ConstraintMap<XmlAttributes>): TreeParser<XmlTreeElement, E> {
+    return headParser(tree => {
+        if (tree.type === 'element') {
+            const checks = checkObjectFull(tree.attributes, attrs);
             if (checks.length === 0) {
                 return yieldLast(tree);
             } else {
