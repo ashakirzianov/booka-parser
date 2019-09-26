@@ -6,7 +6,7 @@ import {
 import {
     and, translate, seq, maybe, envParser, headParser, reject, yieldLast, some,
 } from '../combinators';
-import { ParagraphNode, makePph } from 'booka-common';
+import { ParagraphNode, makePph, KnownTag, flatten } from 'booka-common';
 
 export const gutenbergHooks: EpubBookParserHooks = {
     nodeHooks: [
@@ -21,6 +21,14 @@ export const gutenbergHooks: EpubBookParserHooks = {
 function metaHook(): MetadataRecordParser {
     return headParser(([key, value]) => {
         switch (key) {
+            case 'subject':
+                const subs = value as string[];
+                const subjects = flatten(subs.map(sub => sub.split(' -- ')));
+                const tags: KnownTag[] = subjects.map(sub => ({
+                    tag: 'subject' as const,
+                    value: sub,
+                }));
+                return yieldLast(tags);
             case 'dc:identifier':
                 const id = value['#'];
                 if (id && typeof id === 'string') {
