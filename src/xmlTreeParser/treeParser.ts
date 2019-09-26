@@ -64,14 +64,13 @@ export function elemChProj<TC, T = TC>(
 }
 
 export function elemProj<T, E = any>(
-    ec: XmlElementConstraint,
-    project: (x: { element: XmlTreeElement }) => T,
+    ec: XmlElementConstraint & {
+        project: (el: XmlTreeElement) => T,
+    },
 ): TreeParser<T, E> {
     return translate(
         elem(ec),
-        (el) => project({
-            element: el,
-        }),
+        ec.project,
     );
 }
 

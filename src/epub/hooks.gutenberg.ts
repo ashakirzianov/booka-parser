@@ -52,18 +52,16 @@ function skipTocP(): Tree2ElementsParser {
     return elemProj({
         name: 'p',
         classes: 'toc',
-    },
-        () => [],
-    );
+        project: () => [],
+    });
 }
 
 function skipTocTable(): Tree2ElementsParser {
     return elemProj({
         name: 'table',
         attrs: { summary: 'Toc' },
-    },
-        () => [],
-    );
+        project: () => [],
+    });
 }
 
 function footnote(): Tree2ElementsParser {
@@ -75,9 +73,8 @@ function footnote(): Tree2ElementsParser {
                     ? i.startsWith('link')
                     : false,
             },
-        },
-            ({ element }) => element.attributes.id,
-        );
+            project: el => el.attributes.id,
+        });
         const footnoteMarker = elemCh({
             name: 'p',
             children: footnoteId,

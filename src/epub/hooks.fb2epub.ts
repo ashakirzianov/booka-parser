@@ -121,9 +121,8 @@ function footnoteSection(): Tree2ElementsParser {
             attrs: {
                 id: id => id !== undefined,
             },
-        },
-            ({ element }) => element.attributes.id!,
-        );
+            project: el => el.attributes.id!,
+        });
         const h = elemCh({
             name: n => n.match(/^h[0-9]+$/) !== null,
             children: textNode(),
@@ -137,9 +136,8 @@ function footnoteSection(): Tree2ElementsParser {
             name: 'a',
             classes: 'note_anchor',
             attrs: { href: null },
-        },
-            () => undefined,
-        );
+            project: () => undefined,
+        });
         const children = seq(some(env.spanParser), expectEoi('footnote-p'));
         const pph = elemChProj({
             name: 'p',
@@ -149,9 +147,8 @@ function footnoteSection(): Tree2ElementsParser {
         });
         const br = elemProj({
             name: 'br',
-        },
-            () => undefined,
-        );
+            project: () => undefined,
+        });
         const skipWhitespaces = translate(
             textNode(),
             () => undefined,
