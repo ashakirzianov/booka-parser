@@ -1,13 +1,13 @@
-import { ParagraphNode, compoundSpan, flatten, GroupNode, BookContentNode, makePph, Span } from 'booka-common';
+import { ParagraphNode, compoundSpan, flatten, GroupNode, BookContentNode, makePph, Span, filterUndefined } from 'booka-common';
 import {
     yieldLast, headParser, reject, choice, oneOrMore, translate,
     envParser, fullParser, expectEoi, compoundDiagnostic,
-    ParserDiagnostic, expectParseAll, some, expected, Stream, makeStream, projectFirst, seq, endOfInput,
+    ParserDiagnostic, expectParseAll, some, expected, Stream, makeStream, projectFirst, seq, endOfInput, projectLast,
 } from '../combinators';
 import { isWhitespaces } from '../utils';
-import { elemCh, elemChProj, whitespaced } from './treeParser';
+import { elemCh, elemChProj, whitespaced, elemProj } from './treeParser';
 import { spanContent, span, expectSpanContent, standardClasses } from './spanParser';
-import { XmlTree, tree2String, XmlTreeElement } from '../xmlStringParser';
+import { XmlTree, tree2String } from '../xmlStringParser';
 import { Tree2ElementsParser, EpubTreeParser, buildRef, stream2string } from './utils';
 import {
     BookElement, ContentElement, TitleElement,
@@ -128,10 +128,17 @@ const tr = elemCh({
 
 const tableBodyContent = expectParseAll(some(whitespaced(tr)), stream2string);
 
-const tbody = elemCh({
+const tableIgnore = elemProj({
+    name: ['colgroup', 'col'],
+    project: () => undefined,
+});
+const tbodyTag = elemCh({
     name: 'tbody',
     children: tableBodyContent,
 });
+const tbody = projectLast(
+    seq(some(whitespaced(tableIgnore)), tbodyTag),
+);
 
 const tableBody = choice(tbody, tableBodyContent);
 
