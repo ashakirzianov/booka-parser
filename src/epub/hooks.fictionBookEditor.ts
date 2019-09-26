@@ -1,12 +1,20 @@
-import { KnownTag } from 'booka-common';
-import { reject, headParser, yieldLast } from '../combinators';
-import { isTextTree, isElementTree, XmlTreeWithChildren } from '../xmlStringParser';
+import { KnownTag, extractSpanText, ParagraphNode } from 'booka-common';
+import {
+    reject, headParser, yieldLast, translate, choice, expectParseAll, some,
+} from '../combinators';
+import { XmlTreeWithChildren } from '../xmlStringParser';
 import { EpubBookParserHooks, MetadataRecordParser } from './epubBookParser';
-import { Tree2ElementsParser } from '../xmlTreeParser';
+import {
+    Tree2ElementsParser, span, paragraphNode, stream2string, elemChProj,
+} from '../xmlTreeParser';
+import { BookElement } from '../bookElementParser';
 
 export const fictionBookEditorHooks: EpubBookParserHooks = {
     nodeHooks: [
+        subtitle(),
         titleElement(),
+        cite(),
+        epigraph(),
     ],
     metadataHooks: [metaHook()],
 };
@@ -51,13 +59,97 @@ function metaHook(): MetadataRecordParser {
     });
 }
 
+function epigraph(): Tree2ElementsParser {
+    const content = expectParseAll(some(paragraphNode), stream2string);
+
+    return elemChProj({
+        name: 'div',
+        classes: 'epigraph',
+        children: content,
+        project: children => [{
+            element: 'content',
+            content: {
+                node: 'group',
+                nodes: children,
+                semantic: 'epigraph',
+                signature: [],
+            },
+        }],
+    });
+}
+
+function cite(): Tree2ElementsParser {
+    const textAuthor = elemChProj({
+        name: ['div', 'p'],
+        classes: 'text-author',
+        children: span,
+        project: children => ({
+            kind: 'signature' as const,
+            line: extractSpanText(children),
+        }),
+    });
+    const p = translate(
+        paragraphNode,
+        pn => ({
+            kind: 'pph' as const,
+            paragraph: pn,
+        }),
+    );
+    const content = expectParseAll(some(choice(textAuthor, p)), stream2string);
+
+    return elemChProj({
+        name: 'div',
+        classes: 'cite',
+        children: content,
+        project: children => {
+            const pphs = children.reduce(
+                (ps, c) =>
+                    c.kind === 'pph' ? ps.concat(c.paragraph) : ps,
+                [] as ParagraphNode[],
+            );
+            const signature = children.reduce(
+                (ss, c) =>
+                    c.kind === 'signature'
+                        ? ss.concat(c.line)
+                        : ss,
+                [] as string[],
+            );
+
+            const result: BookElement = {
+                element: 'content',
+                content: {
+                    node: 'group',
+                    nodes: pphs,
+                    semantic: 'quote',
+                    signature: signature,
+                },
+            };
+
+            return [result];
+        },
+    });
+}
+
+function subtitle(): Tree2ElementsParser {
+    return elemChProj({
+        name: 'p',
+        classes: 'subtitle',
+        children: span,
+        project: children => [{
+            element: 'chapter-title',
+            title: [extractSpanText(children)],
+            level: undefined,
+        }],
+    });
+}
+
 function titleElement(): Tree2ElementsParser {
     function extractTextLines(node: XmlTreeWithChildren): string[] {
         const result: string[] = [];
         for (const ch of node.children) {
-            if (isElementTree(ch)) {
+            if (ch.type === 'element') {
                 result.push(...extractTextLines(ch));
-            } else if (isTextTree(ch)) {
+            } else if (ch.type === 'text') {
                 if (!ch.text.startsWith('\n')) {
                     result.push(ch.text);
                 }
@@ -68,7 +160,7 @@ function titleElement(): Tree2ElementsParser {
     }
 
     return headParser(el => {
-        if (!isElementTree(el) || el.name !== 'div') {
+        if (el.type !== 'element' || el.name !== 'div') {
             return reject();
         }
 

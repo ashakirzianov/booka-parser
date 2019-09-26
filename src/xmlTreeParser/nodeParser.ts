@@ -1,12 +1,12 @@
-import { ParagraphNode, compoundSpan, flatten, GroupNode, BookContentNode, makePph } from 'booka-common';
+import { ParagraphNode, compoundSpan, flatten, GroupNode, BookContentNode, makePph, Span, filterUndefined } from 'booka-common';
 import {
     yieldLast, headParser, reject, choice, oneOrMore, translate,
-    namedParser, envParser, fullParser, expectEoi,
-    compoundDiagnostic, ParserDiagnostic, expectParseAll, some, expected, projectFirst, endOfInput, seq, Stream, makeStream,
+    envParser, fullParser, expectEoi, compoundDiagnostic,
+    ParserDiagnostic, expectParseAll, some, expected, Stream, makeStream, projectFirst, seq, endOfInput, projectLast,
 } from '../combinators';
 import { isWhitespaces } from '../utils';
-import { xmlElementParser, whitespaced } from './treeParser';
-import { spanContent, span, expectSpanContent } from './spanParser';
+import { elemCh, elemChProj, whitespaced, elemProj } from './treeParser';
+import { spanContent, span, expectSpanContent, standardClasses } from './spanParser';
 import { XmlTree, tree2String } from '../xmlStringParser';
 import { Tree2ElementsParser, EpubTreeParser, buildRef, stream2string } from './utils';
 import {
@@ -26,15 +26,27 @@ const skipWhitespaces: Tree2ElementsParser = headParser(node => {
     }
 });
 
-const wrappedSpans = xmlElementParser(
-    ['p', 'span', 'div'],
-    {
-        class: null, id: null,
-        'xml:space': 'preserve',
+const wrappedSpans = elemCh({
+    context: 'wrappedSpans',
+    name: ['p', 'span', 'div'],
+    expectedClasses: [
+        ...standardClasses,
+        // TODO: do not ignore ?
+        'letterdate', 'letter1', 'titlepage', 'footer', 'intro',
+        'poem', 'poem1', 'gapspace', 'gapshortline', 'noindent',
+        'figcenter', 'stanza', 'foot', 'letter', 'gutindent', 'poetry',
+        'finis', 'verse', 'gutsumm', 'pfirst', 'right', 'state', 'book',
+        'contents', 'preface1', 'preface2',
+        // TODO: handle properly !!!
+        'footnote', 'toc',
+    ],
+    expectedAttrs: {
+        style: null,
+        id: null,
+        'xml:space': [undefined, 'preserve'],
     },
-    spanContent,
-    ([el, spans]) => yieldLast(spans),
-);
+    children: spanContent,
+});
 const pphSpans = choice(wrappedSpans, oneOrMore(span));
 
 export const paragraphNode: EpubTreeParser<ParagraphNode> = translate(
@@ -42,179 +54,233 @@ export const paragraphNode: EpubTreeParser<ParagraphNode> = translate(
     spans => makePph(compoundSpan(spans)),
 );
 
-const pphElement: Tree2ElementsParser = namedParser('pph', translate(
+const pphElement: Tree2ElementsParser = translate(
     paragraphNode,
     pNode => [{
         element: 'content',
         content: pNode,
     }],
-));
+);
 
-const blockquote: Tree2ElementsParser = xmlElementParser(
-    'blockquote',
-    {
-        cite: null,
-    },
-    projectFirst(seq(some(paragraphNode), endOfInput())),
-    ([xml, pphs], e) => {
+const pphs = projectFirst(seq(some(paragraphNode), endOfInput()));
+const blockquote: Tree2ElementsParser = elemChProj({
+    context: 'blockquote',
+    name: 'blockquote',
+    expectedAttrs: { cite: null },
+    children: pphs,
+    project: (children, element) => {
         const node: GroupNode = {
             node: 'group',
-            nodes: pphs,
+            nodes: children,
             semantic: 'quote',
-            source: xml.attributes.cite,
+            signature: element.attributes.cite
+                ? [element.attributes.cite]
+                : [],
         };
-        return yieldLast([{
+        return [{
             element: 'content',
             content: node,
-        }]);
-    }
-);
+        }];
+    },
+});
 
-const li = xmlElementParser(
-    'li',
-    {},
-    expectSpanContent,
-    ([_, itemSpan]) => yieldLast(itemSpan),
-);
-const listElement = xmlElementParser(
-    ['ol', 'ul'],
-    { class: ['none', 'nonetn', 'c9', undefined] },
-    expectParseAll(some(whitespaced(li)), stream2string),
-    ([xml, items]) => yieldLast<BookElement[]>([{
+const li = elemCh({
+    name: 'li',
+    children: expectSpanContent,
+});
+
+const lis = expectParseAll(some(whitespaced(li)), stream2string);
+const listElement: Tree2ElementsParser = elemChProj({
+    name: ['ol', 'ul'],
+    expectedClasses: [
+        ...standardClasses,
+        'none', 'nonetn',
+        // TODO: properly support
+        'toc',
+    ],
+    children: lis,
+    project: (children, element) => [{
         element: 'content',
         content: {
             node: 'list',
-            kind: xml.name === 'ol' ? 'ordered' : 'basic',
-            items,
+            kind: element.name === 'ol' ? 'ordered' : 'basic',
+            items: children,
         },
-    }]),
-);
+    }],
+});
 
-const tableCell = xmlElementParser(
-    ['td', 'th'],
-    { class: null },
-    expected(pphSpans, []),
-    ([_, s]) => yieldLast(compoundSpan(s)),
-);
+const cellContent = expected(pphSpans, []);
+const tableCell = elemChProj({
+    name: ['td', 'th'],
+    expectedClasses: standardClasses,
+    expectedAttrs: {
+        align: null, valign: null, colspan: null,
+    },
+    children: cellContent,
+    project: children =>
+        compoundSpan(children),
+});
 
-const tr = xmlElementParser(
-    'tr',
-    { class: null },
-    expectParseAll(some(whitespaced(tableCell)), stream2string),
-    ([_, cells]) => yieldLast(cells),
-);
+const tr = elemCh({
+    name: 'tr',
+    children: expectParseAll(some(whitespaced(tableCell)), stream2string),
+});
 
 const tableBodyContent = expectParseAll(some(whitespaced(tr)), stream2string);
 
-const tbody = xmlElementParser(
-    'tbody',
-    {},
-    tableBodyContent,
-    ([_, rows]) => yieldLast(rows),
+const tableIgnore = elemProj({
+    name: ['colgroup', 'col'],
+    project: () => undefined,
+});
+const tbodyTag = elemCh({
+    name: 'tbody',
+    children: tableBodyContent,
+});
+const tbody = projectLast(
+    seq(some(whitespaced(tableIgnore)), tbodyTag),
 );
 
 const tableBody = choice(tbody, tableBodyContent);
 
-const table: Tree2ElementsParser = xmlElementParser(
-    'table',
-    {
-        summary: null,
-        class: null,
-        border: null, cellpadding: null,
+const tableContent = expectParseAll(whitespaced(tableBody), stream2string);
+const table: Tree2ElementsParser = elemChProj({
+    name: 'table',
+    expectedClasses: [
+        ...standardClasses,
+        // TODO: do not ignore ?
+        'illus',
+    ],
+    expectedAttrs: {
+        border: null, cellpadding: null, cellspacing: null, width: null,
+        summary: [
+            undefined, '',
+            // TODO: do not ignore ?
+            'Illustrations', 'carol',
+        ],
     },
-    expectParseAll(whitespaced(tableBody), stream2string),
-    ([_, rows]) => yieldLast(fromContent({
+    children: tableContent,
+    project: children => fromContent({
         node: 'table',
-        rows,
-    })),
-);
+        rows: children,
+    }),
+});
 
-const hr = xmlElementParser(
-    'hr',
-    { class: ['main', 'short', 'tiny', 'break', undefined] },
-    expectEoi(stream2string),
-    () => yieldLast(fromContent({
+const hr = elemChProj({
+    name: 'hr',
+    expectedClasses: [
+        ...standardClasses,
+        'main', 'short', 'tiny', 'break', 'full',
+        // TODO: do not ignore ?
+        'title',
+    ],
+    children: expectEoi(stream2string),
+    project: () => fromContent({
         node: 'separator',
-    })),
-);
+    }),
+});
 
-const containerElement: Tree2ElementsParser = namedParser('container', envParser(env => {
-    return xmlElementParser(
-        ['p', 'div', 'span', 'blockquote'],
-        {
-            id: null, class: null,
-            'xml:space': 'preserve',
+const containerElement: Tree2ElementsParser = envParser(environment => {
+    return elemChProj({
+        context: 'container-element',
+        name: ['p', 'div', 'span', 'blockquote', 'a'],
+        expectedClasses: [
+            ...standardClasses,
+            'image',
+            // TODO: do not ignore ?
+            'extracts', 'mynote', 'letterdate', 'letter1', 'titlepage',
+            'contents', 'centered', 'poem', 'figcenter', 'blockquot',
+            'stanza', 'book', 'title', 'title2',
+        ],
+        expectedAttrs: {
+            id: null,
+            tag: null,
+            'xml:space': [undefined, 'preserve'],
         },
-        fullParser(env.nodeParser),
-        ([xml, ch], e) => {
-            return yieldLast(buildContainerElements(
-                flatten(ch),
-                buildRef(e.filePath, xml.attributes.id),
-            ));
-        }
-    );
-}));
+        children: fullParser(environment.nodeParser),
+        project: (children: BookElement[][], element) => {
+            const flatChildren = flatten(children);
+            return buildContainerElements(
+                flatChildren,
+                buildRef(environment.filePath, element.attributes.id),
+            );
+        },
+    });
+});
 
-const img: Tree2ElementsParser = xmlElementParser(
-    'img',
-    { src: null, alt: null, class: null },
-    expectEoi('img-children'),
-    ([xml]) => {
+const img: Tree2ElementsParser = elemChProj({
+    name: 'img',
+    expectedClasses: [undefined, 'floatright', 'z1'],
+    expectedAttrs: {
+        src: src => src ? true : false,
+        alt: null, tag: null, title: null, width: null,
+    },
+    children: expectEoi('img-children'),
+    project: (_, xml) => {
         const src = xml.attributes['src'];
         if (src) {
-            return yieldLast([{
+            return [{
                 element: 'content',
                 content: {
                     node: 'image-ref',
                     imageId: src,
                     imageRef: src,
                 },
-            }]);
+            }];
         } else {
-            return yieldLast([], { diag: 'img-must-have-src', node: xml });
+            return [];
         }
-    });
+    },
+});
 
-const image: Tree2ElementsParser = xmlElementParser(
-    'image',
-    {},
-    expectEoi('image-children'),
-    ([xml]) => {
+const image: Tree2ElementsParser = elemChProj({
+    name: 'image',
+    expectedAttrs: {
+        'xlink:href': href => href ? true : false,
+    },
+    children: expectEoi('image-children'),
+    project: (_, xml) => {
         const xlinkHref = xml.attributes['xlink:href'];
         if (xlinkHref) {
-            return yieldLast([{
+            return [{
                 element: 'content',
                 content: {
                     node: 'image-ref',
                     imageId: xlinkHref,
                     imageRef: xlinkHref,
                 },
-            }]);
+            }];
         } else {
-            return yieldLast([], { diag: 'image-must-have-xlinkhref', node: xml });
+            return [];
         }
-    }
-);
+    },
+});
 
-const header: Tree2ElementsParser = xmlElementParser(
-    ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'],
-    { id: null },
-    headerTitleParser,
-    ([xml, title]) => {
+const header: Tree2ElementsParser = elemChProj({
+    name: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'],
+    expectedClasses: [
+        ...standardClasses,
+        // TODO: do not ignore ?
+        'title',
+    ],
+    expectedAttrs: {
+        id: null, style: null,
+    },
+    children: headerTitleParser,
+    project: (title, xml) => {
         const level = parseInt(xml.name[1], 10);
-        return yieldLast([{
+        return [{
             element: 'chapter-title',
             title: title,
             level: 4 - level,
-        }]);
-    });
+        }];
+    },
+});
 
-const svg: Tree2ElementsParser = xmlElementParser(
-    'svg',
-    { viewBox: null, xmlns: null, class: null },
-    () => yieldLast(undefined),
-    () => yieldLast([])
-);
+const svg: Tree2ElementsParser = elemCh({
+    name: 'svg',
+    expectedAttrs: { viewBox: null, xmlns: null },
+    children: () => yieldLast<BookElement[]>([]),
+});
 
 const skip: Tree2ElementsParser = headParser((node, env) => {
     return yieldLast([], { diag: 'unexpected-node', xml: tree2String(node) });
@@ -244,7 +310,7 @@ function headerTitleParser({ stream }: Stream<XmlTree, any>) {
                 break;
             case 'element':
                 switch (node.name) {
-                    case 'em': case 'strong': case 'big':
+                    case 'em': case 'strong': case 'big': case 'i':
                     case 'a': case 'b':
                     case 'span': case 'div': case 'p':
                         const fromElement = headerTitleParser(makeStream(node.children));

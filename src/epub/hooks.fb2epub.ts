@@ -1,16 +1,18 @@
-import { BookContentNode, filterUndefined, makePph, compoundSpan } from 'booka-common';
+import {
+    BookContentNode, filterUndefined, makePph, compoundSpan,
+    extractSpanText,
+} from 'booka-common';
 import { EpubBookParserHooks, MetadataRecordParser } from './epubBookParser';
 import {
-    textNode, xmlChildren, extractText, nameEq, xmlNameAttrs,
-    xmlNameAttrsChildren, xmlAttributes, xmlNameChildren,
-    ignoreClass, buildRef, Tree2ElementsParser,
-    whitespaced, xmlElementParser, xmlName,
+    textNode, ignoreClass, buildRef, Tree2ElementsParser,
+    whitespaced, paragraphNode, stream2string, span, elemChProj, elemCh, elemProj, xmlChildren,
 } from '../xmlTreeParser';
 import {
-    some, translate, choice, seq, and, headParser, envParser, reject, yieldLast, expectEoi,
+    some, translate, choice, seq, and, headParser, envParser, reject, yieldLast, expectEoi, expectParseAll,
 } from '../combinators';
 import { BookElement } from '../bookElementParser';
-import { XmlTree, isElementTree, tree2String } from '../xmlStringParser';
+import { XmlTree, tree2String } from '../xmlStringParser';
+import { equalsToOneOf } from '../utils';
 
 export const fb2epubHooks: EpubBookParserHooks = {
     nodeHooks: [
@@ -21,6 +23,9 @@ export const fb2epubHooks: EpubBookParserHooks = {
         divTitle(),
         footnoteSection(),
         titlePage(),
+        poem(),
+        epigraph(),
+        subtitle(),
     ],
     metadataHooks: [metaHook()],
 };
@@ -39,32 +44,111 @@ function metaHook(): MetadataRecordParser {
     });
 }
 
+function subtitle(): Tree2ElementsParser {
+    return elemChProj({
+        name: 'p',
+        classes: 'subtitle',
+        children: span,
+        project: children => [{
+            element: 'chapter-title',
+            level: undefined,
+            title: [extractSpanText(children)],
+        }],
+    });
+}
+
+function epigraph(): Tree2ElementsParser {
+    const signature = whitespaced(elemCh({
+        name: 'p',
+        children: span,
+    }));
+    const signatureDiv = elemCh({
+        name: 'div',
+        classes: 'epigraph_author',
+        children: signature,
+    });
+    const content = seq(
+        whitespaced(paragraphNode),
+        whitespaced(signatureDiv),
+    );
+
+    return elemChProj({
+        name: 'div',
+        classes: 'epigraph',
+        children: content,
+        project: ([pph, sig]) => [{
+            element: 'content',
+            content: {
+                node: 'group',
+                nodes: [pph],
+                semantic: 'epigraph',
+                signature: [extractSpanText(sig)],
+            },
+        }],
+    });
+}
+
+function poem(): Tree2ElementsParser {
+    const content = expectParseAll(some(paragraphNode), stream2string);
+    const stanza = elemCh({
+        name: 'div',
+        classes: 'stanza',
+        children: content,
+    });
+    const children = whitespaced(choice(stanza, content));
+
+    return elemChProj(
+        {
+            name: 'div',
+            classes: 'poem',
+            children: children,
+            project: ch => [{
+                element: 'content',
+                content: {
+                    node: 'group',
+                    nodes: ch,
+                    semantic: 'poem',
+                },
+            }],
+        });
+}
+
 function footnoteSection(): Tree2ElementsParser {
     return envParser(env => {
-        const divId = translate(
-            xmlNameAttrs('div', { class: 'section2', id: id => id !== undefined }),
-            el => el.attributes.id!,
-        );
-        const h = xmlNameChildren(n => n.startsWith('h'), textNode());
-        const title = xmlNameAttrsChildren(
-            'div',
-            { class: 'note_section' },
-            some(whitespaced(h)),
-        );
-        const back = translate(
-            xmlNameAttrs('a', { class: 'note_anchor', href: null }),
-            () => undefined,
-        );
-        const pph = xmlElementParser(
-            'p',
-            { class: null },
-            seq(some(env.spanParser), expectEoi('footnote-p')),
-            ([_, [spans]]) => yieldLast(makePph(compoundSpan(spans))),
-        );
-        const br = translate(
-            xmlName('br'),
-            () => undefined,
-        );
+        const divId = elemProj({
+            name: 'div',
+            classes: 'section2',
+            attrs: {
+                id: id => id !== undefined,
+            },
+            project: el => el.attributes.id!,
+        });
+        const h = elemCh({
+            name: n => n ? n.match(/^h[0-9]+$/) !== null : false,
+            children: textNode(),
+        });
+        const title = elemCh({
+            name: 'div',
+            classes: 'note_section',
+            children: some(whitespaced(h)),
+        });
+        const back = elemProj({
+            name: 'a',
+            classes: 'note_anchor',
+            attrs: { href: null },
+            project: () => undefined,
+        });
+        const children = seq(some(env.spanParser), expectEoi('footnote-p'));
+        const pph = elemChProj({
+            name: 'p',
+            expectedClasses: null,
+            children: children,
+            project: ([spans]) => makePph(compoundSpan(spans)),
+        });
+        const br = elemProj({
+            name: 'br',
+            project: () => undefined,
+        });
         const skipWhitespaces = translate(
             textNode(),
             () => undefined,
@@ -111,36 +195,51 @@ function footnoteSection(): Tree2ElementsParser {
 }
 
 function titlePage(): Tree2ElementsParser {
-    const bookTitle = translate(
-        extractText(xmlAttributes({ class: 'title1' })),
-        t => ({
+    const bookTitle = elemChProj({
+        classes: 'title1',
+        children: textNode(),
+        project: (children: string) => ({
             element: 'tag',
-            tag: { tag: 'title', value: t },
-        } as BookElement),
-    );
-    const bookAuthor = translate(
-        extractText(xmlAttributes({ class: 'title_authors' })),
-        a => ({
+            tag: { tag: 'title', value: children },
+        } as const),
+    });
+    const bookAuthor = elemChProj({
+        classes: 'title_authors',
+        children: textNode(),
+        project: (children: string) => ({
             element: 'tag',
-            tag: { tag: 'author', value: a },
-        } as BookElement),
-    );
+            tag: { tag: 'author', value: children },
+        } as const),
+    });
     const ignore = headParser(
-        (x: XmlTree) => yieldLast({ element: 'ignore' } as BookElement),
+        (x: XmlTree) =>
+            equalsToOneOf(x.name, [undefined, 'br', 'h3'])
+                ? yieldLast({ element: 'ignore' as const })
+                : reject(),
+    );
+    const report = headParser(
+        (x: XmlTree) => yieldLast(
+            { element: 'ignore' as const },
+            {
+                diag: 'unexpected-node',
+                xml: tree2String(x),
+                context: 'titlepage',
+            },
+        ),
     );
 
-    const parser = xmlNameAttrsChildren(
-        null,
-        { class: 'titlepage' },
-        some(choice(bookTitle, bookAuthor, ignore)),
-    );
+    const parser = elemCh({
+        name: null,
+        classes: 'titlepage',
+        children: some(choice(bookTitle, bookAuthor, ignore, report)),
+    });
 
     return parser;
 }
 
 function divTitle(): Tree2ElementsParser {
     const divLevel = headParser((n: XmlTree) => {
-        if (isElementTree(n) && nameEq('div', n.name)
+        if (n.type === 'element' && n.name === 'div'
             && n.attributes.class && n.attributes.class.startsWith('title')) {
             const levelString = n.attributes.class.slice('title'.length);
             const level = parseInt(levelString, 10);
@@ -152,16 +251,19 @@ function divTitle(): Tree2ElementsParser {
 
         return reject();
     });
-    const h = whitespaced(xmlNameChildren(n => n.startsWith('h'), textNode()));
+    const h = whitespaced(elemCh({
+        name: n => n ? n.startsWith('h') : false,
+        children: textNode(),
+    }));
     const content = some(h);
 
     const parser = translate(
         and(divLevel, xmlChildren(content)),
         ([level, ts]) => [{
-            element: 'chapter-title',
+            element: 'chapter-title' as const,
             title: ts,
             level: 4 - level,
-        } as BookElement],
+        }],
     );
 
     return parser;

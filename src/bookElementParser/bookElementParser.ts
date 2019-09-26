@@ -1,5 +1,5 @@
 import {
-    BookContentNode, ChapterNode, VolumeNode, VolumeMeta,
+    BookContentNode, ChapterNode, VolumeNode, VolumeMeta, KnownTag, Book,
 } from 'booka-common';
 import {
     AsyncStreamParser, yieldLast, ParserDiagnostic,
@@ -7,11 +7,11 @@ import {
 } from '../combinators';
 import { BookElement, TitleOrContentElement } from './bookElement';
 
-export const elements2volume: AsyncStreamParser<BookElement, VolumeNode> = pipeAsync(
+export const elements2book: AsyncStreamParser<BookElement, Book> = pipeAsync(
     async ({ stream }) => {
         return parseMeta(stream);
     },
-    async ({ meta, titleOrContent }) => {
+    async ({ meta, titleOrContent, tags }) => {
         const volumeNodes = allElements(makeStream(titleOrContent, {
             level: undefined,
         }));
@@ -24,14 +24,19 @@ export const elements2volume: AsyncStreamParser<BookElement, VolumeNode> = pipeA
             nodes: volumeNodes.value,
             meta: meta,
         };
+        const book: Book = {
+            volume,
+            tags,
+        };
 
-        return yieldLast(volume, volumeNodes.diagnostic);
+        return yieldLast(book, volumeNodes.diagnostic);
     }
 );
 
 function parseMeta(elements: BookElement[]) {
     const meta: VolumeMeta = {};
     const titleOrContent: TitleOrContentElement[] = [];
+    const tags: KnownTag[] = [];
     const diags: ParserDiagnostic[] = [];
     for (const el of elements) {
         switch (el.element) {
@@ -52,6 +57,7 @@ function parseMeta(elements: BookElement[]) {
                         };
                         break;
                 }
+                tags.push(tag);
                 break;
             case 'chapter-title':
             case 'content':
@@ -67,7 +73,7 @@ function parseMeta(elements: BookElement[]) {
     }
 
     return yieldLast({
-        meta, titleOrContent,
+        meta, titleOrContent, tags,
     }, compoundDiagnostic(diags));
 }
 
@@ -84,13 +90,16 @@ const contentElement: BookElementParser = headParser(head =>
 const titleElement: BookElementParser = input => {
     const head = input.stream[0];
     if (head && head.element === 'chapter-title') {
-        if (input.env.level === undefined || input.env.level > head.level) {
+        if (input.env.level === undefined || head.level === undefined || input.env.level > head.level) {
             const inside = bookElement(makeStream(input.stream.slice(1), {
                 level: head.level,
             }));
+            const insideLevel = head.level !== undefined ? head.level
+                : input.env.level !== undefined ? input.env.level - 1
+                    : 0;
             const chapter: ChapterNode = {
                 node: 'chapter',
-                level: head.level,
+                level: insideLevel,
                 title: head.title,
                 nodes: inside.value,
             };

@@ -1,6 +1,6 @@
 import * as parseXmlLib from '@rgrove/parse-xml';
 import { assertNever } from 'booka-common';
-import { yieldLast, FullParser } from '../combinators';
+import { yieldLast, FullParser, reject } from '../combinators';
 import { isWhitespaces } from '../utils';
 
 export type XmlStringParserInput = {
@@ -14,6 +14,7 @@ export const xmlStringParser: XmlStringParser = input => {
     try {
         let tree = parseXmlLib(input.xmlString, {
             preserveComments: input.preserveComments || false,
+            ignoreUndefinedEntities: true,
         });
         if (input.removeTrailingWhitespaces) {
             tree = {
@@ -23,7 +24,7 @@ export const xmlStringParser: XmlStringParser = input => {
         }
         return yieldLast(tree);
     } catch (e) {
-        return fail(e);
+        return reject({ diag: 'exception', e });
     }
 };
 
@@ -86,7 +87,7 @@ export function xmlText(text: string, parent?: XmlTreeWithChildren): XmlTreeText
     };
 }
 
-export function xmlElement(
+export function makeXmlElement(
     name: string,
     children?: XmlTree[],
     attrs?: XmlAttributes,
@@ -130,20 +131,20 @@ export function attributesToString(attr: XmlAttributes): string {
     return result;
 }
 
-export function tree2String(n: XmlTree): string {
+export function tree2String(n: XmlTree, depth: number = 0): string {
     switch (n.type) {
         case 'element':
         case 'document':
-            const name = n.type === 'element'
-                ? n.name
-                : 'document';
+            const name = n.name || 'document';
             const attrs = n.type === 'element'
                 ? attributesToString(n.attributes)
                 : '';
             const attrsStr = attrs.length > 0 ? ' ' + attrs : '';
-            const chs = n.children
-                .map(tree2String)
-                .reduce((all, cur) => all + cur, '');
+            const chs = depth !== 0
+                ? n.children
+                    .map(ch => tree2String(ch, depth - 1))
+                    .reduce((all, cur) => all + cur, '')
+                : '';
             return chs.length > 0
                 ? `<${name}${attrsStr}>${chs}</${name}>`
                 : `<${name}${attrsStr}/>`;
@@ -185,4 +186,22 @@ export function removeTrailingWhitespaces(trees: XmlTree[]): XmlTree[] {
     }
 
     return result;
+}
+
+export function extractAllText(tree: XmlTree): string {
+    switch (tree.type) {
+        case 'text':
+            return tree.text.trim();
+        case 'document':
+        case 'element':
+            return tree.children
+                .map(extractAllText)
+                .join('\n');
+        case 'comment':
+        case 'cdata':
+            return '';
+        default:
+            assertNever(tree);
+            return '';
+    }
 }

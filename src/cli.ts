@@ -4,8 +4,9 @@ import * as fs from 'fs';
 import { extname, join } from 'path';
 import { parseEpub } from '.';
 import { promisify, inspect } from 'util';
-import { extractNodeText } from 'booka-common';
+import { extractNodeText, tagValue } from 'booka-common';
 import { topDiagnostic } from './combinators';
+import { parseEpubText } from './epub';
 
 exec();
 
@@ -46,11 +47,22 @@ async function processEpubFile(filePath: string, reportMeta: boolean) {
         console.log(book.tags);
     }
     const bookText = extractNodeText(book.volume);
-    console.log(`Book length: ${bookText && bookText.length} symbols`);
+    const allXmlText = await parseEpubText(filePath);
+    const ratio = Math.floor(bookText.length / allXmlText.length * 100);
+    console.log(`Book length: ${bookText.length} symbols, ratio: ${ratio}`);
+    if (ratio < 97) {
+        logRed('Low ratio');
+        await saveString(`${filePath}.original`, allXmlText);
+        await saveString(`${filePath}.parsed`, bookText);
+    }
+    const skipTag = tagValue(result.value.book.tags, 'pg-skip');
+    if (skipTag !== null) {
+        logYellow('SKIP');
+    }
     if (result.diagnostic) {
         const top = topDiagnostic(result.diagnostic, 10);
         logRed('Diagnostics:');
-        console.log(inspect(result.diagnostic, false, 8, true));
+        console.log(inspect(result.diagnostic, false, 10, true));
     }
 }
 
@@ -72,12 +84,20 @@ function logRed(message: string) {
     console.log(`\x1b[31m${message}\x1b[0m`);
 }
 
+function logYellow(message: string) {
+    console.log(`\x1b[33m${message}\x1b[0m`);
+}
+
 async function logTimeAsync(marker: string, f: () => Promise<void>) {
     console.log(`Start: ${marker}`);
     const start = new Date();
     await f();
     const finish = new Date();
     console.log(`Finish: ${marker}, ${finish.valueOf() - start.valueOf()}ms`);
+}
+
+async function saveString(path: string, content: string) {
+    return promisify(fs.writeFile)(path, content);
 }
 
 export async function wait(n: number) {

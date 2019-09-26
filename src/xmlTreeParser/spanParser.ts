@@ -3,9 +3,20 @@ import {
     declare, translate, seq, some, endOfInput, choice,
     headParser, yieldLast, reject, Stream, expectEoi, projectFirst,
 } from '../combinators';
-import { xmlElementParser } from './treeParser';
+import { elemChProj } from './treeParser';
 import { XmlTree, tree2String } from '../xmlStringParser';
 import { TreeParserEnv, Tree2SpanParser, stream2string } from './utils';
+
+export const standardClasses = [
+    undefined,
+    'p', 'p1', 'v', 'empty-line',
+    'dropcap', 'drop',
+    'section1', 'section2', 'section3', 'section4', 'section5', 'section6',
+    // Project Gutenberg:
+    'i2', 'i4', 'i6', 'i8', 'i10', 'i16', 'i20', 'i21',
+    'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'c9', 'c10', 'c11',
+    'pgmonospaced', 'center', 'pgheader', 'fig', 'figleft',
+];
 
 export const span = declare<Stream<XmlTree, TreeParserEnv>, Span>('span');
 
@@ -33,51 +44,66 @@ const sup = attrsSpanParser(['sup'], ['superscript'], expectSpanContent);
 const sub = attrsSpanParser(['sub'], ['subscript'], expectSpanContent);
 const attr = choice(italic, bold, quote, small, big, sup, sub);
 
-const brSpan: Tree2SpanParser = xmlElementParser(
-    'br', {}, expectEoi(stream2string),
-    () => yieldLast('\n'),
-);
+const brSpan: Tree2SpanParser = elemChProj({
+    name: 'br',
+    expectedClasses: undefined,
+    children: expectEoi(stream2string),
+    project: () => '\n',
+});
 
-const correctionSpan: Tree2SpanParser = xmlElementParser(
-    'ins',
-    { title: null },
-    expectSpanContent,
-    ([xml, content]) => yieldLast({
+const correctionSpan: Tree2SpanParser = elemChProj({
+    name: 'ins',
+    expectedClasses: undefined,
+    expectedAttrs: { title: null },
+    children: expectSpanContent,
+    project: (content, xml) => ({
         span: 'compound',
         spans: [content],
         semantic: 'correction',
         note: xml.attributes.title,
     }),
-);
+});
 
-const spanSpan: Tree2SpanParser = xmlElementParser(
-    'span',
-    {
+const spanSpan: Tree2SpanParser = elemChProj({
+    name: 'span',
+    expectedClasses: [
+        ...standardClasses,
+        // TODO: do not ignore ?
+        'smcap', 'GutSmall', 'caps',
+    ],
+    expectedAttrs: {
         id: null,
-        class: null, href: null, title: null, tag: null,
+        href: null, title: null, tag: null,
     },
-    spanContent,
-    ([xml, sp]) => yieldLast(compoundSpan(sp)),
-);
-const aSpan: Tree2SpanParser = xmlElementParser(
-    'a',
-    {
+    children: spanContent,
+    project: children => compoundSpan(children),
+});
+const aSpan: Tree2SpanParser = elemChProj({
+    name: 'a',
+    expectedClasses: [
+        ...standardClasses, 'a',
+        // TODO: do not ignore ?
+        'pginternal', 'x-ebookmaker-pageno', 'footnote',
+        'citation',
+    ],
+    expectedAttrs: {
         id: null,
-        class: null, href: null, title: null, tag: null,
+        href: null, title: null, tag: null,
     },
-    spanContent,
-    ([xml, sp]) => {
-        const content = compoundSpan(sp);
-        if (xml.attributes.href !== undefined) {
-            return yieldLast({
+    children: spanContent,
+    project: (children, element) => {
+        const content = compoundSpan(children);
+        if (element.attributes.href !== undefined) {
+            return {
                 span: 'ref',
-                refToId: xml.attributes.href,
+                refToId: element.attributes.href,
                 content,
-            });
+            };
         } else {
-            return yieldLast(content);
+            return content;
         }
-    });
+    },
+});
 
 span.implementation = choice(
     text, attr, brSpan,
@@ -85,13 +111,19 @@ span.implementation = choice(
 );
 
 function attrsSpanParser(tagNames: string[], attrs: AttributeName[], contentParser: Tree2SpanParser): Tree2SpanParser {
-    return xmlElementParser(
-        tagNames,
-        { class: null, id: null },
-        contentParser,
-        ([_, content]) => yieldLast({
+    return elemChProj({
+        name: tagNames,
+        expectedClasses: [
+            ...standardClasses,
+            // TODO: do not ignore?
+            'smcap', 'GutSmall',
+        ],
+        expectedAttrs: { id: null },
+        children: contentParser,
+        project: (children) => ({
             span: 'attrs',
             attrs,
-            content,
-        }));
+            content: children,
+        }),
+    });
 }

@@ -93,9 +93,17 @@ const kindResolver: EpubKindResolver<EPub> = {
             return false;
         }
 
+        const gutenbergUrl = 'http://www.gutenberg.org';
         const source = rawMetadata['dc:source'];
-        return typeof source === 'string'
-            && source.startsWith('http://www.gutenberg.org');
+        const isGutenbergSource = typeof source === 'string'
+            && source.startsWith(gutenbergUrl);
+        if (isGutenbergSource) {
+            return isGutenbergSource;
+        }
+        const id = rawMetadata['dc:identifier'];
+        const marker = id && id['#'];
+        return typeof marker === 'string'
+            && marker.startsWith(gutenbergUrl);
     },
     fb2epub: epub => {
         const rawMetadata = getRawData(epub.metadata) as any;
