@@ -72,7 +72,7 @@ export function elemProj<T, E = any>(
 
 export type TreeParser<Out = XmlTree, Env = undefined> = StreamParser<XmlTree, Out, Env>;
 
-export function xmlName<E = any>(name: Constraint<string>): TreeParser<XmlTreeElement, E> {
+function xmlName<E = any>(name: Constraint<string>): TreeParser<XmlTreeElement, E> {
     return headParser(tree => {
         if (tree.type === 'element') {
             const check = checkValue(tree.name, name);
@@ -86,7 +86,7 @@ export function xmlName<E = any>(name: Constraint<string>): TreeParser<XmlTreeEl
     );
 }
 
-export function xmlAttributes<E = any>(attrs: ConstraintMap<XmlAttributes>): TreeParser<XmlTreeElement, E> {
+function xmlAttributes<E = any>(attrs: ConstraintMap<XmlAttributes>): TreeParser<XmlTreeElement, E> {
     return headParser(tree => {
         if (tree.type === 'element') {
             const checks = checkObject(tree.attributes, attrs);
@@ -100,7 +100,7 @@ export function xmlAttributes<E = any>(attrs: ConstraintMap<XmlAttributes>): Tre
     });
 }
 
-export function xmlAttributesFull<E = any>(attrs: ConstraintMap<XmlAttributes>): TreeParser<XmlTreeElement, E> {
+function xmlAttributesFull<E = any>(attrs: ConstraintMap<XmlAttributes>): TreeParser<XmlTreeElement, E> {
     return headParser(tree => {
         if (tree.type === 'element') {
             const checks = checkObjectFull(tree.attributes, attrs);

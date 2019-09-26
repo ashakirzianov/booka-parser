@@ -1,9 +1,11 @@
-import { BookContentNode, filterUndefined, makePph, compoundSpan, extractSpanText, extractNodeText } from 'booka-common';
+import {
+    BookContentNode, filterUndefined, makePph, compoundSpan,
+    extractSpanText,
+} from 'booka-common';
 import { EpubBookParserHooks, MetadataRecordParser } from './epubBookParser';
 import {
-    textNode, extractText, nameEq,
-    ignoreClass, buildRef, Tree2ElementsParser,
-    whitespaced, xmlName, paragraphNode, stream2string, span, xmlChildren, xmlAttributes, elemChProj, elemCh, elemProj,
+    textNode, nameEq, ignoreClass, buildRef, Tree2ElementsParser,
+    whitespaced, paragraphNode, stream2string, span, elemChProj, elemCh, elemProj, xmlChildren,
 } from '../xmlTreeParser';
 import {
     some, translate, choice, seq, and, headParser, envParser, reject, yieldLast, expectEoi, expectParseAll,
@@ -146,8 +148,9 @@ function footnoteSection(): Tree2ElementsParser {
         },
             ({ children: [spans] }) => makePph(compoundSpan(spans)),
         );
-        const br = translate(
-            xmlName('br'),
+        const br = elemProj({
+            name: 'br',
+        },
             () => undefined,
         );
         const skipWhitespaces = translate(
@@ -196,19 +199,23 @@ function footnoteSection(): Tree2ElementsParser {
 }
 
 function titlePage(): Tree2ElementsParser {
-    const bookTitle = translate(
-        extractText(xmlAttributes({ class: 'title1' })),
-        t => ({
+    const bookTitle = elemChProj({
+        requiredAttributes: { class: 'title1' },
+        children: textNode(),
+    },
+        ({ children }) => ({
             element: 'tag',
-            tag: { tag: 'title', value: t },
-        } as BookElement),
+            tag: { tag: 'title', value: children },
+        } as const),
     );
-    const bookAuthor = translate(
-        extractText(xmlAttributes({ class: 'title_authors' })),
-        a => ({
+    const bookAuthor = elemChProj({
+        requiredAttributes: { class: 'title_authors' },
+        children: textNode(),
+    },
+        ({ children }) => ({
             element: 'tag',
-            tag: { tag: 'author', value: a },
-        } as BookElement),
+            tag: { tag: 'author', value: children },
+        } as const),
     );
     const ignore = headParser(
         (x: XmlTree) =>
@@ -259,10 +266,10 @@ function divTitle(): Tree2ElementsParser {
     const parser = translate(
         and(divLevel, xmlChildren(content)),
         ([level, ts]) => [{
-            element: 'chapter-title',
+            element: 'chapter-title' as const,
             title: ts,
             level: 4 - level,
-        } as BookElement],
+        }],
     );
 
     return parser;

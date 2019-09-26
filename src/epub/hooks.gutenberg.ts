@@ -1,7 +1,7 @@
 import { EpubBookParserHooks, MetadataRecordParser } from './epubBookParser';
 import {
-    xmlName, xmlChildren, textNode,
-    whitespaces, buildRef, Tree2ElementsParser, ignoreClass, elemProj, elem,
+    textNode,
+    whitespaces, buildRef, Tree2ElementsParser, ignoreClass, elemProj, elem, elemChProj, elemCh,
 } from '../xmlTreeParser';
 import {
     and, translate, seq, maybe, envParser, headParser, reject, yieldLast, some,
@@ -68,12 +68,12 @@ function footnote(): Tree2ElementsParser {
                     : false,
             },
         },
-            ({ element }) => element.attributes.id || null,
+            ({ element }) => element.attributes.id,
         );
-        const footnoteMarker = translate(
-            and(xmlName('p'), xmlChildren(footnoteId)),
-            ([_, id]) => id,
-        );
+        const footnoteMarker = elemCh({
+            name: 'p',
+            children: footnoteId,
+        });
 
         const footnoteTitle = textNode(t => {
             if (t.endsWith('(')) {
@@ -86,9 +86,9 @@ function footnote(): Tree2ElementsParser {
         const footnoteTitleLine = translate(
             seq(
                 footnoteTitle,
-                xmlName('a'),
+                elem({ name: 'a' }),
                 textNode(),
-                xmlName('br'),
+                elem({ name: 'br' }),
             ),
             ([title]) => title,
         );
@@ -101,14 +101,12 @@ function footnote(): Tree2ElementsParser {
             }),
         );
         const footnoteContent = seq(maybe(footnoteTitleLine), pph);
-        const footnoteP = elem({
+        const footnoteContainer = elemChProj({
             name: 'p',
             requiredAttributes: { class: 'foot' },
-        });
-
-        const footnoteContainer = translate(
-            and(footnoteP, xmlChildren(footnoteContent)),
-            ([_, [title, content]]) => ({ title, content }),
+            children: footnoteContent,
+        },
+            ({ children: [title, content] }) => ({ title, content }),
         );
 
         const fullFootnote: Tree2ElementsParser = translate(

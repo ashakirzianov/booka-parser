@@ -2,7 +2,7 @@ import { KnownTag, extractSpanText, ParagraphNode } from 'booka-common';
 import {
     reject, headParser, yieldLast, translate, choice, expectParseAll, some,
 } from '../combinators';
-import { isTextTree, isElementTree, XmlTreeWithChildren } from '../xmlStringParser';
+import { XmlTreeWithChildren } from '../xmlStringParser';
 import { EpubBookParserHooks, MetadataRecordParser } from './epubBookParser';
 import {
     Tree2ElementsParser, span, paragraphNode, stream2string, elemChProj,
@@ -150,9 +150,9 @@ function titleElement(): Tree2ElementsParser {
     function extractTextLines(node: XmlTreeWithChildren): string[] {
         const result: string[] = [];
         for (const ch of node.children) {
-            if (isElementTree(ch)) {
+            if (ch.type === 'element') {
                 result.push(...extractTextLines(ch));
-            } else if (isTextTree(ch)) {
+            } else if (ch.type === 'text') {
                 if (!ch.text.startsWith('\n')) {
                     result.push(ch.text);
                 }
@@ -163,7 +163,7 @@ function titleElement(): Tree2ElementsParser {
     }
 
     return headParser(el => {
-        if (!isElementTree(el) || el.name !== 'div') {
+        if (el.type !== 'element' || el.name !== 'div') {
             return reject();
         }
 
