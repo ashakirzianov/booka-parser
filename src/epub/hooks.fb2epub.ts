@@ -1,10 +1,9 @@
 import { BookContentNode, filterUndefined, makePph, compoundSpan, extractSpanText, extractNodeText } from 'booka-common';
 import { EpubBookParserHooks, MetadataRecordParser } from './epubBookParser';
 import {
-    textNode, xmlChildren, extractText, nameEq, xmlNameAttrs,
-    xmlNameAttrsChildren, xmlAttributes, xmlNameChildren,
+    textNode, extractText, nameEq,
     ignoreClass, buildRef, Tree2ElementsParser,
-    whitespaced, xmlElementChildrenProj, xmlName, paragraphNode, stream2string, span,
+    whitespaced, xmlName, paragraphNode, stream2string, span, xmlChildren, xmlAttributes, xmlElementChProj, xmlElementCh, xmlElementProj,
 } from '../xmlTreeParser';
 import {
     some, translate, choice, seq, and, headParser, envParser, reject, yieldLast, expectEoi, expectParseAll,
@@ -44,26 +43,40 @@ function metaHook(): MetadataRecordParser {
 }
 
 function subtitle(): Tree2ElementsParser {
-    return xmlNameAttrsChildren(
-        'p', { class: 'subtitle' },
-        translate(
-            span,
-            s => [{
-                element: 'chapter-title',
-                level: undefined,
-                title: [extractSpanText(s)],
-            }],
-        ),
+    return xmlElementChProj({
+        name: 'p',
+        requiredAttributes: { class: 'subtitle' },
+        children: span,
+    },
+        ({ children }) => [{
+            element: 'chapter-title',
+            level: undefined,
+            title: [extractSpanText(children)],
+        }],
     );
 }
 
 function epigraph(): Tree2ElementsParser {
-    const signature = whitespaced(xmlNameChildren('p', span));
-    const signatureDiv = xmlNameAttrsChildren('div', { class: 'epigraph_author' }, signature);
-    const content = seq(whitespaced(paragraphNode), whitespaced(signatureDiv));
-    return translate(
-        xmlNameAttrsChildren('div', { class: 'epigraph' }, content),
-        ([pph, sig]) => [{
+    const signature = whitespaced(xmlElementCh({
+        name: 'p',
+        children: span,
+    }));
+    const signatureDiv = xmlElementCh({
+        name: 'div',
+        requiredAttributes: { class: 'epigraph_author' },
+        children: signature,
+    });
+    const content = seq(
+        whitespaced(paragraphNode),
+        whitespaced(signatureDiv),
+    );
+
+    return xmlElementChProj({
+        name: 'div',
+        requiredAttributes: { class: 'epigraph' },
+        children: content,
+    },
+        ({ children: [pph, sig] }) => [{
             element: 'content',
             content: {
                 node: 'group',
@@ -71,21 +84,29 @@ function epigraph(): Tree2ElementsParser {
                 semantic: 'epigraph',
                 signature: [extractSpanText(sig)],
             },
-        }]
+        }],
     );
 }
 
 function poem(): Tree2ElementsParser {
     const content = expectParseAll(some(paragraphNode), stream2string);
-    const stanza = xmlNameAttrsChildren('div', { class: 'stanza' }, content);
+    const stanza = xmlElementCh({
+        name: 'div',
+        requiredAttributes: { class: 'stanza' },
+        children: content,
+    });
 
-    return translate(
-        xmlNameAttrsChildren('div', { class: 'poem' }, whitespaced(choice(stanza, content))),
-        pphs => [{
+    return xmlElementChProj(
+        {
+            name: 'div',
+            requiredAttributes: { class: 'poem' },
+            children: whitespaced(choice(stanza, content)),
+        },
+        ({ children }) => [{
             element: 'content',
             content: {
                 node: 'group',
-                nodes: pphs,
+                nodes: children,
                 semantic: 'poem',
             },
         }],
@@ -94,21 +115,31 @@ function poem(): Tree2ElementsParser {
 
 function footnoteSection(): Tree2ElementsParser {
     return envParser(env => {
-        const divId = translate(
-            xmlNameAttrs('div', { class: 'section2', id: id => id !== undefined }),
-            el => el.attributes.id!,
+        const divId = xmlElementProj({
+            name: 'div',
+            requiredAttributes: {
+                class: 'section2',
+                id: id => id !== undefined,
+            },
+        },
+            ({ element }) => element.attributes.id!,
         );
-        const h = xmlNameChildren(n => n.startsWith('h'), textNode());
-        const title = xmlNameAttrsChildren(
-            'div',
-            { class: 'note_section' },
-            some(whitespaced(h)),
-        );
-        const back = translate(
-            xmlNameAttrs('a', { class: 'note_anchor', href: null }),
+        const h = xmlElementCh({
+            name: n => n.match(/^h[0-9]+$/) !== null,
+            children: textNode(),
+        });
+        const title = xmlElementCh({
+            name: 'div',
+            requiredAttributes: { class: 'note_section' },
+            children: some(whitespaced(h)),
+        });
+        const back = xmlElementProj({
+            name: 'a',
+            requiredAttributes: { class: 'note_anchor', href: null },
+        },
             () => undefined,
         );
-        const pph = xmlElementChildrenProj({
+        const pph = xmlElementChProj({
             name: 'p',
             expectedAttributes: { class: null },
             children: seq(some(env.spanParser), expectEoi('footnote-p')),
@@ -196,11 +227,11 @@ function titlePage(): Tree2ElementsParser {
         ),
     );
 
-    const parser = xmlNameAttrsChildren(
-        null,
-        { class: 'titlepage' },
-        some(choice(bookTitle, bookAuthor, ignore, report)),
-    );
+    const parser = xmlElementCh({
+        name: null,
+        requiredAttributes: { class: 'titlepage' },
+        children: some(choice(bookTitle, bookAuthor, ignore, report)),
+    });
 
     return parser;
 }
@@ -219,7 +250,10 @@ function divTitle(): Tree2ElementsParser {
 
         return reject();
     });
-    const h = whitespaced(xmlNameChildren(n => n.startsWith('h'), textNode()));
+    const h = whitespaced(xmlElementCh({
+        name: n => n.startsWith('h'),
+        children: textNode(),
+    }));
     const content = some(h);
 
     const parser = translate(

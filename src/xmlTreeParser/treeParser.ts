@@ -5,6 +5,7 @@ import {
     StreamParser, headParser, makeStream, nextStream, not, Stream,
     projectLast, and, expected, yieldLast, diagnosticContext,
     maybe,
+    Parser,
 } from '../combinators';
 import { Constraint, ConstraintMap, checkObject, checkValue, checkObjectFull } from './constraint';
 import { filterUndefined } from 'booka-common';
@@ -36,13 +37,13 @@ export function xmlElement<E = any>(ec: XmlElementConstraint): TreeParser<XmlTre
         : diagnosticContext(result, ec.context);
 }
 
-export function xmlElementChildren<TC, E = any>(ec: XmlElementConstraint & {
+export function xmlElementCh<TC, E = any>(ec: XmlElementConstraint & {
     children: TreeParser<TC, E>,
 }): TreeParser<TC, E> {
     return projectLast(and(xmlElement(ec), xmlChildren(ec.children)));
 }
 
-export function xmlElementChildrenProj<TC, T, E = any>(
+export function xmlElementChProj<TC, T, E = any>(
     ec: XmlElementConstraint & {
         children: TreeParser<TC, E>,
     },
@@ -53,6 +54,18 @@ export function xmlElementChildrenProj<TC, T, E = any>(
         ([el, ch]) => project({
             element: el,
             children: ch,
+        }),
+    );
+}
+
+export function xmlElementProj<T, E = any>(
+    ec: XmlElementConstraint,
+    project: (x: { element: XmlTreeElement }) => T,
+): TreeParser<T, E> {
+    return translate(
+        xmlElement(ec),
+        (el) => project({
+            element: el,
         }),
     );
 }
@@ -99,22 +112,6 @@ export function xmlAttributesFull<E = any>(attrs: ConstraintMap<XmlAttributes>):
         }
         return reject({ diag: 'expected-xml-element' });
     });
-}
-
-export function xmlNameAttrs(name: Constraint<string>, attrs: ConstraintMap<XmlAttributes>) {
-    return projectLast(and(xmlName(name), xmlAttributes(attrs)));
-}
-
-export function xmlNameAttrsChildren<T, E = any>(name: Constraint<string>, attrs: ConstraintMap<XmlAttributes>, childrenParser: TreeParser<T, E>) {
-    return projectLast(
-        and(xmlName(name), xmlAttributes(attrs), xmlChildren(childrenParser))
-    );
-}
-
-export function xmlNameChildren<T, E = any>(name: Constraint<string>, childrenParser: TreeParser<T, E>) {
-    return projectLast(
-        and(xmlName(name), xmlChildren(childrenParser))
-    );
 }
 
 export function xmlChildren<T, E>(parser: TreeParser<T, E>): TreeParser<T, E> {

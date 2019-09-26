@@ -1,7 +1,7 @@
 import { EpubBookParserHooks, MetadataRecordParser } from './epubBookParser';
 import {
-    xmlName, xmlNameAttrs, xmlChildren, textNode,
-    whitespaces, buildRef, Tree2ElementsParser, xmlNameAttrsChildren, ignoreClass,
+    xmlName, xmlChildren, textNode,
+    whitespaces, buildRef, Tree2ElementsParser, ignoreClass, xmlElementProj, xmlElement,
 } from '../xmlTreeParser';
 import {
     and, translate, seq, maybe, envParser, headParser, reject, yieldLast, some,
@@ -41,30 +41,34 @@ function metaHook(): MetadataRecordParser {
 }
 
 function skipTocP(): Tree2ElementsParser {
-    return translate(
-        xmlNameAttrs('p', { class: 'toc' }),
+    return xmlElementProj({
+        name: 'p',
+        requiredAttributes: { class: 'toc' },
+    },
         () => [],
     );
 }
 
 function skipTocTable(): Tree2ElementsParser {
-    return translate(
-        xmlNameAttrs('table', { summary: 'Toc', class: null }),
+    return xmlElementProj({
+        name: 'table',
+        requiredAttributes: { summary: 'Toc', class: null },
+    },
         () => [],
     );
 }
 
 function footnote(): Tree2ElementsParser {
     return envParser(env => {
-        const footnoteId = translate(
-            xmlNameAttrs(
-                'a',
-                {
-                    id: i => i
-                        ? i.startsWith('link')
-                        : false,
-                }),
-            el => el.attributes.id || null,
+        const footnoteId = xmlElementProj({
+            name: 'a',
+            requiredAttributes: {
+                id: i => i
+                    ? i.startsWith('link')
+                    : false,
+            },
+        },
+            ({ element }) => element.attributes.id || null,
         );
         const footnoteMarker = translate(
             and(xmlName('p'), xmlChildren(footnoteId)),
@@ -97,7 +101,10 @@ function footnote(): Tree2ElementsParser {
             }),
         );
         const footnoteContent = seq(maybe(footnoteTitleLine), pph);
-        const footnoteP = xmlNameAttrs('p', { class: 'foot' });
+        const footnoteP = xmlElement({
+            name: 'p',
+            requiredAttributes: { class: 'foot' },
+        });
 
         const footnoteContainer = translate(
             and(footnoteP, xmlChildren(footnoteContent)),

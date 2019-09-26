@@ -3,7 +3,7 @@ import {
     declare, translate, seq, some, endOfInput, choice,
     headParser, yieldLast, reject, Stream, expectEoi, projectFirst,
 } from '../combinators';
-import { xmlElementChildrenProj } from './treeParser';
+import { xmlElementChProj } from './treeParser';
 import { XmlTree, tree2String } from '../xmlStringParser';
 import { TreeParserEnv, Tree2SpanParser, stream2string } from './utils';
 
@@ -33,14 +33,14 @@ const sup = attrsSpanParser(['sup'], ['superscript'], expectSpanContent);
 const sub = attrsSpanParser(['sub'], ['subscript'], expectSpanContent);
 const attr = choice(italic, bold, quote, small, big, sup, sub);
 
-const brSpan: Tree2SpanParser = xmlElementChildrenProj({
+const brSpan: Tree2SpanParser = xmlElementChProj({
     name: 'br',
     children: expectEoi(stream2string),
 },
     () => '\n',
 );
 
-const correctionSpan: Tree2SpanParser = xmlElementChildrenProj({
+const correctionSpan: Tree2SpanParser = xmlElementChProj({
     name: 'ins',
     expectedAttributes: { title: null },
     children: expectSpanContent,
@@ -53,7 +53,7 @@ const correctionSpan: Tree2SpanParser = xmlElementChildrenProj({
     }),
 );
 
-const spanSpan: Tree2SpanParser = xmlElementChildrenProj({
+const spanSpan: Tree2SpanParser = xmlElementChProj({
     name: 'span',
     expectedAttributes: {
         id: null,
@@ -63,7 +63,7 @@ const spanSpan: Tree2SpanParser = xmlElementChildrenProj({
 },
     ({ children }) => compoundSpan(children),
 );
-const aSpan: Tree2SpanParser = xmlElementChildrenProj({
+const aSpan: Tree2SpanParser = xmlElementChProj({
     name: 'a',
     expectedAttributes: {
         id: null,
@@ -91,7 +91,7 @@ span.implementation = choice(
 );
 
 function attrsSpanParser(tagNames: string[], attrs: AttributeName[], contentParser: Tree2SpanParser): Tree2SpanParser {
-    return xmlElementChildrenProj({
+    return xmlElementChProj({
         name: tagNames,
         expectedAttributes: { class: null, id: null },
         children: contentParser,

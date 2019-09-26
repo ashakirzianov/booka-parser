@@ -86,7 +86,7 @@ export function xmlText(text: string, parent?: XmlTreeWithChildren): XmlTreeText
     };
 }
 
-export function xmlElement(
+export function makeXmlElement(
     name: string,
     children?: XmlTree[],
     attrs?: XmlAttributes,

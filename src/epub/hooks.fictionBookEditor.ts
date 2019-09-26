@@ -1,8 +1,12 @@
 import { KnownTag, extractSpanText, ParagraphNode } from 'booka-common';
-import { reject, headParser, yieldLast, envParser, translate, choice, expectParseAll, some } from '../combinators';
+import {
+    reject, headParser, yieldLast, translate, choice, expectParseAll, some,
+} from '../combinators';
 import { isTextTree, isElementTree, XmlTreeWithChildren } from '../xmlStringParser';
 import { EpubBookParserHooks, MetadataRecordParser } from './epubBookParser';
-import { Tree2ElementsParser, xmlNameAttrsChildren, textNode, span, paragraphNode, stream2string } from '../xmlTreeParser';
+import {
+    Tree2ElementsParser, span, paragraphNode, stream2string, xmlElementChProj,
+} from '../xmlTreeParser';
 import { BookElement } from '../bookElementParser';
 
 export const fictionBookEditorHooks: EpubBookParserHooks = {
@@ -58,13 +62,16 @@ function metaHook(): MetadataRecordParser {
 function epigraph(): Tree2ElementsParser {
     const content = expectParseAll(some(paragraphNode), stream2string);
 
-    return translate(
-        xmlNameAttrsChildren('div', { class: 'epigraph' }, content),
-        pphs => [{
+    return xmlElementChProj({
+        name: 'div',
+        requiredAttributes: { class: 'epigraph' },
+        children: content,
+    },
+        ({ children }) => [{
             element: 'content',
             content: {
                 node: 'group',
-                nodes: pphs,
+                nodes: children,
                 semantic: 'epigraph',
                 signature: [],
             },
@@ -73,16 +80,15 @@ function epigraph(): Tree2ElementsParser {
 }
 
 function cite(): Tree2ElementsParser {
-    const textAuthor = xmlNameAttrsChildren(
-        ['div', 'p'],
-        { class: 'text-author' },
-        translate(
-            span,
-            s => ({
-                kind: 'signature' as const,
-                line: extractSpanText(s),
-            }),
-        ),
+    const textAuthor = xmlElementChProj({
+        name: ['div', 'p'],
+        requiredAttributes: { class: 'text-author' },
+        children: span,
+    },
+        ({ children }) => ({
+            kind: 'signature' as const,
+            line: extractSpanText(children),
+        }),
     );
     const p = translate(
         paragraphNode,
@@ -93,15 +99,18 @@ function cite(): Tree2ElementsParser {
     );
     const content = expectParseAll(some(choice(textAuthor, p)), stream2string);
 
-    const children = translate(
-        content,
-        cs => {
-            const pphs = cs.reduce(
+    return xmlElementChProj({
+        name: 'div',
+        requiredAttributes: { class: 'cite' },
+        children: content,
+    },
+        ({ children }) => {
+            const pphs = children.reduce(
                 (ps, c) =>
                     c.kind === 'pph' ? ps.concat(c.paragraph) : ps,
                 [] as ParagraphNode[],
             );
-            const signature = cs.reduce(
+            const signature = children.reduce(
                 (ss, c) =>
                     c.kind === 'signature'
                         ? ss.concat(c.line)
@@ -120,17 +129,18 @@ function cite(): Tree2ElementsParser {
             };
 
             return [result];
-        }
-    );
-    return xmlNameAttrsChildren('div', { class: 'cite' }, children);
+        });
 }
 
 function subtitle(): Tree2ElementsParser {
-    return translate(
-        xmlNameAttrsChildren('p', { class: 'subtitle' }, span),
-        s => [{
+    return xmlElementChProj({
+        name: 'p',
+        requiredAttributes: { class: 'subtitle' },
+        children: span,
+    },
+        ({ children }) => [{
             element: 'chapter-title',
-            title: [extractSpanText(s)],
+            title: [extractSpanText(children)],
             level: undefined,
         }],
     );
