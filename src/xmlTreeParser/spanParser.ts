@@ -57,7 +57,7 @@ const spanSpan: Tree2SpanParser = elemChProj({
     name: 'span',
     expectedAttrs: {
         id: null,
-        class: null, href: null, title: null, tag: null,
+        href: null, title: null, tag: null,
     },
     children: spanContent,
 },
@@ -67,7 +67,7 @@ const aSpan: Tree2SpanParser = elemChProj({
     name: 'a',
     expectedAttrs: {
         id: null,
-        class: null, href: null, title: null, tag: null,
+        href: null, title: null, tag: null,
     },
     children: spanContent,
 },
@@ -93,7 +93,8 @@ span.implementation = choice(
 function attrsSpanParser(tagNames: string[], attrs: AttributeName[], contentParser: Tree2SpanParser): Tree2SpanParser {
     return elemChProj({
         name: tagNames,
-        expectedAttrs: { class: null, id: null },
+        expectedClasses: null,
+        expectedAttrs: { id: null },
         children: contentParser,
     },
         ({ children }) => ({

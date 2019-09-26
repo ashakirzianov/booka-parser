@@ -130,20 +130,20 @@ export function attributesToString(attr: XmlAttributes): string {
     return result;
 }
 
-export function tree2String(n: XmlTree): string {
+export function tree2String(n: XmlTree, depth: number = 0): string {
     switch (n.type) {
         case 'element':
         case 'document':
-            const name = n.type === 'element'
-                ? n.name
-                : 'document';
+            const name = n.name || 'document';
             const attrs = n.type === 'element'
                 ? attributesToString(n.attributes)
                 : '';
             const attrsStr = attrs.length > 0 ? ' ' + attrs : '';
-            const chs = n.children
-                .map(tree2String)
-                .reduce((all, cur) => all + cur, '');
+            const chs = depth !== 0
+                ? n.children
+                    .map(ch => tree2String(ch, depth - 1))
+                    .reduce((all, cur) => all + cur, '')
+                : '';
             return chs.length > 0
                 ? `<${name}${attrsStr}>${chs}</${name}>`
                 : `<${name}${attrsStr}/>`;

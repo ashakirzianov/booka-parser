@@ -47,7 +47,7 @@ function metaHook(): MetadataRecordParser {
 function subtitle(): Tree2ElementsParser {
     return elemChProj({
         name: 'p',
-        attrs: { class: 'subtitle' },
+        classes: 'subtitle',
         children: span,
     },
         ({ children }) => [{
@@ -65,7 +65,7 @@ function epigraph(): Tree2ElementsParser {
     }));
     const signatureDiv = elemCh({
         name: 'div',
-        attrs: { class: 'epigraph_author' },
+        classes: 'epigraph_author',
         children: signature,
     });
     const content = seq(
@@ -75,7 +75,7 @@ function epigraph(): Tree2ElementsParser {
 
     return elemChProj({
         name: 'div',
-        attrs: { class: 'epigraph' },
+        classes: 'epigraph',
         children: content,
     },
         ({ children: [pph, sig] }) => [{
@@ -94,14 +94,14 @@ function poem(): Tree2ElementsParser {
     const content = expectParseAll(some(paragraphNode), stream2string);
     const stanza = elemCh({
         name: 'div',
-        attrs: { class: 'stanza' },
+        classes: 'stanza',
         children: content,
     });
 
     return elemChProj(
         {
             name: 'div',
-            attrs: { class: 'poem' },
+            classes: 'poem',
             children: whitespaced(choice(stanza, content)),
         },
         ({ children }) => [{
@@ -119,8 +119,8 @@ function footnoteSection(): Tree2ElementsParser {
     return envParser(env => {
         const divId = elemProj({
             name: 'div',
+            classes: 'section2',
             attrs: {
-                class: 'section2',
                 id: id => id !== undefined,
             },
         },
@@ -132,18 +132,19 @@ function footnoteSection(): Tree2ElementsParser {
         });
         const title = elemCh({
             name: 'div',
-            attrs: { class: 'note_section' },
+            classes: 'note_section',
             children: some(whitespaced(h)),
         });
         const back = elemProj({
             name: 'a',
-            attrs: { class: 'note_anchor', href: null },
+            classes: 'note_anchor',
+            attrs: { href: null },
         },
             () => undefined,
         );
         const pph = elemChProj({
             name: 'p',
-            expectedAttrs: { class: null },
+            expectedClasses: null,
             children: seq(some(env.spanParser), expectEoi('footnote-p')),
         },
             ({ children: [spans] }) => makePph(compoundSpan(spans)),
@@ -200,7 +201,7 @@ function footnoteSection(): Tree2ElementsParser {
 
 function titlePage(): Tree2ElementsParser {
     const bookTitle = elemChProj({
-        attrs: { class: 'title1' },
+        classes: 'title1',
         children: textNode(),
     },
         ({ children }) => ({
@@ -209,7 +210,7 @@ function titlePage(): Tree2ElementsParser {
         } as const),
     );
     const bookAuthor = elemChProj({
-        attrs: { class: 'title_authors' },
+        classes: 'title_authors',
         children: textNode(),
     },
         ({ children }) => ({
@@ -236,7 +237,7 @@ function titlePage(): Tree2ElementsParser {
 
     const parser = elemCh({
         name: null,
-        attrs: { class: 'titlepage' },
+        classes: 'titlepage',
         children: some(choice(bookTitle, bookAuthor, ignore, report)),
     });
 

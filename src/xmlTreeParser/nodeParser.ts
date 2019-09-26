@@ -29,23 +29,21 @@ const skipWhitespaces: Tree2ElementsParser = headParser(node => {
 const wrappedSpans = elemCh({
     context: 'wrappedSpans',
     name: ['p', 'span', 'div'],
+    expectedClasses: [
+        undefined, 'p', 'p1', 'v', 'empty-line', 'drop',
+        // Project Gutenberg:
+        'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'c9', 'c10', 'c11',
+        'pgmonospaced', 'center', 'pgheader',
+        // TODO: do not ignore ?
+        'letterdate', 'letter1', 'titlepage', 'footer', 'intro',
+        'poem', 'poem1', 'gapspace', 'gapshortline', 'noindent',
+        'figcenter', 'stanza', 'foot', 'letter', 'gutindent', 'poetry',
+        'finis', 'verse', 'gutsumm', 'pfirst',
+        // TODO: handle properly !!!
+        'footnote', 'toc',
+    ],
     expectedAttrs: {
         style: null,
-        class: [
-            undefined, 'p', 'p1', 'v', 'empty-line', 'drop',
-            // Project Gutenberg:
-            'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'c9', 'c10', 'c11',
-            'pgmonospaced', 'center',
-            // TODO: support multiple classes
-            'center c1', 'pgmonospaced pgheader', 'noindent c4',
-            // TODO: do not ignore ?
-            'letterdate', 'letter1', 'titlepage', 'footer', 'intro',
-            'poem', 'poem1', 'gapspace', 'gapshortline', 'noindent',
-            'figcenter', 'stanza', 'foot', 'letter', 'gutindent', 'poetry',
-            'finis', 'verse', 'gutsumm', 'pfirst',
-            // TODO: handle properly !!!
-            'footnote', 'toc',
-        ],
         id: null,
         'xml:space': [undefined, 'preserve'],
     },
@@ -95,16 +93,14 @@ const li = elemCh({
 
 const listElement: Tree2ElementsParser = elemChProj({
     name: ['ol', 'ul'],
-    expectedAttrs: {
-        class: [
-            undefined,
-            // Project Gutenberg:
-            'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'c9',
-            'none', 'nonetn',
-            // TODO: properly support
-            'toc',
-        ],
-    },
+    expectedClasses: [
+        undefined,
+        // Project Gutenberg:
+        'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'c9',
+        'none', 'nonetn',
+        // TODO: properly support
+        'toc',
+    ],
     children: expectParseAll(some(whitespaced(li)), stream2string),
 },
     ({ element, children }) => [{
@@ -119,12 +115,12 @@ const listElement: Tree2ElementsParser = elemChProj({
 
 const tableCell = elemChProj({
     name: ['td', 'th'],
+    expectedClasses: [
+        undefined,
+        'c1', 'c2', 'c3', 'c4', 'c5', 'c6',
+    ],
     expectedAttrs: {
         align: null, valign: null, colspan: null,
-        class: [
-            undefined,
-            'c1', 'c2', 'c3', 'c4', 'c5', 'c6',
-        ],
     },
     children: expected(pphSpans, []),
 },
@@ -147,13 +143,13 @@ const tableBody = choice(tbody, tableBodyContent);
 
 const table: Tree2ElementsParser = elemChProj({
     name: 'table',
+    expectedClasses: [
+        undefined,
+        'c1', 'c2', 'c3', 'c4', 'c5', 'c6',
+    ],
     expectedAttrs: {
         border: null, cellpadding: null, cellspacing: null, width: null,
         summary: [undefined, ''],
-        class: [
-            undefined,
-            'c1', 'c2', 'c3', 'c4', 'c5', 'c6',
-        ],
     },
     children: expectParseAll(whitespaced(tableBody), stream2string),
 },
@@ -165,14 +161,12 @@ const table: Tree2ElementsParser = elemChProj({
 
 const hr = elemChProj({
     name: 'hr',
-    expectedAttrs: {
-        class: [
-            undefined,
-            // Project Gutenberg:
-            'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7',
-            'main', 'short', 'tiny', 'break',
-        ],
-    },
+    expectedClasses: [
+        undefined,
+        // Project Gutenberg:
+        'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7',
+        'main', 'short', 'tiny', 'break',
+    ],
     children: expectEoi(stream2string),
 },
     () => fromContent({
@@ -183,21 +177,19 @@ const hr = elemChProj({
 const containerElement: Tree2ElementsParser = envParser(environment => {
     return elemChProj({
         name: ['p', 'div', 'span', 'blockquote', 'a'],
+        expectedClasses: [
+            undefined, 'image',
+            'section1', 'section2', 'section3', 'section4', 'section5', 'section6',
+            // Project Gutenberg:
+            'fig', 'figleft',
+            'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'c9', 'c10',
+            // TODO: do not ignore ?
+            'extracts', 'mynote', 'letterdate', 'letter1', 'titlepage',
+            'contents', 'centered', 'poem', 'figcenter', 'blockquot',
+        ],
         expectedAttrs: {
             id: null,
             tag: null,
-            class: [
-                undefined, 'image',
-                'section1', 'section2', 'section3', 'section4', 'section5', 'section6',
-                // Project Gutenberg:
-                'fig',
-                'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'c9',
-                // TODO: support multiple classes
-                'fig c2', 'figleft c7', 'fig c8', 'fig c9', 'fig c10',
-                // TODO: do not ignore ?
-                'extracts', 'mynote', 'letterdate', 'letter1', 'titlepage',
-                'contents', 'centered', 'poem', 'figcenter', 'blockquot',
-            ],
             'xml:space': [undefined, 'preserve'],
         },
         children: fullParser(environment.nodeParser),
@@ -214,10 +206,10 @@ const containerElement: Tree2ElementsParser = envParser(environment => {
 
 const img: Tree2ElementsParser = elemChProj({
     name: 'img',
+    expectedClasses: [undefined, 'floatright'],
     expectedAttrs: {
         src: src => src ? true : false,
         alt: null, tag: null, title: null, width: null,
-        class: null,
     },
     children: expectEoi('img-children'),
 },
@@ -264,13 +256,13 @@ const image: Tree2ElementsParser = elemChProj({
 
 const header: Tree2ElementsParser = elemChProj({
     name: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'],
+    expectedClasses: [
+        undefined,
+        // Project Gutenberg:
+        'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8',
+    ],
     expectedAttrs: {
         id: null, style: null,
-        class: [
-            undefined,
-            // Project Gutenberg:
-            'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8',
-        ],
     },
     children: headerTitleParser,
 },
@@ -286,7 +278,7 @@ const header: Tree2ElementsParser = elemChProj({
 
 const svg: Tree2ElementsParser = elemCh({
     name: 'svg',
-    expectedAttrs: { viewBox: null, xmlns: null, class: null },
+    expectedAttrs: { viewBox: null, xmlns: null },
     children: () => yieldLast<BookElement[]>([]),
 });
 

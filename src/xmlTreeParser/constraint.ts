@@ -2,6 +2,7 @@ type SimpleConstraint<TV, TC extends TV = TV> =
     | TC
     | ((x: TV) => boolean)
     | null
+    | undefined
     ;
 type CompoundConstraint<TV, TC extends TV = TV> = Array<SimpleConstraint<TV, TC>>;
 export type Constraint<TV, TC extends TV = TV> =
@@ -20,10 +21,10 @@ export type ConstraintFailReason = {
     constraint: string,
 };
 
-function checkValueSimple<T, C extends T>(value: T, constraint: SimpleConstraint<T, C>): boolean {
+function checkValueSimple<T, C extends T>(value: T | undefined, constraint: SimpleConstraint<T, C>): boolean {
     if (typeof constraint === 'function') {
         const fn = constraint as (x: T) => boolean;
-        const result = fn(value);
+        const result = value !== undefined && fn(value);
         return result;
     } else if (constraint === null) {
         return true;
@@ -32,7 +33,7 @@ function checkValueSimple<T, C extends T>(value: T, constraint: SimpleConstraint
     }
 }
 
-export function checkValue<T, C extends T>(value: T, constraint: Constraint<T, C>): boolean {
+export function checkValue<T, C extends T>(value: T | undefined, constraint: Constraint<T, C>): boolean {
     if (Array.isArray(constraint)) {
         return constraint.some(c => checkValueSimple(value, c));
     } else {
