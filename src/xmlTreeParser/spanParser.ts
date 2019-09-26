@@ -7,6 +7,16 @@ import { elemChProj } from './treeParser';
 import { XmlTree, tree2String } from '../xmlStringParser';
 import { TreeParserEnv, Tree2SpanParser, stream2string } from './utils';
 
+export const standardClasses = [
+    undefined,
+    'p', 'p1', 'v', 'empty-line',
+    'dropcap', 'drop',
+    // Project Gutenberg:
+    'i2', 'i4', 'i6', 'i8', 'i10', 'i16', 'i20', 'i21',
+    'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'c9', 'c10', 'c11',
+    'pgmonospaced', 'center', 'pgheader', 'fig', 'figleft',
+];
+
 export const span = declare<Stream<XmlTree, TreeParserEnv>, Span>('span');
 
 export const spanContent = projectFirst(seq(some(span), endOfInput(stream2string)));
@@ -56,11 +66,9 @@ const correctionSpan: Tree2SpanParser = elemChProj({
 const spanSpan: Tree2SpanParser = elemChProj({
     name: 'span',
     expectedClasses: [
-        undefined, 'dropcap', 'drop',
-        'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'c9', 'c10', 'c11',
-        'i2', 'i6', 'i8', 'i16', 'i20', 'i21',
+        ...standardClasses,
         // TODO: do not ignore ?
-        'smcap', 'GutSmall',
+        'smcap', 'GutSmall', 'caps',
     ],
     expectedAttrs: {
         id: null,
@@ -72,8 +80,7 @@ const spanSpan: Tree2SpanParser = elemChProj({
 const aSpan: Tree2SpanParser = elemChProj({
     name: 'a',
     expectedClasses: [
-        undefined, 'a',
-        'c1', 'c2', 'c3', 'c4', 'c5',
+        ...standardClasses, 'a',
         // TODO: do not ignore ?
         'pginternal', 'x-ebookmaker-pageno', 'footnote',
         'citation',
@@ -106,8 +113,7 @@ function attrsSpanParser(tagNames: string[], attrs: AttributeName[], contentPars
     return elemChProj({
         name: tagNames,
         expectedClasses: [
-            undefined, 'i6',
-            'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'c9', 'c10', 'c11',
+            ...standardClasses,
             // TODO: do not ignore?
             'smcap', 'GutSmall',
         ],
