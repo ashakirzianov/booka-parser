@@ -42,7 +42,7 @@ const brSpan: Tree2SpanParser = elemChProj({
 
 const correctionSpan: Tree2SpanParser = elemChProj({
     name: 'ins',
-    expectedAttributes: { title: null },
+    expectedAttrs: { title: null },
     children: expectSpanContent,
 },
     ({ element: xml, children: content }) => ({
@@ -55,7 +55,7 @@ const correctionSpan: Tree2SpanParser = elemChProj({
 
 const spanSpan: Tree2SpanParser = elemChProj({
     name: 'span',
-    expectedAttributes: {
+    expectedAttrs: {
         id: null,
         class: null, href: null, title: null, tag: null,
     },
@@ -65,7 +65,7 @@ const spanSpan: Tree2SpanParser = elemChProj({
 );
 const aSpan: Tree2SpanParser = elemChProj({
     name: 'a',
-    expectedAttributes: {
+    expectedAttrs: {
         id: null,
         class: null, href: null, title: null, tag: null,
     },
@@ -93,7 +93,7 @@ span.implementation = choice(
 function attrsSpanParser(tagNames: string[], attrs: AttributeName[], contentParser: Tree2SpanParser): Tree2SpanParser {
     return elemChProj({
         name: tagNames,
-        expectedAttributes: { class: null, id: null },
+        expectedAttrs: { class: null, id: null },
         children: contentParser,
     },
         ({ children }) => ({

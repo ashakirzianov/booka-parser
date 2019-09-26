@@ -64,7 +64,7 @@ function epigraph(): Tree2ElementsParser {
 
     return elemChProj({
         name: 'div',
-        requiredAttributes: { class: 'epigraph' },
+        attrs: { class: 'epigraph' },
         children: content,
     },
         ({ children }) => [{
@@ -82,7 +82,7 @@ function epigraph(): Tree2ElementsParser {
 function cite(): Tree2ElementsParser {
     const textAuthor = elemChProj({
         name: ['div', 'p'],
-        requiredAttributes: { class: 'text-author' },
+        attrs: { class: 'text-author' },
         children: span,
     },
         ({ children }) => ({
@@ -101,7 +101,7 @@ function cite(): Tree2ElementsParser {
 
     return elemChProj({
         name: 'div',
-        requiredAttributes: { class: 'cite' },
+        attrs: { class: 'cite' },
         children: content,
     },
         ({ children }) => {
@@ -135,7 +135,7 @@ function cite(): Tree2ElementsParser {
 function subtitle(): Tree2ElementsParser {
     return elemChProj({
         name: 'p',
-        requiredAttributes: { class: 'subtitle' },
+        attrs: { class: 'subtitle' },
         children: span,
     },
         ({ children }) => [{

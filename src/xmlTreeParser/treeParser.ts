@@ -12,17 +12,17 @@ import { filterUndefined } from 'booka-common';
 
 export type XmlElementConstraint = {
     name?: Constraint<string>,
-    requiredAttributes?: ConstraintMap<XmlAttributes>,
-    expectedAttributes?: ConstraintMap<XmlAttributes>,
+    attrs?: ConstraintMap<XmlAttributes>,
+    expectedAttrs?: ConstraintMap<XmlAttributes>,
     context?: any,
 };
 export function elem<E = any>(ec: XmlElementConstraint): TreeParser<XmlTreeElement, E> {
     const name = ec.name === undefined ? undefined
         : xmlName(ec.name);
-    const attrs = ec.requiredAttributes === undefined ? undefined
-        : xmlAttributes(ec.requiredAttributes);
-    const expectedAttrs = ec.expectedAttributes === undefined ? undefined
-        : expected(xmlAttributesFull(ec.expectedAttributes), undefined);
+    const attrs = ec.attrs === undefined ? undefined
+        : xmlAttributes(ec.attrs);
+    const expectedAttrs = ec.expectedAttrs === undefined ? undefined
+        : expected(xmlAttributesFull(ec.expectedAttrs), undefined);
     const all = filterUndefined([name, attrs, expectedAttrs]);
 
     const elParser: TreeParser<XmlTreeElement, E> = headParser(el =>

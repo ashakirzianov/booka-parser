@@ -43,7 +43,7 @@ function metaHook(): MetadataRecordParser {
 function skipTocP(): Tree2ElementsParser {
     return elemProj({
         name: 'p',
-        requiredAttributes: { class: 'toc' },
+        attrs: { class: 'toc' },
     },
         () => [],
     );
@@ -52,7 +52,7 @@ function skipTocP(): Tree2ElementsParser {
 function skipTocTable(): Tree2ElementsParser {
     return elemProj({
         name: 'table',
-        requiredAttributes: { summary: 'Toc', class: null },
+        attrs: { summary: 'Toc', class: null },
     },
         () => [],
     );
@@ -62,7 +62,7 @@ function footnote(): Tree2ElementsParser {
     return envParser(env => {
         const footnoteId = elemProj({
             name: 'a',
-            requiredAttributes: {
+            attrs: {
                 id: i => i
                     ? i.startsWith('link')
                     : false,
@@ -103,7 +103,7 @@ function footnote(): Tree2ElementsParser {
         const footnoteContent = seq(maybe(footnoteTitleLine), pph);
         const footnoteContainer = elemChProj({
             name: 'p',
-            requiredAttributes: { class: 'foot' },
+            attrs: { class: 'foot' },
             children: footnoteContent,
         },
             ({ children: [title, content] }) => ({ title, content }),

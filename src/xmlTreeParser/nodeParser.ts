@@ -29,7 +29,7 @@ const skipWhitespaces: Tree2ElementsParser = headParser(node => {
 const wrappedSpans = elemCh({
     context: 'wrappedSpans',
     name: ['p', 'span', 'div'],
-    expectedAttributes: {
+    expectedAttrs: {
         style: null,
         class: [
             undefined, 'p', 'p1', 'v', 'empty-line', 'drop',
@@ -69,7 +69,7 @@ const pphElement: Tree2ElementsParser = diagnosticContext(translate(
 const blockquote: Tree2ElementsParser = elemChProj({
     context: 'blockquote',
     name: 'blockquote',
-    expectedAttributes: { cite: null },
+    expectedAttrs: { cite: null },
     children: projectFirst(seq(some(paragraphNode), endOfInput())),
 },
     ({ element, children }) => {
@@ -95,7 +95,7 @@ const li = elemCh({
 
 const listElement: Tree2ElementsParser = elemChProj({
     name: ['ol', 'ul'],
-    expectedAttributes: {
+    expectedAttrs: {
         class: [
             undefined,
             // Project Gutenberg:
@@ -119,7 +119,7 @@ const listElement: Tree2ElementsParser = elemChProj({
 
 const tableCell = elemChProj({
     name: ['td', 'th'],
-    expectedAttributes: {
+    expectedAttrs: {
         align: null, valign: null, colspan: null,
         class: [
             undefined,
@@ -147,7 +147,7 @@ const tableBody = choice(tbody, tableBodyContent);
 
 const table: Tree2ElementsParser = elemChProj({
     name: 'table',
-    expectedAttributes: {
+    expectedAttrs: {
         border: null, cellpadding: null, cellspacing: null, width: null,
         summary: [undefined, ''],
         class: [
@@ -165,7 +165,7 @@ const table: Tree2ElementsParser = elemChProj({
 
 const hr = elemChProj({
     name: 'hr',
-    expectedAttributes: {
+    expectedAttrs: {
         class: [
             undefined,
             // Project Gutenberg:
@@ -183,7 +183,7 @@ const hr = elemChProj({
 const containerElement: Tree2ElementsParser = envParser(environment => {
     return elemChProj({
         name: ['p', 'div', 'span', 'blockquote', 'a'],
-        expectedAttributes: {
+        expectedAttrs: {
             id: null,
             tag: null,
             class: [
@@ -214,7 +214,7 @@ const containerElement: Tree2ElementsParser = envParser(environment => {
 
 const img: Tree2ElementsParser = elemChProj({
     name: 'img',
-    expectedAttributes: {
+    expectedAttrs: {
         src: src => src ? true : false,
         alt: null, tag: null, title: null, width: null,
         class: null,
@@ -240,7 +240,7 @@ const img: Tree2ElementsParser = elemChProj({
 
 const image: Tree2ElementsParser = elemChProj({
     name: 'image',
-    expectedAttributes: {
+    expectedAttrs: {
         'xlink:href': href => href ? true : false,
     },
     children: expectEoi('image-children'),
@@ -264,7 +264,7 @@ const image: Tree2ElementsParser = elemChProj({
 
 const header: Tree2ElementsParser = elemChProj({
     name: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'],
-    expectedAttributes: {
+    expectedAttrs: {
         id: null, style: null,
         class: [
             undefined,
@@ -286,7 +286,7 @@ const header: Tree2ElementsParser = elemChProj({
 
 const svg: Tree2ElementsParser = elemCh({
     name: 'svg',
-    expectedAttributes: { viewBox: null, xmlns: null, class: null },
+    expectedAttrs: { viewBox: null, xmlns: null, class: null },
     children: () => yieldLast<BookElement[]>([]),
 });
 
