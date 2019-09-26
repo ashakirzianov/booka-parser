@@ -28,7 +28,7 @@ async function exec() {
     console.log(epubs);
     logTimeAsync('parsing', async () => {
         for (const epubPath of epubs) {
-            await processEpubFile(epubPath, reportMeta);
+            await processEpubFile(epubPath, reportMeta || true);
         }
     });
 }

@@ -1,4 +1,4 @@
-import { KnownTag } from 'booka-common';
+import { KnownTag, buildTagSet } from 'booka-common';
 import {
     headParser, yieldLast, makeStream, choice,
     fullParser,
@@ -18,9 +18,12 @@ export const metadataParser: AsyncFullParser<EpubBook, KnownTag[]> = async epub 
         .entries(epub.metadata);
     const metaStream = makeStream(records);
     const result = full(metaStream);
-    return result.success
-        ? yieldLast(result.value, result.diagnostic)
-        : result;
+    if (result.success) {
+        const unique = buildTagSet(result.value);
+        return yieldLast(unique, result.diagnostic);
+    } else {
+        return result;
+    }
 };
 
 const defaultMetadataParser: MetadataRecordParser = headParser(([key, value]) => {
