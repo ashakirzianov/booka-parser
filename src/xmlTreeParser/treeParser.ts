@@ -5,7 +5,6 @@ import {
     StreamParser, headParser, makeStream, nextStream, not, Stream,
     projectLast, and, expected, yieldLast, diagnosticContext,
     maybe,
-    Parser,
 } from '../combinators';
 import { Constraint, ConstraintMap, checkObject, checkValue, checkObjectFull } from './constraint';
 import { filterUndefined } from 'booka-common';
@@ -32,7 +31,8 @@ export function elem<E = any>(ec: XmlElementConstraint): TreeParser<XmlTreeEleme
     );
 
     const result = projectLast(and(and(...all), elParser));
-    return ec.context === undefined
+    const context = ec.context || ec.name;
+    return context === undefined
         ? result
         : diagnosticContext(result, ec.context);
 }
