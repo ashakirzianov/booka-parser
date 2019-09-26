@@ -3,7 +3,7 @@ import { buildDocumentParser, span, nodeParser, paragraphNode, TreeParserEnv } f
 import {
     makeStream, headParser,
     translate, expected, yieldLast,
-    StreamParser, pipe, fullParser, AsyncFullParser, choice,
+    StreamParser, pipe, fullParser, AsyncFullParser, choice, endOfInput, yieldNext, nextStream,
 } from '../combinators';
 import { AsyncIter } from '../utils';
 import { EpubSection, EpubBook } from './epubBook';
@@ -51,8 +51,17 @@ export const sectionsParser: AsyncFullParser<EpubBook, BookElement[]> = async ep
         },
     );
 
+    const reportProblems = choice(headParser(singleSection), input => {
+        return input === undefined || input.stream === undefined || input.stream.length === 0
+            ? yieldLast([])
+            : yieldNext([], nextStream(input), {
+                diag: 'couldnt-parse-section',
+                filePath: input.stream[0].filePath,
+            });
+    });
+
     const full = translate(
-        fullParser(headParser(singleSection)),
+        fullParser(reportProblems),
         els => flatten(els),
     );
 
