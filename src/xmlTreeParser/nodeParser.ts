@@ -1,13 +1,13 @@
-import { ParagraphNode, compoundSpan, flatten, GroupNode, BookContentNode, makePph } from 'booka-common';
+import { ParagraphNode, compoundSpan, flatten, GroupNode, BookContentNode, makePph, Span } from 'booka-common';
 import {
     yieldLast, headParser, reject, choice, oneOrMore, translate,
     envParser, fullParser, expectEoi, compoundDiagnostic,
-    ParserDiagnostic, expectParseAll, some, expected, projectFirst, endOfInput, seq, Stream, makeStream, diagnosticContext,
+    ParserDiagnostic, expectParseAll, some, expected, Stream, makeStream, diagnosticContext, projectFirst, seq, endOfInput,
 } from '../combinators';
 import { isWhitespaces } from '../utils';
 import { elemCh, elemChProj, whitespaced } from './treeParser';
 import { spanContent, span, expectSpanContent } from './spanParser';
-import { XmlTree, tree2String } from '../xmlStringParser';
+import { XmlTree, tree2String, XmlTreeElement } from '../xmlStringParser';
 import { Tree2ElementsParser, EpubTreeParser, buildRef, stream2string } from './utils';
 import {
     BookElement, ContentElement, TitleElement,
@@ -64,13 +64,13 @@ const pphElement: Tree2ElementsParser = diagnosticContext(translate(
     }],
 ), 'pphElement');
 
+const pphs = projectFirst(seq(some(paragraphNode), endOfInput()));
 const blockquote: Tree2ElementsParser = elemChProj({
     context: 'blockquote',
     name: 'blockquote',
     expectedAttrs: { cite: null },
-    children: projectFirst(seq(some(paragraphNode), endOfInput())),
-},
-    ({ element, children }) => {
+    children: pphs,
+    project: (children, element) => {
         const node: GroupNode = {
             node: 'group',
             nodes: children,
@@ -84,13 +84,14 @@ const blockquote: Tree2ElementsParser = elemChProj({
             content: node,
         }];
     },
-);
+});
 
 const li = elemCh({
     name: 'li',
     children: expectSpanContent,
 });
 
+const lis = expectParseAll(some(whitespaced(li)), stream2string);
 const listElement: Tree2ElementsParser = elemChProj({
     name: ['ol', 'ul'],
     expectedClasses: [
@@ -101,9 +102,8 @@ const listElement: Tree2ElementsParser = elemChProj({
         // TODO: properly support
         'toc',
     ],
-    children: expectParseAll(some(whitespaced(li)), stream2string),
-},
-    ({ element, children }) => [{
+    children: lis,
+    project: (children, element) => [{
         element: 'content',
         content: {
             node: 'list',
@@ -111,8 +111,9 @@ const listElement: Tree2ElementsParser = elemChProj({
             items: children,
         },
     }],
-);
+});
 
+const cellContent = expected(pphSpans, []);
 const tableCell = elemChProj({
     name: ['td', 'th'],
     expectedClasses: [
@@ -122,10 +123,10 @@ const tableCell = elemChProj({
     expectedAttrs: {
         align: null, valign: null, colspan: null,
     },
-    children: expected(pphSpans, []),
-},
-    ({ children }) => compoundSpan(children),
-);
+    children: cellContent,
+    project: children =>
+        compoundSpan(children),
+});
 
 const tr = elemCh({
     name: 'tr',
@@ -141,6 +142,7 @@ const tbody = elemCh({
 
 const tableBody = choice(tbody, tableBodyContent);
 
+const tableContent = expectParseAll(whitespaced(tableBody), stream2string);
 const table: Tree2ElementsParser = elemChProj({
     name: 'table',
     expectedClasses: [
@@ -151,13 +153,12 @@ const table: Tree2ElementsParser = elemChProj({
         border: null, cellpadding: null, cellspacing: null, width: null,
         summary: [undefined, ''],
     },
-    children: expectParseAll(whitespaced(tableBody), stream2string),
-},
-    ({ children }) => fromContent({
+    children: tableContent,
+    project: children => fromContent({
         node: 'table',
         rows: children,
     }),
-);
+});
 
 const hr = elemChProj({
     name: 'hr',
@@ -168,11 +169,10 @@ const hr = elemChProj({
         'main', 'short', 'tiny', 'break',
     ],
     children: expectEoi(stream2string),
-},
-    () => fromContent({
+    project: () => fromContent({
         node: 'separator',
     }),
-);
+});
 
 const containerElement: Tree2ElementsParser = envParser(environment => {
     return elemChProj({
@@ -193,15 +193,14 @@ const containerElement: Tree2ElementsParser = envParser(environment => {
             'xml:space': [undefined, 'preserve'],
         },
         children: fullParser(environment.nodeParser),
-    },
-        ({ element, children }) => {
+        project: (children: BookElement[][], element) => {
             const flatChildren = flatten(children);
             return buildContainerElements(
                 flatChildren,
                 buildRef(environment.filePath, element.attributes.id),
             );
         },
-    );
+    });
 });
 
 const img: Tree2ElementsParser = elemChProj({
@@ -212,8 +211,7 @@ const img: Tree2ElementsParser = elemChProj({
         alt: null, tag: null, title: null, width: null,
     },
     children: expectEoi('img-children'),
-},
-    ({ element: xml }) => {
+    project: (_, xml) => {
         const src = xml.attributes['src'];
         if (src) {
             return [{
@@ -228,7 +226,7 @@ const img: Tree2ElementsParser = elemChProj({
             return [];
         }
     },
-);
+});
 
 const image: Tree2ElementsParser = elemChProj({
     name: 'image',
@@ -236,8 +234,7 @@ const image: Tree2ElementsParser = elemChProj({
         'xlink:href': href => href ? true : false,
     },
     children: expectEoi('image-children'),
-},
-    ({ element: xml }) => {
+    project: (_, xml) => {
         const xlinkHref = xml.attributes['xlink:href'];
         if (xlinkHref) {
             return [{
@@ -252,7 +249,7 @@ const image: Tree2ElementsParser = elemChProj({
             return [];
         }
     },
-);
+});
 
 const header: Tree2ElementsParser = elemChProj({
     name: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'],
@@ -265,8 +262,7 @@ const header: Tree2ElementsParser = elemChProj({
         id: null, style: null,
     },
     children: headerTitleParser,
-},
-    ({ children: title, element: xml }) => {
+    project: (title, xml) => {
         const level = parseInt(xml.name[1], 10);
         return [{
             element: 'chapter-title',
@@ -274,7 +270,7 @@ const header: Tree2ElementsParser = elemChProj({
             level: 4 - level,
         }];
     },
-);
+});
 
 const svg: Tree2ElementsParser = elemCh({
     name: 'svg',

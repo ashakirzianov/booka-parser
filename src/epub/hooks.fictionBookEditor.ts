@@ -66,8 +66,7 @@ function epigraph(): Tree2ElementsParser {
         name: 'div',
         classes: 'epigraph',
         children: content,
-    },
-        ({ children }) => [{
+        project: children => [{
             element: 'content',
             content: {
                 node: 'group',
@@ -75,21 +74,20 @@ function epigraph(): Tree2ElementsParser {
                 semantic: 'epigraph',
                 signature: [],
             },
-        }]
-    );
+        }],
+    });
 }
 
 function cite(): Tree2ElementsParser {
     const textAuthor = elemChProj({
         name: ['div', 'p'],
-        classes: 'text-author' ,
+        classes: 'text-author',
         children: span,
-    },
-        ({ children }) => ({
+        project: children => ({
             kind: 'signature' as const,
             line: extractSpanText(children),
         }),
-    );
+    });
     const p = translate(
         paragraphNode,
         pn => ({
@@ -101,10 +99,9 @@ function cite(): Tree2ElementsParser {
 
     return elemChProj({
         name: 'div',
-        classes: 'cite' ,
+        classes: 'cite',
         children: content,
-    },
-        ({ children }) => {
+        project: children => {
             const pphs = children.reduce(
                 (ps, c) =>
                     c.kind === 'pph' ? ps.concat(c.paragraph) : ps,
@@ -129,21 +126,21 @@ function cite(): Tree2ElementsParser {
             };
 
             return [result];
-        });
+        },
+    });
 }
 
 function subtitle(): Tree2ElementsParser {
     return elemChProj({
         name: 'p',
-        classes: 'subtitle' ,
+        classes: 'subtitle',
         children: span,
-    },
-        ({ children }) => [{
+        project: children => [{
             element: 'chapter-title',
             title: [extractSpanText(children)],
             level: undefined,
         }],
-    );
+    });
 }
 
 function titleElement(): Tree2ElementsParser {

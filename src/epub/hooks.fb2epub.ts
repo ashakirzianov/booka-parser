@@ -49,13 +49,12 @@ function subtitle(): Tree2ElementsParser {
         name: 'p',
         classes: 'subtitle',
         children: span,
-    },
-        ({ children }) => [{
+        project: children => [{
             element: 'chapter-title',
             level: undefined,
             title: [extractSpanText(children)],
         }],
-    );
+    });
 }
 
 function epigraph(): Tree2ElementsParser {
@@ -77,8 +76,7 @@ function epigraph(): Tree2ElementsParser {
         name: 'div',
         classes: 'epigraph',
         children: content,
-    },
-        ({ children: [pph, sig] }) => [{
+        project: ([pph, sig]) => [{
             element: 'content',
             content: {
                 node: 'group',
@@ -87,7 +85,7 @@ function epigraph(): Tree2ElementsParser {
                 signature: [extractSpanText(sig)],
             },
         }],
-    );
+    });
 }
 
 function poem(): Tree2ElementsParser {
@@ -97,22 +95,22 @@ function poem(): Tree2ElementsParser {
         classes: 'stanza',
         children: content,
     });
+    const children = whitespaced(choice(stanza, content));
 
     return elemChProj(
         {
             name: 'div',
             classes: 'poem',
-            children: whitespaced(choice(stanza, content)),
-        },
-        ({ children }) => [{
-            element: 'content',
-            content: {
-                node: 'group',
-                nodes: children,
-                semantic: 'poem',
-            },
-        }],
-    );
+            children: children,
+            project: ch => [{
+                element: 'content',
+                content: {
+                    node: 'group',
+                    nodes: ch,
+                    semantic: 'poem',
+                },
+            }],
+        });
 }
 
 function footnoteSection(): Tree2ElementsParser {
@@ -142,13 +140,13 @@ function footnoteSection(): Tree2ElementsParser {
         },
             () => undefined,
         );
+        const children = seq(some(env.spanParser), expectEoi('footnote-p'));
         const pph = elemChProj({
             name: 'p',
             expectedClasses: null,
-            children: seq(some(env.spanParser), expectEoi('footnote-p')),
-        },
-            ({ children: [spans] }) => makePph(compoundSpan(spans)),
-        );
+            children: children,
+            project: ([spans]) => makePph(compoundSpan(spans)),
+        });
         const br = elemProj({
             name: 'br',
         },
@@ -203,21 +201,19 @@ function titlePage(): Tree2ElementsParser {
     const bookTitle = elemChProj({
         classes: 'title1',
         children: textNode(),
-    },
-        ({ children }) => ({
+        project: (children: string) => ({
             element: 'tag',
             tag: { tag: 'title', value: children },
         } as const),
-    );
+    });
     const bookAuthor = elemChProj({
         classes: 'title_authors',
         children: textNode(),
-    },
-        ({ children }) => ({
+        project: (children: string) => ({
             element: 'tag',
             tag: { tag: 'author', value: children },
         } as const),
-    );
+    });
     const ignore = headParser(
         (x: XmlTree) =>
             equalsToOneOf(x.name, [undefined, 'br', 'h3'])

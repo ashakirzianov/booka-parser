@@ -37,23 +37,21 @@ const brSpan: Tree2SpanParser = elemChProj({
     name: 'br',
     expectedClasses: undefined,
     children: expectEoi(stream2string),
-},
-    () => '\n',
-);
+    project: () => '\n',
+});
 
 const correctionSpan: Tree2SpanParser = elemChProj({
     name: 'ins',
     expectedClasses: undefined,
     expectedAttrs: { title: null },
     children: expectSpanContent,
-},
-    ({ element: xml, children: content }) => ({
+    project: (content, xml) => ({
         span: 'compound',
         spans: [content],
         semantic: 'correction',
         note: xml.attributes.title,
     }),
-);
+});
 
 const spanSpan: Tree2SpanParser = elemChProj({
     name: 'span',
@@ -69,9 +67,8 @@ const spanSpan: Tree2SpanParser = elemChProj({
         href: null, title: null, tag: null,
     },
     children: spanContent,
-},
-    ({ children }) => compoundSpan(children),
-);
+    project: children => compoundSpan(children),
+});
 const aSpan: Tree2SpanParser = elemChProj({
     name: 'a',
     expectedClasses: [
@@ -85,8 +82,7 @@ const aSpan: Tree2SpanParser = elemChProj({
         href: null, title: null, tag: null,
     },
     children: spanContent,
-},
-    ({ element, children }) => {
+    project: (children, element) => {
         const content = compoundSpan(children);
         if (element.attributes.href !== undefined) {
             return {
@@ -98,7 +94,7 @@ const aSpan: Tree2SpanParser = elemChProj({
             return content;
         }
     },
-);
+});
 
 span.implementation = choice(
     text, attr, brSpan,
@@ -116,11 +112,10 @@ function attrsSpanParser(tagNames: string[], attrs: AttributeName[], contentPars
         ],
         expectedAttrs: { id: null },
         children: contentParser,
-    },
-        ({ children }) => ({
+        project: (children) => ({
             span: 'attrs',
             attrs,
             content: children,
         }),
-    );
+    });
 }

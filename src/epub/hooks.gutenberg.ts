@@ -113,9 +113,8 @@ function footnote(): Tree2ElementsParser {
             name: 'p',
             classes: 'foot',
             children: footnoteContent,
-        },
-            ({ children: [title, content] }) => ({ title, content }),
-        );
+            project: ([title, content]) => ({ title, content }),
+        });
 
         const fullFootnote: Tree2ElementsParser = translate(
             seq(footnoteMarker, whitespaces, footnoteContainer),

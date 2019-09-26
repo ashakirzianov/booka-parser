@@ -51,18 +51,15 @@ export function elemCh<TC, E = any>(ec: XmlElementConstraint & {
     return projectLast(and(elem(ec), xmlChildren(ec.children)));
 }
 
-export function elemChProj<TC, T, E = any>(
+export function elemChProj<TC, T = TC>(
     ec: XmlElementConstraint & {
-        children: TreeParser<TC, E>,
+        children: TreeParser<TC, any>,
+        project: (ch: TC, el: XmlTreeElement) => T,
     },
-    project: (x: { element: XmlTreeElement, children: TC }) => T,
-): TreeParser<T, E> {
+): TreeParser<T, any> {
     return translate(
         and(elem(ec), xmlChildren(ec.children)),
-        ([el, ch]) => project({
-            element: el,
-            children: ch,
-        }),
+        ([el, ch]) => ec.project(ch, el),
     );
 }
 
