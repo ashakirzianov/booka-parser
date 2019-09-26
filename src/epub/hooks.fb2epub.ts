@@ -3,7 +3,7 @@ import { EpubBookParserHooks, MetadataRecordParser } from './epubBookParser';
 import {
     textNode, extractText, nameEq,
     ignoreClass, buildRef, Tree2ElementsParser,
-    whitespaced, xmlName, paragraphNode, stream2string, span, xmlChildren, xmlAttributes, xmlElementChProj, xmlElementCh, xmlElementProj,
+    whitespaced, xmlName, paragraphNode, stream2string, span, xmlChildren, xmlAttributes, elemChProj, elemCh, elemProj,
 } from '../xmlTreeParser';
 import {
     some, translate, choice, seq, and, headParser, envParser, reject, yieldLast, expectEoi, expectParseAll,
@@ -43,7 +43,7 @@ function metaHook(): MetadataRecordParser {
 }
 
 function subtitle(): Tree2ElementsParser {
-    return xmlElementChProj({
+    return elemChProj({
         name: 'p',
         requiredAttributes: { class: 'subtitle' },
         children: span,
@@ -57,11 +57,11 @@ function subtitle(): Tree2ElementsParser {
 }
 
 function epigraph(): Tree2ElementsParser {
-    const signature = whitespaced(xmlElementCh({
+    const signature = whitespaced(elemCh({
         name: 'p',
         children: span,
     }));
-    const signatureDiv = xmlElementCh({
+    const signatureDiv = elemCh({
         name: 'div',
         requiredAttributes: { class: 'epigraph_author' },
         children: signature,
@@ -71,7 +71,7 @@ function epigraph(): Tree2ElementsParser {
         whitespaced(signatureDiv),
     );
 
-    return xmlElementChProj({
+    return elemChProj({
         name: 'div',
         requiredAttributes: { class: 'epigraph' },
         children: content,
@@ -90,13 +90,13 @@ function epigraph(): Tree2ElementsParser {
 
 function poem(): Tree2ElementsParser {
     const content = expectParseAll(some(paragraphNode), stream2string);
-    const stanza = xmlElementCh({
+    const stanza = elemCh({
         name: 'div',
         requiredAttributes: { class: 'stanza' },
         children: content,
     });
 
-    return xmlElementChProj(
+    return elemChProj(
         {
             name: 'div',
             requiredAttributes: { class: 'poem' },
@@ -115,7 +115,7 @@ function poem(): Tree2ElementsParser {
 
 function footnoteSection(): Tree2ElementsParser {
     return envParser(env => {
-        const divId = xmlElementProj({
+        const divId = elemProj({
             name: 'div',
             requiredAttributes: {
                 class: 'section2',
@@ -124,22 +124,22 @@ function footnoteSection(): Tree2ElementsParser {
         },
             ({ element }) => element.attributes.id!,
         );
-        const h = xmlElementCh({
+        const h = elemCh({
             name: n => n.match(/^h[0-9]+$/) !== null,
             children: textNode(),
         });
-        const title = xmlElementCh({
+        const title = elemCh({
             name: 'div',
             requiredAttributes: { class: 'note_section' },
             children: some(whitespaced(h)),
         });
-        const back = xmlElementProj({
+        const back = elemProj({
             name: 'a',
             requiredAttributes: { class: 'note_anchor', href: null },
         },
             () => undefined,
         );
-        const pph = xmlElementChProj({
+        const pph = elemChProj({
             name: 'p',
             expectedAttributes: { class: null },
             children: seq(some(env.spanParser), expectEoi('footnote-p')),
@@ -227,7 +227,7 @@ function titlePage(): Tree2ElementsParser {
         ),
     );
 
-    const parser = xmlElementCh({
+    const parser = elemCh({
         name: null,
         requiredAttributes: { class: 'titlepage' },
         children: some(choice(bookTitle, bookAuthor, ignore, report)),
@@ -250,7 +250,7 @@ function divTitle(): Tree2ElementsParser {
 
         return reject();
     });
-    const h = whitespaced(xmlElementCh({
+    const h = whitespaced(elemCh({
         name: n => n.startsWith('h'),
         children: textNode(),
     }));

@@ -5,7 +5,7 @@ import {
     ParserDiagnostic, expectParseAll, some, expected, projectFirst, endOfInput, seq, Stream, makeStream, diagnosticContext,
 } from '../combinators';
 import { isWhitespaces } from '../utils';
-import { xmlElementCh, xmlElementChProj, whitespaced } from './treeParser';
+import { elemCh, elemChProj, whitespaced } from './treeParser';
 import { spanContent, span, expectSpanContent } from './spanParser';
 import { XmlTree, tree2String } from '../xmlStringParser';
 import { Tree2ElementsParser, EpubTreeParser, buildRef, stream2string } from './utils';
@@ -26,7 +26,7 @@ const skipWhitespaces: Tree2ElementsParser = headParser(node => {
     }
 });
 
-const wrappedSpans = xmlElementCh({
+const wrappedSpans = elemCh({
     context: 'wrappedSpans',
     name: ['p', 'span', 'div'],
     expectedAttributes: {
@@ -66,7 +66,7 @@ const pphElement: Tree2ElementsParser = diagnosticContext(translate(
     }],
 ), 'pphElement');
 
-const blockquote: Tree2ElementsParser = xmlElementChProj({
+const blockquote: Tree2ElementsParser = elemChProj({
     context: 'blockquote',
     name: 'blockquote',
     expectedAttributes: { cite: null },
@@ -88,12 +88,12 @@ const blockquote: Tree2ElementsParser = xmlElementChProj({
     },
 );
 
-const li = xmlElementCh({
+const li = elemCh({
     name: 'li',
     children: expectSpanContent,
 });
 
-const listElement: Tree2ElementsParser = xmlElementChProj({
+const listElement: Tree2ElementsParser = elemChProj({
     name: ['ol', 'ul'],
     expectedAttributes: {
         class: [
@@ -117,7 +117,7 @@ const listElement: Tree2ElementsParser = xmlElementChProj({
     }],
 );
 
-const tableCell = xmlElementChProj({
+const tableCell = elemChProj({
     name: ['td', 'th'],
     expectedAttributes: {
         align: null, valign: null, colspan: null,
@@ -131,21 +131,21 @@ const tableCell = xmlElementChProj({
     ({ children }) => compoundSpan(children),
 );
 
-const tr = xmlElementCh({
+const tr = elemCh({
     name: 'tr',
     children: expectParseAll(some(whitespaced(tableCell)), stream2string),
 });
 
 const tableBodyContent = expectParseAll(some(whitespaced(tr)), stream2string);
 
-const tbody = xmlElementCh({
+const tbody = elemCh({
     name: 'tbody',
     children: tableBodyContent,
 });
 
 const tableBody = choice(tbody, tableBodyContent);
 
-const table: Tree2ElementsParser = xmlElementChProj({
+const table: Tree2ElementsParser = elemChProj({
     name: 'table',
     expectedAttributes: {
         border: null, cellpadding: null, cellspacing: null, width: null,
@@ -163,7 +163,7 @@ const table: Tree2ElementsParser = xmlElementChProj({
     }),
 );
 
-const hr = xmlElementChProj({
+const hr = elemChProj({
     name: 'hr',
     expectedAttributes: {
         class: [
@@ -181,7 +181,7 @@ const hr = xmlElementChProj({
 );
 
 const containerElement: Tree2ElementsParser = envParser(environment => {
-    return xmlElementChProj({
+    return elemChProj({
         name: ['p', 'div', 'span', 'blockquote', 'a'],
         expectedAttributes: {
             id: null,
@@ -212,7 +212,7 @@ const containerElement: Tree2ElementsParser = envParser(environment => {
     );
 });
 
-const img: Tree2ElementsParser = xmlElementChProj({
+const img: Tree2ElementsParser = elemChProj({
     name: 'img',
     expectedAttributes: {
         src: src => src ? true : false,
@@ -238,7 +238,7 @@ const img: Tree2ElementsParser = xmlElementChProj({
     },
 );
 
-const image: Tree2ElementsParser = xmlElementChProj({
+const image: Tree2ElementsParser = elemChProj({
     name: 'image',
     expectedAttributes: {
         'xlink:href': href => href ? true : false,
@@ -262,7 +262,7 @@ const image: Tree2ElementsParser = xmlElementChProj({
     },
 );
 
-const header: Tree2ElementsParser = xmlElementChProj({
+const header: Tree2ElementsParser = elemChProj({
     name: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'],
     expectedAttributes: {
         id: null, style: null,
@@ -284,7 +284,7 @@ const header: Tree2ElementsParser = xmlElementChProj({
     },
 );
 
-const svg: Tree2ElementsParser = xmlElementCh({
+const svg: Tree2ElementsParser = elemCh({
     name: 'svg',
     expectedAttributes: { viewBox: null, xmlns: null, class: null },
     children: () => yieldLast<BookElement[]>([]),

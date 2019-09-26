@@ -5,7 +5,7 @@ import {
 import { isTextTree, isElementTree, XmlTreeWithChildren } from '../xmlStringParser';
 import { EpubBookParserHooks, MetadataRecordParser } from './epubBookParser';
 import {
-    Tree2ElementsParser, span, paragraphNode, stream2string, xmlElementChProj,
+    Tree2ElementsParser, span, paragraphNode, stream2string, elemChProj,
 } from '../xmlTreeParser';
 import { BookElement } from '../bookElementParser';
 
@@ -62,7 +62,7 @@ function metaHook(): MetadataRecordParser {
 function epigraph(): Tree2ElementsParser {
     const content = expectParseAll(some(paragraphNode), stream2string);
 
-    return xmlElementChProj({
+    return elemChProj({
         name: 'div',
         requiredAttributes: { class: 'epigraph' },
         children: content,
@@ -80,7 +80,7 @@ function epigraph(): Tree2ElementsParser {
 }
 
 function cite(): Tree2ElementsParser {
-    const textAuthor = xmlElementChProj({
+    const textAuthor = elemChProj({
         name: ['div', 'p'],
         requiredAttributes: { class: 'text-author' },
         children: span,
@@ -99,7 +99,7 @@ function cite(): Tree2ElementsParser {
     );
     const content = expectParseAll(some(choice(textAuthor, p)), stream2string);
 
-    return xmlElementChProj({
+    return elemChProj({
         name: 'div',
         requiredAttributes: { class: 'cite' },
         children: content,
@@ -133,7 +133,7 @@ function cite(): Tree2ElementsParser {
 }
 
 function subtitle(): Tree2ElementsParser {
-    return xmlElementChProj({
+    return elemChProj({
         name: 'p',
         requiredAttributes: { class: 'subtitle' },
         children: span,

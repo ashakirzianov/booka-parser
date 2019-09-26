@@ -1,7 +1,7 @@
 import { EpubBookParserHooks, MetadataRecordParser } from './epubBookParser';
 import {
     xmlName, xmlChildren, textNode,
-    whitespaces, buildRef, Tree2ElementsParser, ignoreClass, xmlElementProj, xmlElement,
+    whitespaces, buildRef, Tree2ElementsParser, ignoreClass, elemProj, elem,
 } from '../xmlTreeParser';
 import {
     and, translate, seq, maybe, envParser, headParser, reject, yieldLast, some,
@@ -41,7 +41,7 @@ function metaHook(): MetadataRecordParser {
 }
 
 function skipTocP(): Tree2ElementsParser {
-    return xmlElementProj({
+    return elemProj({
         name: 'p',
         requiredAttributes: { class: 'toc' },
     },
@@ -50,7 +50,7 @@ function skipTocP(): Tree2ElementsParser {
 }
 
 function skipTocTable(): Tree2ElementsParser {
-    return xmlElementProj({
+    return elemProj({
         name: 'table',
         requiredAttributes: { summary: 'Toc', class: null },
     },
@@ -60,7 +60,7 @@ function skipTocTable(): Tree2ElementsParser {
 
 function footnote(): Tree2ElementsParser {
     return envParser(env => {
-        const footnoteId = xmlElementProj({
+        const footnoteId = elemProj({
             name: 'a',
             requiredAttributes: {
                 id: i => i
@@ -101,7 +101,7 @@ function footnote(): Tree2ElementsParser {
             }),
         );
         const footnoteContent = seq(maybe(footnoteTitleLine), pph);
-        const footnoteP = xmlElement({
+        const footnoteP = elem({
             name: 'p',
             requiredAttributes: { class: 'foot' },
         });

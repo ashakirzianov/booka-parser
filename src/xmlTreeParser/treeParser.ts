@@ -16,7 +16,7 @@ export type XmlElementConstraint = {
     expectedAttributes?: ConstraintMap<XmlAttributes>,
     context?: any,
 };
-export function xmlElement<E = any>(ec: XmlElementConstraint): TreeParser<XmlTreeElement, E> {
+export function elem<E = any>(ec: XmlElementConstraint): TreeParser<XmlTreeElement, E> {
     const name = ec.name === undefined ? undefined
         : xmlName(ec.name);
     const attrs = ec.requiredAttributes === undefined ? undefined
@@ -25,32 +25,32 @@ export function xmlElement<E = any>(ec: XmlElementConstraint): TreeParser<XmlTre
         : expected(xmlAttributesFull(ec.expectedAttributes), undefined);
     const all = filterUndefined([name, attrs, expectedAttrs]);
 
-    const element: TreeParser<XmlTreeElement, E> = headParser(el =>
+    const elParser: TreeParser<XmlTreeElement, E> = headParser(el =>
         el.type === 'element'
             ? yieldLast(el)
             : reject()
     );
 
-    const result = projectLast(and(and(...all), element));
+    const result = projectLast(and(and(...all), elParser));
     return ec.context === undefined
         ? result
         : diagnosticContext(result, ec.context);
 }
 
-export function xmlElementCh<TC, E = any>(ec: XmlElementConstraint & {
+export function elemCh<TC, E = any>(ec: XmlElementConstraint & {
     children: TreeParser<TC, E>,
 }): TreeParser<TC, E> {
-    return projectLast(and(xmlElement(ec), xmlChildren(ec.children)));
+    return projectLast(and(elem(ec), xmlChildren(ec.children)));
 }
 
-export function xmlElementChProj<TC, T, E = any>(
+export function elemChProj<TC, T, E = any>(
     ec: XmlElementConstraint & {
         children: TreeParser<TC, E>,
     },
     project: (x: { element: XmlTreeElement, children: TC }) => T,
 ): TreeParser<T, E> {
     return translate(
-        and(xmlElement(ec), xmlChildren(ec.children)),
+        and(elem(ec), xmlChildren(ec.children)),
         ([el, ch]) => project({
             element: el,
             children: ch,
@@ -58,12 +58,12 @@ export function xmlElementChProj<TC, T, E = any>(
     );
 }
 
-export function xmlElementProj<T, E = any>(
+export function elemProj<T, E = any>(
     ec: XmlElementConstraint,
     project: (x: { element: XmlTreeElement }) => T,
 ): TreeParser<T, E> {
     return translate(
-        xmlElement(ec),
+        elem(ec),
         (el) => project({
             element: el,
         }),
