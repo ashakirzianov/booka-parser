@@ -205,7 +205,7 @@ const containerElement: Tree2ElementsParser = envParser(environment => {
 
 const img: Tree2ElementsParser = elemChProj({
     name: 'img',
-    expectedClasses: [undefined, 'floatright'],
+    expectedClasses: [undefined, 'floatright', 'z1'],
     expectedAttrs: {
         src: src => src ? true : false,
         alt: null, tag: null, title: null, width: null,

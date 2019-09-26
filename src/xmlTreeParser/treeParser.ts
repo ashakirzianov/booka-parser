@@ -42,7 +42,7 @@ export function elem<E = any>(ec: XmlElementConstraint): TreeParser<XmlTreeEleme
     const context = ec.context || ec.name;
     return context === undefined
         ? result
-        : diagnosticContext(result, ec.context);
+        : diagnosticContext(result, context);
 }
 
 export function elemCh<TC, E = any>(ec: XmlElementConstraint & {

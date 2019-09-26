@@ -56,7 +56,7 @@ const correctionSpan: Tree2SpanParser = elemChProj({
 const spanSpan: Tree2SpanParser = elemChProj({
     name: 'span',
     expectedClasses: [
-        undefined, 'dropcap',
+        undefined, 'dropcap', 'drop',
         'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'c9', 'c10', 'c11',
         'i2', 'i6', 'i8', 'i16', 'i20', 'i21',
         // TODO: do not ignore ?
@@ -72,7 +72,8 @@ const spanSpan: Tree2SpanParser = elemChProj({
 const aSpan: Tree2SpanParser = elemChProj({
     name: 'a',
     expectedClasses: [
-        undefined, 'c1', 'c2', 'c3', 'c4', 'c5',
+        undefined, 'a',
+        'c1', 'c2', 'c3', 'c4', 'c5',
         // TODO: do not ignore ?
         'pginternal', 'x-ebookmaker-pageno', 'footnote',
         'citation',
