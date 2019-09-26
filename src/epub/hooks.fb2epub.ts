@@ -4,14 +4,14 @@ import {
 } from 'booka-common';
 import { EpubBookParserHooks, MetadataRecordParser } from './epubBookParser';
 import {
-    textNode, nameEq, ignoreClass, buildRef, Tree2ElementsParser,
+    textNode, ignoreClass, buildRef, Tree2ElementsParser,
     whitespaced, paragraphNode, stream2string, span, elemChProj, elemCh, elemProj, xmlChildren,
 } from '../xmlTreeParser';
 import {
     some, translate, choice, seq, and, headParser, envParser, reject, yieldLast, expectEoi, expectParseAll,
 } from '../combinators';
 import { BookElement } from '../bookElementParser';
-import { XmlTree, isElementTree, tree2String } from '../xmlStringParser';
+import { XmlTree, tree2String } from '../xmlStringParser';
 import { equalsToOneOf } from '../utils';
 
 export const fb2epubHooks: EpubBookParserHooks = {
@@ -245,7 +245,7 @@ function titlePage(): Tree2ElementsParser {
 
 function divTitle(): Tree2ElementsParser {
     const divLevel = headParser((n: XmlTree) => {
-        if (isElementTree(n) && nameEq('div', n.name)
+        if (n.type === 'element' && n.name === 'div'
             && n.attributes.class && n.attributes.class.startsWith('title')) {
             const levelString = n.attributes.class.slice('title'.length);
             const level = parseInt(levelString, 10);

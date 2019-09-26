@@ -1,5 +1,5 @@
 import { XmlTree, hasChildren, XmlAttributes, XmlTreeElement, tree2String } from '../xmlStringParser';
-import { caseInsensitiveEq, isWhitespaces } from '../utils';
+import { isWhitespaces } from '../utils';
 import {
     Result, yieldNext, reject, seq, some, translate,
     StreamParser, headParser, makeStream, nextStream, not, Stream,
@@ -8,6 +8,8 @@ import {
 } from '../combinators';
 import { Constraint, ConstraintMap, checkObject, checkValue, checkObjectFull } from './constraint';
 import { filterUndefined } from 'booka-common';
+
+export type TreeParser<Out = XmlTree, Env = undefined> = StreamParser<XmlTree, Out, Env>;
 
 export type XmlElementConstraint = {
     name?: Constraint<string>,
@@ -69,8 +71,6 @@ export function elemProj<T, E = any>(
         }),
     );
 }
-
-export type TreeParser<Out = XmlTree, Env = undefined> = StreamParser<XmlTree, Out, Env>;
 
 function xmlName<E = any>(name: Constraint<string>): TreeParser<XmlTreeElement, E> {
     return headParser(tree => {
@@ -175,7 +175,7 @@ function parsePathHelper<T, E>(pathComponents: string[], then: TreeParser<T, E>,
     const pc = pathComponents[0];
 
     const childIndex = input.stream.findIndex(ch =>
-        ch.type === 'element' && nameEq(ch.name, pc));
+        ch.type === 'element' && ch.name === pc);
     const child = input.stream[childIndex];
     if (!child) {
         return reject({ diag: `parse path: ${pc}: can't find child` });
@@ -199,13 +199,6 @@ export function path<T, E>(paths: string[], then: TreeParser<T, E>): TreeParser<
 
 // Text:
 
-export function nameEq(n1: string, n2: string): boolean {
-    return caseInsensitiveEq(n1, n2);
-}
-
-export const extractText = (parser: TreeParser) =>
-    projectLast(and(parser, xmlChildren(textNode())));
-
 export function textNode<T, E = any>(f: (text: string) => T | null): TreeParser<T, E>;
 export function textNode<E = any>(): TreeParser<string, E>;
 export function textNode<T, E>(f?: (text: string) => T | null): TreeParser<T | string, E> {
@@ -225,20 +218,11 @@ export function textNode<T, E>(f?: (text: string) => T | null): TreeParser<T | s
     });
 }
 
-// Whitespaces:
-
 export const whitespaces = textNode<boolean, any>(text => isWhitespaces(text) ? true : null);
 
 export function whitespaced<T, E>(parser: TreeParser<T, E>): TreeParser<T, E> {
     return translate(
         seq(maybe(whitespaces), parser, maybe(whitespaces)),
         ([_, result, __]) => result,
-    );
-}
-
-export function beforeWhitespaces<T, E>(parser: TreeParser<T, E>): TreeParser<T> {
-    return translate(
-        seq(parser, whitespaces),
-        ([result, _]) => result,
     );
 }
