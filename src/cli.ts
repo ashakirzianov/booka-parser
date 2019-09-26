@@ -4,7 +4,7 @@ import * as fs from 'fs';
 import { extname, join } from 'path';
 import { parseEpub } from '.';
 import { promisify, inspect } from 'util';
-import { extractNodeText } from 'booka-common';
+import { extractNodeText, tagValue } from 'booka-common';
 import { topDiagnostic } from './combinators';
 import { parseEpubText } from './epub';
 
@@ -55,6 +55,10 @@ async function processEpubFile(filePath: string, reportMeta: boolean) {
         await saveString(`${filePath}.original`, allXmlText);
         await saveString(`${filePath}.parsed`, bookText);
     }
+    const skipTag = tagValue(result.value.book.tags, 'pg-skip');
+    if (skipTag !== null) {
+        logYellow('SKIP');
+    }
     if (result.diagnostic) {
         const top = topDiagnostic(result.diagnostic, 10);
         logRed('Diagnostics:');
@@ -78,6 +82,10 @@ function isEpub(path: string): boolean {
 
 function logRed(message: string) {
     console.log(`\x1b[31m${message}\x1b[0m`);
+}
+
+function logYellow(message: string) {
+    console.log(`\x1b[33m${message}\x1b[0m`);
 }
 
 async function logTimeAsync(marker: string, f: () => Promise<void>) {

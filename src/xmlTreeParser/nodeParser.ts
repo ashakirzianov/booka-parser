@@ -2,7 +2,7 @@ import { ParagraphNode, compoundSpan, flatten, GroupNode, BookContentNode, makeP
 import {
     yieldLast, headParser, reject, choice, oneOrMore, translate,
     envParser, fullParser, expectEoi, compoundDiagnostic,
-    ParserDiagnostic, expectParseAll, some, expected, Stream, makeStream, diagnosticContext, projectFirst, seq, endOfInput,
+    ParserDiagnostic, expectParseAll, some, expected, Stream, makeStream, projectFirst, seq, endOfInput,
 } from '../combinators';
 import { isWhitespaces } from '../utils';
 import { elemCh, elemChProj, whitespaced } from './treeParser';
@@ -56,13 +56,13 @@ export const paragraphNode: EpubTreeParser<ParagraphNode> = translate(
     spans => makePph(compoundSpan(spans)),
 );
 
-const pphElement: Tree2ElementsParser = diagnosticContext(translate(
+const pphElement: Tree2ElementsParser = translate(
     paragraphNode,
     pNode => [{
         element: 'content',
         content: pNode,
     }],
-), 'pphElement');
+);
 
 const pphs = projectFirst(seq(some(paragraphNode), endOfInput()));
 const blockquote: Tree2ElementsParser = elemChProj({
@@ -176,6 +176,7 @@ const hr = elemChProj({
 
 const containerElement: Tree2ElementsParser = envParser(environment => {
     return elemChProj({
+        context: 'container-element',
         name: ['p', 'div', 'span', 'blockquote', 'a'],
         expectedClasses: [
             undefined, 'image',
@@ -186,6 +187,7 @@ const containerElement: Tree2ElementsParser = envParser(environment => {
             // TODO: do not ignore ?
             'extracts', 'mynote', 'letterdate', 'letter1', 'titlepage',
             'contents', 'centered', 'poem', 'figcenter', 'blockquot',
+            'stanza',
         ],
         expectedAttrs: {
             id: null,

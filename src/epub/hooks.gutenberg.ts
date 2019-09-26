@@ -14,6 +14,7 @@ export const gutenbergHooks: EpubBookParserHooks = {
         skipTocP(),
         skipTocTable(),
         ignoreClass('chapterhead'),
+        referenceBookMarker(),
     ],
     metadataHooks: [metaHook()],
 };
@@ -45,6 +46,25 @@ function metaHook(): MetadataRecordParser {
             default:
                 return reject();
         }
+    });
+}
+
+function referenceBookMarker(): Tree2ElementsParser {
+    const markerText = `THIS EBOOK WAS ONE OF PROJECT GUTENBERG'S EARLY FILES`;
+    return elemChProj({
+        name: 'p',
+        children: textNode(text =>
+            text.startsWith(markerText)
+                ? true
+                : null),
+        project: () => {
+            return [{
+                element: 'tag',
+                tag: {
+                    tag: 'pg-skip',
+                },
+            }];
+        },
     });
 }
 

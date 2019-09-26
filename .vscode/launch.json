@@ -8,7 +8,7 @@
       "preLaunchTask": "watch",
       "program": "${workspaceFolder}/src/cli.ts",
       "args": [
-        "pg/pg0.epub"
+        "pg/pg15.epub"
       ],
       "cwd": "${workspaceFolder}",
       "protocol": "inspector",
