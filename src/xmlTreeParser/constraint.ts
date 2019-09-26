@@ -1,6 +1,6 @@
 type SimpleConstraint<TV, TC extends TV = TV> =
     | TC
-    | ((x: TV) => boolean)
+    | ((x: TV | undefined) => boolean)
     | null
     | undefined
     ;
@@ -23,8 +23,8 @@ export type ConstraintFailReason = {
 
 function checkValueSimple<T, C extends T>(value: T | undefined, constraint: SimpleConstraint<T, C>): boolean {
     if (typeof constraint === 'function') {
-        const fn = constraint as (x: T) => boolean;
-        const result = value !== undefined && fn(value);
+        const fn = constraint as (x: T | undefined) => boolean;
+        const result = fn(value);
         return result;
     } else if (constraint === null) {
         return true;

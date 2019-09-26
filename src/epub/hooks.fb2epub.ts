@@ -124,7 +124,7 @@ function footnoteSection(): Tree2ElementsParser {
             project: el => el.attributes.id!,
         });
         const h = elemCh({
-            name: n => n.match(/^h[0-9]+$/) !== null,
+            name: n => n ? n.match(/^h[0-9]+$/) !== null : false,
             children: textNode(),
         });
         const title = elemCh({
@@ -252,7 +252,7 @@ function divTitle(): Tree2ElementsParser {
         return reject();
     });
     const h = whitespaced(elemCh({
-        name: n => n.startsWith('h'),
+        name: n => n ? n.startsWith('h') : false,
         children: textNode(),
     }));
     const content = some(h);
