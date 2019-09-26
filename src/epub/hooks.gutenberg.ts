@@ -15,6 +15,7 @@ export const gutenbergHooks: EpubBookParserHooks = {
         skipTocTable(),
         ignoreClass('chapterhead'),
         referenceBookMarker(),
+        oldFashionTitle(),
     ],
     metadataHooks: [metaHook()],
 };
@@ -46,6 +47,29 @@ function metaHook(): MetadataRecordParser {
             default:
                 return reject();
         }
+    });
+}
+
+function oldFashionTitle(): Tree2ElementsParser {
+    const titleRegex = /\*\*\*\*\*The Project Gutenberg Etext "([^"\*]*)\**"/;
+    return elemChProj({
+        name: 'p',
+        attrs: {
+            style: 'margin-top: 2em',
+        },
+        children: textNode(text => {
+            const match = text.match(titleRegex);
+            return match ? match[1] : null;
+        }),
+        project: (title: string) => {
+            return [{
+                element: 'tag',
+                tag: {
+                    tag: 'title',
+                    value: title,
+                },
+            }];
+        },
     });
 }
 
