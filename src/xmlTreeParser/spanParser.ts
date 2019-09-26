@@ -35,6 +35,7 @@ const attr = choice(italic, bold, quote, small, big, sup, sub);
 
 const brSpan: Tree2SpanParser = elemChProj({
     name: 'br',
+    expectedClasses: undefined,
     children: expectEoi(stream2string),
 },
     () => '\n',
@@ -42,6 +43,7 @@ const brSpan: Tree2SpanParser = elemChProj({
 
 const correctionSpan: Tree2SpanParser = elemChProj({
     name: 'ins',
+    expectedClasses: undefined,
     expectedAttrs: { title: null },
     children: expectSpanContent,
 },
@@ -55,6 +57,13 @@ const correctionSpan: Tree2SpanParser = elemChProj({
 
 const spanSpan: Tree2SpanParser = elemChProj({
     name: 'span',
+    expectedClasses: [
+        undefined, 'dropcap',
+        'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'c9', 'c10', 'c11',
+        'i2', 'i6', 'i8', 'i16', 'i20', 'i21',
+        // TODO: do not ignore ?
+        'smcap', 'GutSmall',
+    ],
     expectedAttrs: {
         id: null,
         href: null, title: null, tag: null,
@@ -65,6 +74,12 @@ const spanSpan: Tree2SpanParser = elemChProj({
 );
 const aSpan: Tree2SpanParser = elemChProj({
     name: 'a',
+    expectedClasses: [
+        undefined, 'c1', 'c2', 'c3', 'c4', 'c5',
+        // TODO: do not ignore ?
+        'pginternal', 'x-ebookmaker-pageno', 'footnote',
+        'citation',
+    ],
     expectedAttrs: {
         id: null,
         href: null, title: null, tag: null,
@@ -93,7 +108,12 @@ span.implementation = choice(
 function attrsSpanParser(tagNames: string[], attrs: AttributeName[], contentParser: Tree2SpanParser): Tree2SpanParser {
     return elemChProj({
         name: tagNames,
-        expectedClasses: null,
+        expectedClasses: [
+            undefined, 'i6',
+            'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'c9', 'c10', 'c11',
+            // TODO: do not ignore?
+            'smcap', 'GutSmall',
+        ],
         expectedAttrs: { id: null },
         children: contentParser,
     },
