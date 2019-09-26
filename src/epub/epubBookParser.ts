@@ -3,7 +3,7 @@ import { equalsToOneOf } from '../utils';
 import {
     makeStream, yieldLast, andAsync, AsyncFullParser, pipeAsync, ParserDiagnostic, compoundDiagnostic, StreamParser,
 } from '../combinators';
-import { elements2volume, BookElement } from '../bookElementParser';
+import { elements2book, BookElement } from '../bookElementParser';
 import { EpubBook } from './epubBook';
 import { sectionsParser } from './sectionParser';
 import { metadataParser } from './metaParser';
@@ -28,23 +28,15 @@ export const epubBookParser: AsyncFullParser<EpubBook, Book> = pipeAsync(
         const metaNodes = buildMetaElementsFromTags(tags);
         const allNodes = elements.concat(metaNodes);
 
-        const volumeResult = await elements2volume(makeStream(allNodes));
+        const bookResult = await elements2book(makeStream(allNodes));
 
-        if (!volumeResult.success) {
-            return volumeResult;
+        if (!bookResult.success) {
+            return bookResult;
         }
 
-        const volume = volumeResult.value;
-        const book: Book = {
-            volume,
-            source: {
-                source: 'epub',
-                kind: epub.kind,
-            },
-            tags: tags,
-        };
+        const book: Book = bookResult.value;
 
-        return yieldLast({ book, epub }, volumeResult.diagnostic);
+        return yieldLast({ book, epub }, bookResult.diagnostic);
     },
     // Resolve image references
     async ({ book, epub }) => {
