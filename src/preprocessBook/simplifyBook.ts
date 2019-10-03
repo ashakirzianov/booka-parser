@@ -61,9 +61,7 @@ function simplifyParagraph(paragraph: ParagraphNode): BookContentNode | undefine
 function simplifySpan(span: Span): Span | undefined {
     switch (span.span) {
         case undefined:
-            return isWhitespaces(span)
-                ? undefined
-                : span;
+            return span;
         case 'attrs':
         case 'ref':
             const content = simplifySpan(span.content);

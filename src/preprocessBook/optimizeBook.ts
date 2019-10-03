@@ -82,8 +82,12 @@ function optimizeCompound(compound: CompoundSpan): Span {
             } else if (isAttributedSpan(prev)) {
                 if (isAttributedSpan(optimized) && sameAttrs(prev.attrs, optimized.attrs)) {
                     toReplace = {
-                        span: 'compound',
-                        spans: [prev.content, optimized.content],
+                        span: 'attrs',
+                        attrs: prev.attrs,
+                        content: {
+                            span: 'compound',
+                            spans: [prev.content, optimized.content],
+                        },
                     };
                 }
             } else if (isCompoundSpan(prev) && isCompoundSpan(optimized)) {
