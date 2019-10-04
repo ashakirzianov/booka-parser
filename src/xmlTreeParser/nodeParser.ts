@@ -8,8 +8,8 @@ import {
     ParserDiagnostic, some, Stream, makeStream, seq, projectLast, diagnosticContext,
 } from '../combinators';
 import { isWhitespaces } from '../utils';
-import { elemCh, elemChProj, elemProj, expectParseAll, expectEoi, parseAll } from './treeParser';
-import { spanContent, span, expectSpanContent, standardClasses } from './spanParser';
+import { elemCh, elemChProj, elemProj } from './treeParser';
+import { spanContent, span, standardClasses } from './spanParser';
 import { XmlTree, tree2String } from '../xmlStringParser';
 import { Tree2ElementsParser, EpubTreeParser, buildRef } from './utils';
 import {
@@ -49,6 +49,7 @@ const wrappedSpans = elemCh({
         'xml:space': [undefined, 'preserve'],
     },
     children: spanContent,
+    onChildrenTail: 'break',
 });
 const pphSpans = diagnosticContext(
     choice(wrappedSpans, oneOrMore(span)),
@@ -68,12 +69,13 @@ const pphElement: Tree2ElementsParser = translate(
     }],
 );
 
-const pphs = parseAll(some(paragraphNode));
+const pphs = some(paragraphNode);
 const blockquote: Tree2ElementsParser = elemChProj({
     context: 'blockquote',
     name: 'blockquote',
     expectedAttrs: { cite: null },
     children: pphs,
+    onChildrenTail: 'break',
     project: (children, element) => {
         const node: GroupNode = {
             node: 'group',
@@ -95,10 +97,10 @@ const blockquote: Tree2ElementsParser = elemChProj({
 
 const li = elemCh({
     name: 'li',
-    children: expectSpanContent,
+    children: spanContent,
 });
 
-const lis = expectParseAll(some(li));
+const lis = some(li);
 const listElement: Tree2ElementsParser = elemChProj({
     context: 'list',
     name: ['ol', 'ul'],
@@ -119,7 +121,7 @@ const listElement: Tree2ElementsParser = elemChProj({
     }],
 });
 
-const cellContent = expectParseAll(some(pphSpans));
+const cellContent = some(pphSpans);
 const tableCell = elemChProj({
     context: 'table cell',
     name: ['td', 'th'],
@@ -138,17 +140,11 @@ const tableCell = elemChProj({
     },
 });
 
-const rowContent = diagnosticContext(
-    expectParseAll(some(tableCell)),
-    'row content',
-);
 const tr = elemCh({
     context: 'table row',
     name: 'tr',
-    children: rowContent,
+    children: some(tableCell),
 });
-
-const tableBodyContent = expectParseAll(some(tr));
 
 const tableIgnore = elemProj({
     name: ['colgroup', 'col'],
@@ -156,15 +152,13 @@ const tableIgnore = elemProj({
 });
 const tbodyTag = elemCh({
     name: 'tbody',
-    children: tableBodyContent,
+    children: some(tr),
 });
 const tbody = projectLast(
     seq(some(tableIgnore), tbodyTag),
 );
 
-const tableBody = choice(tbody, tableBodyContent);
-
-const tableContent = expectParseAll(tableBody);
+const tableContent = choice(tbody, some(tr));
 const table: Tree2ElementsParser = elemChProj({
     name: 'table',
     expectedClasses: [
@@ -187,7 +181,7 @@ const table: Tree2ElementsParser = elemChProj({
     }),
 });
 
-const hr = elemChProj({
+const hr = elemProj({
     context: 'separator',
     name: 'hr',
     expectedClasses: [
@@ -196,7 +190,6 @@ const hr = elemChProj({
         // TODO: do not ignore ?
         'title',
     ],
-    children: expectEoi(),
     project: () => fromContent({
         node: 'separator',
     }),
@@ -230,15 +223,14 @@ const containerElement: Tree2ElementsParser = envParser(environment => {
     });
 });
 
-const img: Tree2ElementsParser = elemChProj({
+const img: Tree2ElementsParser = elemProj({
     name: 'img',
     expectedClasses: [undefined, 'floatright', 'z1'],
     expectedAttrs: {
         src: src => src ? true : false,
         alt: null, tag: null, title: null, width: null,
     },
-    children: expectEoi(),
-    project: (_, xml) => {
+    project: xml => {
         const src = xml.attributes['src'];
         if (src) {
             return [{
@@ -255,13 +247,12 @@ const img: Tree2ElementsParser = elemChProj({
     },
 });
 
-const image: Tree2ElementsParser = elemChProj({
+const image: Tree2ElementsParser = elemProj({
     name: 'image',
     expectedAttrs: {
         'xlink:href': href => href ? true : false,
     },
-    children: expectEoi(),
-    project: (_, xml) => {
+    project: xml => {
         const xlinkHref = xml.attributes['xlink:href'];
         if (xlinkHref) {
             return [{

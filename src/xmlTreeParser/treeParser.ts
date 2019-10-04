@@ -18,6 +18,7 @@ export type XmlElementConstraint = {
     expectedClasses?: Constraint<string>,
     context?: any,
     keepWhitespaces?: 'trailing' | 'leading' | 'both' | 'none',
+    onChildrenTail?: 'ignore' | 'warn' | 'break', // Default is 'warn'
 };
 export function elem<E = any>(ec: XmlElementConstraint): TreeParser<XmlTreeElement, E> {
     return elementParserImpl(ec);
@@ -53,6 +54,7 @@ function elementParserImpl<TC, T = TC>(
     },
 ): TreeParser<any, any> {
     return function elemParser(input) {
+        const childrenTail = ec.onChildrenTail || 'warn';
         let stream = input.stream;
         let head = stream[0];
         if (ec.keepWhitespaces !== 'leading' && ec.keepWhitespaces !== 'both') {
@@ -80,6 +82,12 @@ function elementParserImpl<TC, T = TC>(
         if (childrenResult && childrenResult.success === false) {
             return reject();
         }
+        const childrenNextStream = childrenResult
+            ? childrenResult.next && childrenResult.next.stream
+            : head.children;
+        if (childrenTail === 'break' && childrenNextStream && childrenNextStream.length > 0) {
+            return reject();
+        }
 
         const diags: ParserDiagnostic[] = [];
         if (ec.expectedClasses) {
@@ -101,6 +109,12 @@ function elementParserImpl<TC, T = TC>(
         }
         if (childrenResult && childrenResult.diagnostic) {
             diags.push(childrenResult.diagnostic);
+        }
+        if (childrenTail === 'warn' && childrenNextStream && childrenNextStream.length > 0) {
+            diags.push({
+                diag: 'expected-parse-all-children',
+                tail: childrenNextStream.map(tree2String).join('\n'),
+            });
         }
 
         const diag: ParserDiagnostic = diags.length > 0
