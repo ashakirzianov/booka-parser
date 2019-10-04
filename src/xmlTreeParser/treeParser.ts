@@ -17,6 +17,7 @@ export type XmlElementConstraint = {
     classes?: Constraint<string>,
     expectedClasses?: Constraint<string>,
     context?: any,
+    keepWhitespaces?: 'trailing' | 'leading' | 'both' | 'none',
 };
 export function elem<E = any>(ec: XmlElementConstraint): TreeParser<XmlTreeElement, E> {
     return elementParserImpl(ec);
@@ -52,7 +53,15 @@ function elementParserImpl<TC, T = TC>(
     },
 ): TreeParser<any, any> {
     return function elemParser(input) {
-        const head = input.stream[0];
+        let stream = input.stream;
+        let head = stream[0];
+        if (ec.keepWhitespaces !== 'leading' && ec.keepWhitespaces !== 'both') {
+            while (head && head.type === 'text' && isWhitespaces(head.text)) {
+                stream = stream.slice(1);
+                head = stream[0];
+            }
+        }
+
         if (head === undefined || head.type !== 'element') {
             return reject();
         }
@@ -72,21 +81,34 @@ function elementParserImpl<TC, T = TC>(
             return reject();
         }
 
-        const expectedClasses = ec.expectedClasses && checkClass(cls, ec.expectedClasses);
-        const expectedAttrs = ec.expectedAttrs && checkObjectFull(head.attributes, { ...ec.expectedAttrs, class: null });
+        const diags: ParserDiagnostic[] = [];
+        if (ec.expectedClasses) {
+            const classCheck = checkClass(cls, ec.expectedClasses);
+            if (classCheck) {
+                diags.push(classCheck);
+            }
+        }
+        if (ec.expectedAttrs) {
+            const attrsCheck = checkObjectFull(head.attributes, {
+                ...ec.expectedAttrs, class: null,
+            });
+            if (attrsCheck.length > 0) {
+                diags.push({
+                    diag: 'unexpected-attrs',
+                    reasons: attrsCheck,
+                });
+            }
+        }
+        if (childrenResult && childrenResult.diagnostic) {
+            diags.push(childrenResult.diagnostic);
+        }
 
-        let diag = compoundDiagnostic([
-            expectedClasses || undefined,
-            expectedAttrs && expectedAttrs.length > 0
-                ? { diag: 'unexpected-attrs', reasons: expectedAttrs }
-                : undefined,
-            childrenResult && childrenResult.diagnostic,
-        ]);
-        diag = diag !== undefined
+        const diag: ParserDiagnostic = diags.length > 0
             ? {
                 context: ec.context || ec.name || 'unspecified',
-                xml: tree2String(head),
-                ...diag,
+                xml: tree2String(head, 1),
+                parentXml: tree2String(head.parent, 1),
+                diagnostic: compoundDiagnostic(diags),
             }
             : undefined;
 
@@ -100,7 +122,16 @@ function elementParserImpl<TC, T = TC>(
                 : head
             );
 
-        return yieldNext(result, nextStream(input), diag);
+        stream = stream.slice(1);
+        if (ec.keepWhitespaces !== 'trailing' && ec.keepWhitespaces !== 'both') {
+            head = stream[0];
+            while (head && head.type === 'text' && isWhitespaces(head.text)) {
+                stream = stream.slice(1);
+                head = stream[0];
+            }
+        }
+
+        return yieldNext(result, makeStream(stream, input.env), diag);
     };
 }
 

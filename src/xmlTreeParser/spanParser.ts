@@ -41,6 +41,7 @@ const attr = choice(italic, bold, quote, small, big, sup, sub);
 
 const brTag = elemCh({
     name: 'br',
+    keepWhitespaces: 'both',
     expectedClasses: undefined,
     children: expectEoi(),
 });
@@ -53,6 +54,7 @@ const brSpan = translate(
 
 const correctionSpan: Tree2SpanParser = elemChProj({
     name: 'ins',
+    keepWhitespaces: 'both',
     expectedClasses: undefined,
     expectedAttrs: { title: null },
     children: expectSpanContent,
@@ -69,6 +71,7 @@ const correctionSpan: Tree2SpanParser = elemChProj({
 
 const spanSpan: Tree2SpanParser = elemChProj({
     name: 'span',
+    keepWhitespaces: 'both',
     expectedClasses: [
         ...standardClasses,
         // TODO: do not ignore ?
@@ -83,6 +86,7 @@ const spanSpan: Tree2SpanParser = elemChProj({
 });
 const aSpan: Tree2SpanParser = elemChProj({
     name: 'a',
+    keepWhitespaces: 'both',
     expectedClasses: [
         ...standardClasses, 'a',
         // TODO: do not ignore ?
@@ -122,6 +126,7 @@ function attrsSpanParser(tagNames: string[], attrs: AttributeName[], contentPars
             'smcap', 'GutSmall',
         ],
         expectedAttrs: { id: null },
+        keepWhitespaces: 'both',
         children: contentParser,
         project: (children) => ({
             span: 'attrs',
