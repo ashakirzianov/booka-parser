@@ -4,11 +4,11 @@ import {
 } from 'booka-common';
 import {
     yieldLast, headParser, reject, choice, oneOrMore, translate,
-    envParser, fullParser, expectEoi, compoundDiagnostic,
-    ParserDiagnostic, expectParseAll, some, expected, Stream, makeStream, projectFirst, seq, endOfInput, projectLast, diagnosticContext,
+    envParser, fullParser, compoundDiagnostic,
+    ParserDiagnostic, some, expected, Stream, makeStream, projectFirst, seq, endOfInput, projectLast, diagnosticContext,
 } from '../combinators';
 import { isWhitespaces } from '../utils';
-import { elemCh, elemChProj, whitespaced, elemProj } from './treeParser';
+import { elemCh, elemChProj, whitespaced, elemProj, expectParseAll, expectEoi } from './treeParser';
 import { spanContent, span, expectSpanContent, standardClasses } from './spanParser';
 import { XmlTree, tree2String } from '../xmlStringParser';
 import { Tree2ElementsParser, EpubTreeParser, buildRef, stream2string } from './utils';
@@ -98,7 +98,7 @@ const li = elemCh({
     children: expectSpanContent,
 });
 
-const lis = expectParseAll(some(whitespaced(li)), stream2string);
+const lis = expectParseAll(some(whitespaced(li)));
 const listElement: Tree2ElementsParser = elemChProj({
     context: 'list',
     name: ['ol', 'ul'],
@@ -114,12 +114,12 @@ const listElement: Tree2ElementsParser = elemChProj({
         content: {
             node: 'list',
             kind: element.name === 'ol' ? 'ordered' : 'basic',
-            items: children,
+            items: children.map(compoundSpan),
         },
     }],
 });
 
-const cellContent = expectParseAll(some(pphSpans), stream2string);
+const cellContent = expectParseAll(some(pphSpans));
 const tableCell = elemChProj({
     context: 'table cell',
     name: ['td', 'th'],
@@ -139,7 +139,7 @@ const tableCell = elemChProj({
 });
 
 const rowContent = diagnosticContext(
-    expectParseAll(some(whitespaced(tableCell)), stream2string),
+    expectParseAll(some(whitespaced(tableCell))),
     'row content',
 );
 const tr = elemCh({
@@ -148,7 +148,7 @@ const tr = elemCh({
     children: rowContent,
 });
 
-const tableBodyContent = expectParseAll(some(whitespaced(tr)), stream2string);
+const tableBodyContent = expectParseAll(some(whitespaced(tr)));
 
 const tableIgnore = elemProj({
     name: ['colgroup', 'col'],
@@ -164,7 +164,7 @@ const tbody = projectLast(
 
 const tableBody = choice(tbody, tableBodyContent);
 
-const tableContent = expectParseAll(whitespaced(tableBody), stream2string);
+const tableContent = expectParseAll(whitespaced(tableBody));
 const table: Tree2ElementsParser = elemChProj({
     name: 'table',
     expectedClasses: [
@@ -196,7 +196,7 @@ const hr = elemChProj({
         // TODO: do not ignore ?
         'title',
     ],
-    children: expectEoi(stream2string),
+    children: expectEoi(),
     project: () => fromContent({
         node: 'separator',
     }),
@@ -237,7 +237,7 @@ const img: Tree2ElementsParser = elemChProj({
         src: src => src ? true : false,
         alt: null, tag: null, title: null, width: null,
     },
-    children: expectEoi('img-children'),
+    children: expectEoi(),
     project: (_, xml) => {
         const src = xml.attributes['src'];
         if (src) {
@@ -260,7 +260,7 @@ const image: Tree2ElementsParser = elemChProj({
     expectedAttrs: {
         'xlink:href': href => href ? true : false,
     },
-    children: expectEoi('image-children'),
+    children: expectEoi(),
     project: (_, xml) => {
         const xlinkHref = xml.attributes['xlink:href'];
         if (xlinkHref) {

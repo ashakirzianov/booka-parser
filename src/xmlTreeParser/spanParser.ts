@@ -1,9 +1,9 @@
 import { Span, compoundSpan, AttributeName } from 'booka-common';
 import {
     declare, translate, seq, some, endOfInput, choice,
-    headParser, yieldLast, reject, Stream, expectEoi, projectFirst, maybe, expected,
+    headParser, yieldLast, reject, Stream, projectFirst, maybe, expected,
 } from '../combinators';
-import { elemChProj, textNode, elemCh } from './treeParser';
+import { elemChProj, textNode, elemCh, parseAll, expectEoi, expectParseAll, TreeParser } from './treeParser';
 import { XmlTree, tree2String } from '../xmlStringParser';
 import { TreeParserEnv, Tree2SpanParser, stream2string } from './utils';
 
@@ -21,17 +21,8 @@ export const standardClasses = [
 
 export const span = declare<Stream<XmlTree, TreeParserEnv>, Span>('span');
 
-export const spanContent = projectFirst(seq(some(span), endOfInput(stream2string)));
-export const expectSpanContent: Tree2SpanParser = translate(
-    projectFirst(seq(
-        some(choice(span, headParser(
-            el =>
-                yieldLast('', { diag: 'unexpected-xml', xml: tree2String(el) })
-        ))),
-        expected(endOfInput(), undefined),
-    )),
-    compoundSpan,
-);
+export const spanContent = parseAll(some(span));
+export const expectSpanContent = expectParseAll(some(span));
 
 const text: Tree2SpanParser = headParser(node => {
     return node.type === 'text'
@@ -51,7 +42,7 @@ const attr = choice(italic, bold, quote, small, big, sup, sub);
 const brTag = elemCh({
     name: 'br',
     expectedClasses: undefined,
-    children: expectEoi(stream2string),
+    children: expectEoi(),
 });
 const brSpan = translate(
     seq(brTag, maybe(textNode())),
@@ -67,7 +58,7 @@ const correctionSpan: Tree2SpanParser = elemChProj({
     children: expectSpanContent,
     project: (content, xml) => ({
         span: 'compound',
-        spans: [content],
+        spans: content,
         semantic: {
             correction: {
                 note: xml.attributes.title,
@@ -122,7 +113,7 @@ span.implementation = choice(
     correctionSpan, aSpan, spanSpan,
 );
 
-function attrsSpanParser(tagNames: string[], attrs: AttributeName[], contentParser: Tree2SpanParser): Tree2SpanParser {
+function attrsSpanParser(tagNames: string[], attrs: AttributeName[], contentParser: TreeParser<Span[]>): Tree2SpanParser {
     return elemChProj({
         name: tagNames,
         expectedClasses: [
@@ -135,7 +126,7 @@ function attrsSpanParser(tagNames: string[], attrs: AttributeName[], contentPars
         project: (children) => ({
             span: 'attrs',
             attrs,
-            content: children,
+            content: compoundSpan(children),
         }),
     });
 }

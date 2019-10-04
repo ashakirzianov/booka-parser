@@ -1,11 +1,11 @@
 import { KnownTag, extractSpanText, ParagraphNode } from 'booka-common';
 import {
-    reject, headParser, yieldLast, translate, choice, expectParseAll, some,
+    reject, headParser, yieldLast, translate, choice, some,
 } from '../combinators';
 import { XmlTreeWithChildren } from '../xmlStringParser';
 import { EpubBookParserHooks, MetadataRecordParser } from './epubBookParser';
 import {
-    Tree2ElementsParser, span, paragraphNode, stream2string, elemChProj,
+    Tree2ElementsParser, span, paragraphNode, stream2string, elemChProj, expectParseAll,
 } from '../xmlTreeParser';
 import { BookElement } from '../bookElementParser';
 
@@ -60,7 +60,7 @@ function metaHook(): MetadataRecordParser {
 }
 
 function epigraph(): Tree2ElementsParser {
-    const content = expectParseAll(some(paragraphNode), stream2string);
+    const content = expectParseAll(some(paragraphNode));
 
     return elemChProj({
         name: 'div',
@@ -98,7 +98,7 @@ function cite(): Tree2ElementsParser {
             paragraph: pn,
         }),
     );
-    const content = expectParseAll(some(choice(textAuthor, p)), stream2string);
+    const content = expectParseAll(some(choice(textAuthor, p)));
 
     return elemChProj({
         name: 'div',

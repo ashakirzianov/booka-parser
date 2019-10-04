@@ -5,10 +5,10 @@ import {
 import { EpubBookParserHooks, MetadataRecordParser } from './epubBookParser';
 import {
     textNode, ignoreClass, buildRef, Tree2ElementsParser,
-    whitespaced, paragraphNode, stream2string, span, elemChProj, elemCh, elemProj, xmlChildren,
+    whitespaced, paragraphNode, span, elemChProj, elemCh, elemProj, xmlChildren, expectParseAll, expectEoi,
 } from '../xmlTreeParser';
 import {
-    some, translate, choice, seq, and, headParser, envParser, reject, yieldLast, expectEoi, expectParseAll,
+    some, translate, choice, seq, and, headParser, envParser, reject, yieldLast,
 } from '../combinators';
 import { BookElement } from '../bookElementParser';
 import { XmlTree, tree2String } from '../xmlStringParser';
@@ -92,7 +92,7 @@ function epigraph(): Tree2ElementsParser {
 }
 
 function poem(): Tree2ElementsParser {
-    const content = expectParseAll(some(paragraphNode), stream2string);
+    const content = expectParseAll(some(paragraphNode));
     const stanza = elemCh({
         name: 'div',
         classes: 'stanza',
@@ -141,7 +141,7 @@ function footnoteSection(): Tree2ElementsParser {
             attrs: { href: null },
             project: () => undefined,
         });
-        const children = seq(some(env.spanParser), expectEoi('footnote-p'));
+        const children = seq(some(env.spanParser), expectEoi());
         const pph = elemChProj({
             name: 'p',
             expectedClasses: null,
