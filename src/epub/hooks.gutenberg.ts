@@ -13,9 +13,9 @@ import {
 export const gutenbergHooks: EpubBookParserHooks = {
     nodeHooks: [
         footnote(),
-        skipTocP(),
-        skipTocTable(),
-        ignoreClass('chapterhead'),
+        // skipTocP(),
+        // skipTocTable(),
+        // ignoreClass('chapterhead'),
         referenceBookMarker(),
         oldFashionTitle(),
         poem(),
