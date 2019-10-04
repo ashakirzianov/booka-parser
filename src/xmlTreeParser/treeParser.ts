@@ -3,13 +3,9 @@ import { isWhitespaces } from '../utils';
 import {
     Result, yieldNext, reject, seq, some, translate,
     StreamParser, headParser, makeStream, nextStream, not, Stream,
-    projectLast, and, expected, yieldLast, diagnosticContext,
-    maybe,
-    ParserDiagnostic,
-    compoundDiagnostic,
+    yieldLast, maybe, ParserDiagnostic, compoundDiagnostic,
 } from '../combinators';
 import { Constraint, ConstraintMap, checkObject, checkValue, checkObjectFull, constraintToString } from './constraint';
-import { filterUndefined } from 'booka-common';
 
 export type TreeParser<Out = XmlTree, Env = undefined> = StreamParser<XmlTree, Out, Env>;
 
@@ -28,7 +24,6 @@ export function elem<E = any>(ec: XmlElementConstraint): TreeParser<XmlTreeEleme
 export function elemCh<TC, E = any>(ec: XmlElementConstraint & {
     children: TreeParser<TC, E>,
 }): TreeParser<TC, E> {
-    const context = ec.context || ec.name || 'undefined';
     return elementParserImpl(ec);
 }
 
@@ -77,7 +72,7 @@ function elementParserImpl<TC, T = TC>(
         }
 
         const expectedClasses = ec.expectedClasses && checkClass(cls, ec.expectedClasses);
-        const expectedAttrs = ec.expectedAttrs && checkObject(head.attributes, ec.expectedAttrs);
+        const expectedAttrs = ec.expectedAttrs && checkObjectFull(head.attributes, { ...ec.expectedAttrs, class: null });
 
         let diag = compoundDiagnostic([
             expectedClasses || undefined,
