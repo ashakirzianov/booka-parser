@@ -1,9 +1,9 @@
 import { Span, compoundSpan, AttributeName } from 'booka-common';
 import {
     declare, translate, seq, some, endOfInput, choice,
-    headParser, yieldLast, reject, Stream, expectEoi, projectFirst,
+    headParser, yieldLast, reject, Stream, expectEoi, projectFirst, maybe,
 } from '../combinators';
-import { elemChProj } from './treeParser';
+import { elemChProj, textNode, elemCh } from './treeParser';
 import { XmlTree, tree2String } from '../xmlStringParser';
 import { TreeParserEnv, Tree2SpanParser, stream2string } from './utils';
 
@@ -44,12 +44,17 @@ const sup = attrsSpanParser(['sup'], ['superscript'], expectSpanContent);
 const sub = attrsSpanParser(['sub'], ['subscript'], expectSpanContent);
 const attr = choice(italic, bold, quote, small, big, sup, sub);
 
-const brSpan: Tree2SpanParser = elemChProj({
+const brTag = elemCh({
     name: 'br',
     expectedClasses: undefined,
     children: expectEoi(stream2string),
-    project: () => '\n',
 });
+const brSpan = translate(
+    seq(brTag, maybe(textNode())),
+    ([_, nextText]) => nextText === undefined
+        ? '\n'
+        : '\n' + nextText.trimLeft(),
+);
 
 const correctionSpan: Tree2SpanParser = elemChProj({
     name: 'ins',
@@ -59,8 +64,11 @@ const correctionSpan: Tree2SpanParser = elemChProj({
     project: (content, xml) => ({
         span: 'compound',
         spans: [content],
-        semantic: 'correction',
-        note: xml.attributes.title,
+        semantic: {
+            correction: {
+                note: xml.attributes.title,
+            },
+        },
     }),
 });
 
