@@ -1,12 +1,14 @@
+import {
+    ParagraphNode, makePph, KnownTag, flatten,
+} from 'booka-common';
 import { EpubBookParserHooks, MetadataRecordParser } from './epubBookParser';
 import {
     textNode,
-    whitespaces, buildRef, Tree2ElementsParser, ignoreClass, elemProj, elem, elemChProj, elemCh,
+    whitespaces, buildRef, Tree2ElementsParser, ignoreClass, elemProj, elem, elemChProj, elemCh, paragraphNode,
 } from '../xmlTreeParser';
 import {
-    and, translate, seq, maybe, envParser, headParser, reject, yieldLast, some,
+    translate, seq, maybe, envParser, headParser, reject, yieldLast, some,
 } from '../combinators';
-import { ParagraphNode, makePph, KnownTag, flatten } from 'booka-common';
 
 export const gutenbergHooks: EpubBookParserHooks = {
     nodeHooks: [
@@ -16,6 +18,7 @@ export const gutenbergHooks: EpubBookParserHooks = {
         ignoreClass('chapterhead'),
         referenceBookMarker(),
         oldFashionTitle(),
+        poem(),
     ],
     metadataHooks: [metaHook()],
 };
@@ -175,5 +178,21 @@ function footnote(): Tree2ElementsParser {
         );
 
         return fullFootnote;
+    });
+}
+
+function poem(): Tree2ElementsParser {
+    return elemChProj({
+        name: 'p',
+        classes: 'verse',
+        children: paragraphNode,
+        project: p => [{
+            element: 'content',
+            content: {
+                node: 'pph',
+                span: p,
+                semantic: { poem: {} },
+            },
+        }],
     });
 }
