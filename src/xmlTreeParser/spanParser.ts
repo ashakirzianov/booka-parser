@@ -16,7 +16,7 @@ export const standardClasses = [
     'i2', 'i4', 'i6', 'i8', 'i10', 'i16', 'i20', 'i21',
     'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'c9', 'c10', 'c11',
     'pgmonospaced', 'center', 'pgheader', 'fig', 'figleft',
-    'indexpageno',
+    'indexpageno', 'imageref',
 ];
 
 export const span = declare<Stream<XmlTree, TreeParserEnv>, Span>('span');

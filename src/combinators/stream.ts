@@ -43,14 +43,18 @@ export function headParser<In, Out, Env = any>(f: HeadFn<In, Out, Env>): StreamP
 
 export type StringOrFn<T = unknown> = string | ((x: Stream<T, any>) => string);
 export function endOfInput<T = any, E = any>(messageOrFn?: StringOrFn<T>): StreamParser<T, undefined, E> {
-    return input => input.stream.length === 0
-        ? yieldNext(undefined, input)
-        : reject({
-            diag: 'expected-eoi',
-            message: typeof messageOrFn === 'function'
-                ? messageOrFn(input)
-                : messageOrFn,
-        });
+    return input => {
+        if (input.stream.length === 0) {
+            return yieldNext(undefined, input);
+        } else {
+            return reject({
+                diag: 'expected-eoi',
+                message: typeof messageOrFn === 'function'
+                    ? messageOrFn(input)
+                    : messageOrFn,
+            });
+        }
+    };
 }
 
 export function expectEoi<T = unknown>(messageOrFn: StringOrFn<T>) {

@@ -39,16 +39,18 @@ export function elem<E = any>(ec: XmlElementConstraint): TreeParser<XmlTreeEleme
     );
 
     const result = projectLast(and(and(...all), elParser));
-    const context = ec.context || ec.name;
-    return context === undefined
-        ? result
-        : diagnosticContext(result, context);
+    const context = ec.context || ec.name || 'undefined';
+    return diagnosticContext(result, context);
 }
 
 export function elemCh<TC, E = any>(ec: XmlElementConstraint & {
     children: TreeParser<TC, E>,
 }): TreeParser<TC, E> {
-    return projectLast(and(elem(ec), xmlChildren(ec.children)));
+    const context = ec.context || ec.name || 'undefined';
+    return projectLast(and(
+        elem(ec),
+        diagnosticContext(xmlChildren(ec.children), context),
+    ));
 }
 
 export function elemChProj<TC, T = TC>(
@@ -253,6 +255,8 @@ export const whitespaces = textNode<boolean, any>(text => isWhitespaces(text) ? 
 export function whitespaced<T, E>(parser: TreeParser<T, E>): TreeParser<T, E> {
     return translate(
         seq(maybe(whitespaces), parser, maybe(whitespaces)),
-        ([_, result, __]) => result,
+        ([_, result, __]) => {
+            return result;
+        },
     );
 }

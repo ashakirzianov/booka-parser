@@ -5,7 +5,7 @@ import {
 import {
     yieldLast, headParser, reject, choice, oneOrMore, translate,
     envParser, fullParser, expectEoi, compoundDiagnostic,
-    ParserDiagnostic, expectParseAll, some, expected, Stream, makeStream, projectFirst, seq, endOfInput, projectLast,
+    ParserDiagnostic, expectParseAll, some, expected, Stream, makeStream, projectFirst, seq, endOfInput, projectLast, diagnosticContext,
 } from '../combinators';
 import { isWhitespaces } from '../utils';
 import { elemCh, elemChProj, whitespaced, elemProj } from './treeParser';
@@ -50,7 +50,10 @@ const wrappedSpans = elemCh({
     },
     children: spanContent,
 });
-const pphSpans = choice(wrappedSpans, oneOrMore(span));
+const pphSpans = diagnosticContext(
+    choice(wrappedSpans, oneOrMore(span)),
+    'paragraph spans',
+);
 
 export const paragraphNode: EpubTreeParser<SimpleParagraphNode> = translate(
     pphSpans,
@@ -97,6 +100,7 @@ const li = elemCh({
 
 const lis = expectParseAll(some(whitespaced(li)), stream2string);
 const listElement: Tree2ElementsParser = elemChProj({
+    context: 'list',
     name: ['ol', 'ul'],
     expectedClasses: [
         ...standardClasses,
@@ -115,8 +119,9 @@ const listElement: Tree2ElementsParser = elemChProj({
     }],
 });
 
-const cellContent = expectParseAll(some(whitespaced(pphSpans)), stream2string);
+const cellContent = expectParseAll(some(pphSpans), stream2string);
 const tableCell = elemChProj({
+    context: 'table cell',
     name: ['td', 'th'],
     expectedClasses: standardClasses,
     expectedAttrs: {
@@ -133,9 +138,14 @@ const tableCell = elemChProj({
     },
 });
 
+const rowContent = diagnosticContext(
+    expectParseAll(some(whitespaced(tableCell)), stream2string),
+    'row content',
+);
 const tr = elemCh({
+    context: 'table row',
     name: 'tr',
-    children: expectParseAll(some(whitespaced(tableCell)), stream2string),
+    children: rowContent,
 });
 
 const tableBodyContent = expectParseAll(some(whitespaced(tr)), stream2string);
@@ -149,7 +159,7 @@ const tbodyTag = elemCh({
     children: tableBodyContent,
 });
 const tbody = projectLast(
-    seq(some(whitespaced(tableIgnore)), tbodyTag),
+    seq(some(whitespaced(tableIgnore)), whitespaced(tbodyTag)),
 );
 
 const tableBody = choice(tbody, tableBodyContent);
@@ -178,6 +188,7 @@ const table: Tree2ElementsParser = elemChProj({
 });
 
 const hr = elemChProj({
+    context: 'separator',
     name: 'hr',
     expectedClasses: [
         ...standardClasses,
