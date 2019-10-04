@@ -115,7 +115,7 @@ const listElement: Tree2ElementsParser = elemChProj({
     }],
 });
 
-const cellContent = expected(pphSpans, []);
+const cellContent = expectParseAll(whitespaced(pphSpans), stream2string);
 const tableCell = elemChProj({
     name: ['td', 'th'],
     expectedClasses: standardClasses,
@@ -123,8 +123,9 @@ const tableCell = elemChProj({
         align: null, valign: null, colspan: null,
     },
     children: cellContent,
-    project: children =>
-        compoundSpan(children),
+    project: children => {
+        return compoundSpan(children);
+    },
 });
 
 const tr = elemCh({
