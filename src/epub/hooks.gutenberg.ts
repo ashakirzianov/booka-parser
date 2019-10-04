@@ -186,13 +186,15 @@ function poem(): Tree2ElementsParser {
         name: 'p',
         classes: 'verse',
         children: paragraphNode,
-        project: p => [{
-            element: 'content',
-            content: {
-                node: 'pph',
-                span: p,
-                semantic: { poem: {} },
-            },
-        }],
+        project: p => {
+            return [{
+                element: 'content',
+                content: {
+                    node: 'pph',
+                    span: p,
+                    semantic: { poem: {} },
+                },
+            }];
+        },
     });
 }
