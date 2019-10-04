@@ -72,10 +72,13 @@ const blockquote: Tree2ElementsParser = elemChProj({
         const node: GroupNode = {
             node: 'group',
             nodes: children,
-            semantic: 'quote',
-            signature: element.attributes.cite
-                ? [element.attributes.cite]
-                : [],
+            semantic: {
+                quote: {
+                    signature: element.attributes.cite
+                        ? [element.attributes.cite]
+                        : [],
+                },
+            },
         };
         return [{
             element: 'content',

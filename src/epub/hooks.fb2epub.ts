@@ -81,8 +81,11 @@ function epigraph(): Tree2ElementsParser {
             content: {
                 node: 'group',
                 nodes: [pph],
-                semantic: 'epigraph',
-                signature: [extractSpanText(sig)],
+                semantic: {
+                    epigraph: {
+                        signature: [extractSpanText(sig)],
+                    },
+                },
             },
         }],
     });
@@ -107,7 +110,7 @@ function poem(): Tree2ElementsParser {
                 content: {
                     node: 'group',
                     nodes: ch,
-                    semantic: 'poem',
+                    semantic: { poem: {} },
                 },
             }],
         });
@@ -182,8 +185,11 @@ function footnoteSection(): Tree2ElementsParser {
                         node: 'group',
                         nodes: footnoteContent,
                         refId: ref,
-                        semantic: 'footnote',
-                        title: tls || [],
+                        semantic: {
+                            footnote: {
+                                title: tls || [],
+                            },
+                        },
                     },
                 };
                 return [node];

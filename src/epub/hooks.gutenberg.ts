@@ -165,8 +165,11 @@ function footnote(): Tree2ElementsParser {
                     node: 'group',
                     refId: buildRef(env.filePath, id),
                     nodes: [content],
-                    semantic: 'footnote',
-                    title: title ? [title] : [],
+                    semantic: {
+                        footnote: {
+                            title: title ? [title] : [],
+                        },
+                    },
                 },
             }],
         );

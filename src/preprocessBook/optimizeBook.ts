@@ -53,19 +53,24 @@ function optimizeParagraph(p: ParagraphNode): BookContentNode {
 }
 
 function optimizeSpan(span: Span): Span {
-    if (isSimpleSpan(span)) {
-        return span;
-    } else if (isAttributedSpan(span) || isRefSpan(span)) {
-        const optimizedContent = optimizeSpan(span.content);
-        return {
-            ...span,
-            content: optimizedContent,
-        };
-    } else if (isCompoundSpan(span)) {
-        return optimizeCompound(span);
-    } else {
-        assertNever(span);
-        return span;
+    switch (span.span) {
+        case undefined:
+            return span;
+        case 'attrs':
+        case 'ref':
+            {
+                const optimizedContent = optimizeSpan(span.content);
+                return {
+                    ...span,
+                    content: optimizedContent,
+                };
+            }
+        case 'compound':
+            return optimizeCompound(span);
+        default:
+            assertNever(span);
+            return span;
+
     }
 }
 

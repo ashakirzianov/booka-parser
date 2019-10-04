@@ -71,8 +71,11 @@ function epigraph(): Tree2ElementsParser {
             content: {
                 node: 'group',
                 nodes: children,
-                semantic: 'epigraph',
-                signature: [],
+                semantic: {
+                    epigraph: {
+                        signature: [],
+                    },
+                },
             },
         }],
     });
@@ -120,8 +123,11 @@ function cite(): Tree2ElementsParser {
                 content: {
                     node: 'group',
                     nodes: pphs,
-                    semantic: 'quote',
-                    signature: signature,
+                    semantic: {
+                        quote: {
+                            signature: signature,
+                        },
+                    },
                 },
             };
 
