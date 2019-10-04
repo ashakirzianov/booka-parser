@@ -1,7 +1,7 @@
 import { Span, compoundSpan, AttributeName } from 'booka-common';
 import {
     declare, translate, seq, some, endOfInput, choice,
-    headParser, yieldLast, reject, Stream, expectEoi, projectFirst, maybe,
+    headParser, yieldLast, reject, Stream, expectEoi, projectFirst, maybe, expected,
 } from '../combinators';
 import { elemChProj, textNode, elemCh } from './treeParser';
 import { XmlTree, tree2String } from '../xmlStringParser';
@@ -22,10 +22,13 @@ export const span = declare<Stream<XmlTree, TreeParserEnv>, Span>('span');
 
 export const spanContent = projectFirst(seq(some(span), endOfInput(stream2string)));
 export const expectSpanContent: Tree2SpanParser = translate(
-    some(choice(span, headParser(
-        el =>
-            yieldLast('', { diag: 'unexpected-xml', xml: tree2String(el) })
-    ))),
+    projectFirst(seq(
+        some(choice(span, headParser(
+            el =>
+                yieldLast('', { diag: 'unexpected-xml', xml: tree2String(el) })
+        ))),
+        expected(endOfInput(), undefined),
+    )),
     compoundSpan,
 );
 
