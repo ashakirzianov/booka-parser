@@ -5,6 +5,8 @@ import {
     StreamParser, headParser, makeStream, nextStream, not, Stream,
     projectLast, and, expected, yieldLast, diagnosticContext,
     maybe,
+    ParserDiagnostic,
+    compoundDiagnostic,
 } from '../combinators';
 import { Constraint, ConstraintMap, checkObject, checkValue, checkObjectFull, constraintToString } from './constraint';
 import { filterUndefined } from 'booka-common';
@@ -20,37 +22,14 @@ export type XmlElementConstraint = {
     context?: any,
 };
 export function elem<E = any>(ec: XmlElementConstraint): TreeParser<XmlTreeElement, E> {
-    const name = ec.name === undefined ? undefined
-        : xmlName(ec.name);
-    const attrs = ec.attrs === undefined ? undefined
-        : xmlAttributes(ec.attrs);
-    const expectedAttrs = ec.expectedAttrs === undefined ? undefined
-        : expected(xmlAttributesFull({ class: null, ...ec.expectedAttrs }), undefined);
-    const classes = ec.classes === undefined ? undefined
-        : xmlClass(ec.classes);
-    const expectedClasses = ec.expectedClasses === undefined ? undefined
-        : expected(xmlClass(ec.expectedClasses), undefined);
-    const all = filterUndefined([name, attrs, expectedAttrs, classes, expectedClasses]);
-
-    const elParser: TreeParser<XmlTreeElement, E> = headParser(el =>
-        el.type === 'element'
-            ? yieldLast(el)
-            : reject()
-    );
-
-    const result = projectLast(and(and(...all), elParser));
-    const context = ec.context || ec.name || 'undefined';
-    return diagnosticContext(result, context);
+    return elementParserImpl(ec);
 }
 
 export function elemCh<TC, E = any>(ec: XmlElementConstraint & {
     children: TreeParser<TC, E>,
 }): TreeParser<TC, E> {
     const context = ec.context || ec.name || 'undefined';
-    return projectLast(and(
-        elem(ec),
-        diagnosticContext(xmlChildren(ec.children), context),
-    ));
+    return elementParserImpl(ec);
 }
 
 export function elemChProj<TC, T = TC>(
@@ -59,10 +38,7 @@ export function elemChProj<TC, T = TC>(
         project: (ch: TC, el: XmlTreeElement) => T,
     },
 ): TreeParser<T, any> {
-    return translate(
-        and(elem(ec), xmlChildren(ec.children)),
-        ([el, ch]) => ec.project(ch, el),
-    );
+    return elementParserImpl(ec);
 }
 
 export function elemProj<T, E = any>(
@@ -70,10 +46,66 @@ export function elemProj<T, E = any>(
         project: (el: XmlTreeElement) => T,
     },
 ): TreeParser<T, E> {
-    return translate(
-        elem(ec),
-        ec.project,
-    );
+    return elementParserImpl(ec);
+}
+
+function elementParserImpl<TC, T = TC>(
+    ec: XmlElementConstraint & {
+        children?: TreeParser<TC, any>,
+        project?: (chOrEl: any, el?: any) => T,
+    },
+): TreeParser<any, any> {
+    return function elemParser(input) {
+        const head = input.stream[0];
+        if (head === undefined || head.type !== 'element') {
+            return reject();
+        }
+
+        if (!checkValue(head.name, ec.name)) {
+            return reject();
+        }
+        const cls = head.attributes.class;
+        if (ec.classes && checkClass(cls, ec.classes)) {
+            return reject();
+        }
+        if (ec.attrs && checkObject(head.attributes, ec.attrs).length > 0) {
+            return reject();
+        }
+        const childrenResult = ec.children && ec.children(makeStream(head.children, input.env));
+        if (childrenResult && childrenResult.success === false) {
+            return reject();
+        }
+
+        const expectedClasses = ec.expectedClasses && checkClass(cls, ec.expectedClasses);
+        const expectedAttrs = ec.expectedAttrs && checkObject(head.attributes, ec.expectedAttrs);
+
+        let diag = compoundDiagnostic([
+            expectedClasses || undefined,
+            expectedAttrs && expectedAttrs.length > 0
+                ? { diag: 'unexpected-attrs', reasons: expectedAttrs }
+                : undefined,
+            childrenResult && childrenResult.diagnostic,
+        ]);
+        diag = diag !== undefined
+            ? {
+                context: ec.context || ec.name || 'unspecified',
+                xml: tree2String(head),
+                ...diag,
+            }
+            : undefined;
+
+        const result = ec.project
+            ? (childrenResult
+                ? ec.project(childrenResult.value, head)
+                : ec.project(head)
+            )
+            : (childrenResult
+                ? childrenResult.value
+                : head
+            );
+
+        return yieldNext(result, nextStream(input), diag);
+    };
 }
 
 function xmlClass<E = any>(ctr: Constraint<string>): TreeParser<XmlTreeElement, E> {
@@ -82,26 +114,36 @@ function xmlClass<E = any>(ctr: Constraint<string>): TreeParser<XmlTreeElement, 
             return reject();
         }
 
-        const classes = tree.type === 'element' && tree.attributes.class
-            ? tree.attributes.class.split(' ')
-            : [undefined];
-        const fails: any[] = [];
-        for (const cls of classes) {
-            const check = checkValue(cls, ctr);
-            if (!check) {
-                fails.push(cls);
-            }
-        }
+        const diag = checkClass(tree.attributes.class, ctr);
 
-        return fails.length > 0
+        return diag !== undefined
             ? reject({
-                diag: 'unexpected-class',
-                expected: constraintToString(ctr),
-                classes: fails,
+                ...diag,
                 xml: tree2String(tree),
             })
             : yieldLast(tree);
     });
+}
+
+function checkClass(classToCheck: string | undefined, ctr: Constraint<string>): ParserDiagnostic {
+    const classes = classToCheck
+        ? classToCheck.split(' ')
+        : [undefined];
+    const fails: any[] = [];
+    for (const cls of classes) {
+        const check = checkValue(cls, ctr);
+        if (!check) {
+            fails.push(cls);
+        }
+    }
+
+    return fails.length === 0
+        ? undefined
+        : {
+            diag: 'unexpected-class',
+            expected: constraintToString(ctr),
+            classes: fails,
+        };
 }
 
 function xmlName<E = any>(name: Constraint<string>): TreeParser<XmlTreeElement, E> {
