@@ -1,7 +1,8 @@
 import {
     VolumeNode, BookContentNode,
     Span, AttributeName, ParagraphNode, CompoundSpan,
-    isSimpleSpan, isAttributedSpan, pphSpan, isCompoundSpan, Book, assertNever,
+    isSimpleSpan, isAttributedSpan, pphSpan, isCompoundSpan,
+    Book, assertNever,
 } from 'booka-common';
 
 export function optimizeBook(book: Book): Book {
@@ -50,7 +51,12 @@ function optimizeNode(node: BookContentNode): BookContentNode {
 }
 
 function optimizeParagraph(p: ParagraphNode): BookContentNode {
-    return optimizeSpan(pphSpan(p));
+    return p.node === undefined
+        ? optimizeSpan(p)
+        : {
+            ...p,
+            span: optimizeSpan(p.span),
+        };
 }
 
 function optimizeSpan(span: Span): Span {

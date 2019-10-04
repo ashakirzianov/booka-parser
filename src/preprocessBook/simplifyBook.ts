@@ -56,7 +56,14 @@ function simplifyChapter(chapter: ChapterNode): BookContentNode | undefined {
 }
 
 function simplifyParagraph(paragraph: ParagraphNode): BookContentNode | undefined {
-    return simplifySpan(pphSpan(paragraph));
+    if (paragraph.node === undefined) {
+        return simplifySpan(paragraph);
+    } else {
+        const span = simplifySpan(paragraph.span);
+        return span === undefined
+            ? undefined
+            : { ...paragraph, span: span };
+    }
 }
 
 function simplifySpan(span: Span): Span | undefined {
