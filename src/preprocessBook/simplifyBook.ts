@@ -1,6 +1,6 @@
 import {
     VolumeNode, BookContentNode, ChapterNode, ParagraphNode,
-    Span, Book, assertNever, filterUndefined,
+    Span, Book, assertNever, filterUndefined, pphSpan,
 } from 'booka-common';
 import { isWhitespaces } from '../utils';
 
@@ -29,6 +29,7 @@ function simplifyNode(node: BookContentNode): BookContentNode | undefined {
         case 'chapter':
             return simplifyChapter(node);
         case undefined:
+        case 'pph':
             return simplifyParagraph(node);
         case 'group':
         case 'table':
@@ -55,7 +56,7 @@ function simplifyChapter(chapter: ChapterNode): BookContentNode | undefined {
 }
 
 function simplifyParagraph(paragraph: ParagraphNode): BookContentNode | undefined {
-    return simplifySpan(paragraph);
+    return simplifySpan(pphSpan(paragraph));
 }
 
 function simplifySpan(span: Span): Span | undefined {
