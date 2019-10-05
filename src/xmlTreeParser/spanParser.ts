@@ -54,7 +54,7 @@ const quoteSpan = elemChProj({
     keepWhitespaces: 'both',
     children: spanContent,
     project: (content, xml): Span => ({
-        span2: compoundSpan(content),
+        span: compoundSpan(content),
         semantic: {
             quote: {},
         },
@@ -67,7 +67,7 @@ const correctionSpan = elemChProj({
     expectedAttrs: { title: null },
     children: spanContent,
     project: (content, xml): Span => ({
-        span2: compoundSpan(content),
+        span: compoundSpan(content),
         semantic: {
             correction: {
                 note: xml.attributes.title,
