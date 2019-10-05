@@ -1,5 +1,8 @@
 import { XmlTree, tree2String } from '../xmlStringParser';
-import { Stream, alwaysYield, reject, yieldLast, headParser, choice, fullParser, translate, Parser } from '../combinators';
+import {
+    Stream, alwaysYield, reject, yieldLast, headParser, translate,
+    Parser, some, reportUnparsedTail,
+} from '../combinators';
 import { equalsToOneOf } from '../utils';
 import { TreeParser, xmlChildren, path } from './treeParser';
 import { Span, flatten, BookContentNode } from 'booka-common';
@@ -17,7 +20,12 @@ export type Tree2SpanParser = EpubTreeParser<Span>;
 export type Tree2NodeParser = EpubTreeParser<BookContentNode>;
 
 export function buildDocumentParser(nodeParser: Tree2ElementsParser): Tree2ElementsParser {
-    const insideParser = flattenResult(fullParser(nodeParser));
+    const insideParser = flattenResult(
+        reportUnparsedTail(some(nodeParser), tail => ({
+            diag: 'unexpected-xml',
+            xml: tail.stream.map(tree2String),
+        })),
+    );
     const bodyParser = xmlChildren(insideParser);
     const documentParser = path(['html', 'body'], bodyParser);
 

@@ -284,20 +284,3 @@ export function whitespaced<T, E>(parser: TreeParser<T, E>): TreeParser<T, E> {
         },
     );
 }
-
-// Parse all
-
-export function expectEoi<T = unknown>(): TreeParser<undefined, any> {
-    return expected(endOfInput(), undefined, s => ({
-        diag: 'expected-eoi',
-        tail: stream2string(s),
-    }));
-}
-
-export function expectParseAll<Out, E>(single: TreeParser<Out, E>) {
-    return projectFirst(seq(single, expectEoi()));
-}
-
-export function parseAll<Out, E>(single: TreeParser<Out, E>) {
-    return projectFirst(seq(single, endOfInput()));
-}

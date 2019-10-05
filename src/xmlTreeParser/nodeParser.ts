@@ -4,8 +4,8 @@ import {
 } from 'booka-common';
 import {
     yieldLast, headParser, reject, choice, oneOrMore, translate,
-    envParser, fullParser, compoundDiagnostic,
-    ParserDiagnostic, some, Stream, makeStream, seq, projectLast, diagnosticContext,
+    envParser, compoundDiagnostic, ParserDiagnostic, some, Stream,
+    makeStream, seq, projectLast, diagnosticContext,
 } from '../combinators';
 import { isWhitespaces } from '../utils';
 import { elemCh, elemChProj, elemProj } from './treeParser';
@@ -216,7 +216,7 @@ const containerElement: Tree2ElementsParser = envParser(environment => {
             tag: null,
             'xml:space': [undefined, 'preserve'],
         },
-        children: fullParser(environment.nodeParser),
+        children: some(environment.nodeParser),
         project: (children: BookElement[][], element) => {
             const flatChildren = flatten(children);
             return buildContainerElements(

@@ -5,7 +5,7 @@ import {
 import { EpubBookParserHooks, MetadataRecordParser } from './epubBookParser';
 import {
     textNode, ignoreClass, buildRef, Tree2ElementsParser,
-    whitespaced, paragraphNode, span, elemChProj, elemCh, elemProj, xmlChildren, expectParseAll, expectEoi,
+    whitespaced, paragraphNode, span, elemChProj, elemCh, elemProj, xmlChildren,
 } from '../xmlTreeParser';
 import {
     some, translate, choice, seq, and, headParser, envParser, reject, yieldLast,
@@ -92,7 +92,7 @@ function epigraph(): Tree2ElementsParser {
 }
 
 function poem(): Tree2ElementsParser {
-    const content = expectParseAll(some(paragraphNode));
+    const content = some(paragraphNode);
     const stanza = elemCh({
         name: 'div',
         classes: 'stanza',
@@ -141,12 +141,12 @@ function footnoteSection(): Tree2ElementsParser {
             attrs: { href: null },
             project: () => undefined,
         });
-        const children = seq(some(env.spanParser), expectEoi());
+        const children = some(env.spanParser);
         const pph = elemChProj({
             name: 'p',
             expectedClasses: null,
             children: children,
-            project: ([spans]) => makePph(compoundSpan(spans)),
+            project: (spans) => makePph(compoundSpan(spans)),
         });
         const br = elemProj({
             name: 'br',

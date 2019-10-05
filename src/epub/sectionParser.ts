@@ -1,9 +1,10 @@
 import { flatten } from 'booka-common';
-import { buildDocumentParser, span, nodeParser, paragraphNode, TreeParserEnv } from '../xmlTreeParser';
 import {
-    makeStream, headParser,
-    translate, expected, yieldLast,
-    StreamParser, pipe, fullParser, AsyncFullParser, choice, endOfInput, yieldNext, nextStream,
+    buildDocumentParser, span, nodeParser, paragraphNode, TreeParserEnv,
+} from '../xmlTreeParser';
+import {
+    makeStream, headParser, translate, expected, yieldLast,
+    StreamParser, pipe, AsyncFullParser, choice, some, reportUnparsedTail,
 } from '../combinators';
 import { AsyncIter } from '../utils';
 import { EpubSection, EpubBook } from './epubBook';
@@ -51,17 +52,11 @@ export const sectionsParser: AsyncFullParser<EpubBook, BookElement[]> = async ep
         },
     );
 
-    const reportProblems = choice(headParser(singleSection), input => {
-        return input === undefined || input.stream === undefined || input.stream.length === 0
-            ? yieldLast([])
-            : yieldNext([], nextStream(input), {
-                diag: 'couldnt-parse-section',
-                filePath: input.stream[0].filePath,
-            });
-    });
-
     const full = translate(
-        fullParser(reportProblems),
+        reportUnparsedTail(some(headParser(singleSection)), tail => ({
+            diag: 'unexpected-sections',
+            sections: tail.stream,
+        })),
         els => flatten(els),
     );
 

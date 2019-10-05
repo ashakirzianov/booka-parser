@@ -1,5 +1,5 @@
-import { Parser, yieldNext, reject, SuccessParser, some, ResultLast, expected, projectFirst, seq } from './base';
-import { compoundDiagnostic } from './diagnostics';
+import { Parser, yieldNext, reject, SuccessParser, some, ResultLast, expected, projectFirst, seq, yieldLast } from './base';
+import { compoundDiagnostic, ParserDiagnostic } from './diagnostics';
 
 export type Stream<T, E = undefined> = {
     stream: T[],
@@ -73,18 +73,16 @@ export function envParser<I, O, E>(f: (env: E) => StreamParser<I, O, E>): Stream
     };
 }
 
-export function fullParser<I, O, E>(parser: StreamParser<I, O, E>): SuccessStreamParser<I, O[], E> {
-    return input => {
-        const result = some(parser)(input);
-        if (result.next && result.next.stream.length > 0) {
-            return {
-                ...result,
-                diagnostic: compoundDiagnostic([result.diagnostic, {
-                    diag: 'extra-nodes-tail', nodes: result.next.stream,
-                }]),
-            };
+export function parseAll<In, Out, E>(single: StreamParser<In, Out, E>) {
+    return projectFirst(seq(single, endOfInput()));
+}
+
+export function reportUnparsedTail<In, Out, E>(single: StreamParser<In, Out, E>, reporter: (stream: Stream<In, E>) => ParserDiagnostic) {
+    return projectFirst(seq(single, input => {
+        if (input.stream && input.stream.length > 0) {
+            return yieldLast(undefined, reporter(input));
         } else {
-            return result;
+            return yieldLast(undefined);
         }
-    };
+    }));
 }

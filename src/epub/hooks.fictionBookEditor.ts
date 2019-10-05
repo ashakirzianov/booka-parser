@@ -5,7 +5,7 @@ import {
 import { XmlTreeWithChildren } from '../xmlStringParser';
 import { EpubBookParserHooks, MetadataRecordParser } from './epubBookParser';
 import {
-    Tree2ElementsParser, span, paragraphNode, stream2string, elemChProj, expectParseAll,
+    Tree2ElementsParser, span, paragraphNode, elemChProj,
 } from '../xmlTreeParser';
 import { BookElement } from '../bookElementParser';
 
@@ -60,7 +60,7 @@ function metaHook(): MetadataRecordParser {
 }
 
 function epigraph(): Tree2ElementsParser {
-    const content = expectParseAll(some(paragraphNode));
+    const content = some(paragraphNode);
 
     return elemChProj({
         name: 'div',
@@ -98,7 +98,7 @@ function cite(): Tree2ElementsParser {
             paragraph: pn,
         }),
     );
-    const content = expectParseAll(some(choice(textAuthor, p)));
+    const content = some(choice(textAuthor, p));
 
     return elemChProj({
         name: 'div',
