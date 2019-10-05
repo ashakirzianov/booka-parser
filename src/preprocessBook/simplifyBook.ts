@@ -35,8 +35,7 @@ function simplifyNode(node: BookContentNode): BookContentNode | undefined {
         case 'table':
         case 'list':
             return node;
-        case 'image-data':
-        case 'image-ref':
+        case 'image':
         case 'separator':
             return node;
         default:

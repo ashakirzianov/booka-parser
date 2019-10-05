@@ -50,10 +50,11 @@ function parseMeta(elements: BookElement[]) {
                         meta.author = tag.value;
                         break;
                     case 'cover-ref':
-                        meta.coverImageNode = {
-                            node: 'image-ref',
+                        meta.coverImage = {
+                            kind: 'ref',
+                            title: 'cover',
+                            ref: tag.value,
                             imageId: tag.value,
-                            imageRef: tag.value,
                         };
                         break;
                 }

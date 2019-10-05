@@ -240,9 +240,13 @@ const img: Tree2ElementsParser = elemProj({
             return [{
                 element: 'content',
                 content: {
-                    node: 'image-ref',
-                    imageId: src,
-                    imageRef: src,
+                    node: 'image',
+                    image: {
+                        kind: 'ref',
+                        ref: src,
+                        imageId: src,
+                        title: xml.attributes.title || xml.attributes.alt,
+                    },
                 },
             }];
         } else {
@@ -262,9 +266,13 @@ const image: Tree2ElementsParser = elemProj({
             return [{
                 element: 'content',
                 content: {
-                    node: 'image-ref',
-                    imageId: xlinkHref,
-                    imageRef: xlinkHref,
+                    node: 'image',
+                    image: {
+                        kind: 'ref',
+                        ref: xlinkHref,
+                        imageId: xlinkHref,
+                        title: xml.attributes.title || xml.attributes.alt,
+                    },
                 },
             }];
         } else {

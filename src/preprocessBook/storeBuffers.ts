@@ -1,5 +1,5 @@
 import {
-    Book, ImageRefNode, ImageDataNode, ImageNode, processNodeAsync,
+    Book, ImageNode, ImageData, ImageRefData, ImageBufferData, processNodeImagesAsync,
 } from 'booka-common';
 
 export type StoreBufferFn = (buffer: Buffer, id: string, title?: string) => Promise<string | undefined>;
@@ -15,15 +15,12 @@ export async function storeBuffers(book: Book, args: ProcessImagesArgs): Promise
         resolved: {},
     };
 
-    let volume = await processNodeAsync(
+    const volume = await processNodeImagesAsync(
         book.volume,
-        'image-ref',
-        async imageRefNode => resolveImageRef(imageRefNode, env),
-    );
-    volume = await processNodeAsync(
-        book.volume,
-        'image-data',
-        async imageDataNode => resolveImageData(imageDataNode, env),
+        async image =>
+            image.kind === 'ref'
+                ? resolveImageRef(image, env)
+                : resolveImageData(image, env),
     );
 
     return {
@@ -40,38 +37,38 @@ type StoreBufferEnv = {
     },
 };
 
-async function resolveImageRef(node: ImageRefNode, env: StoreBufferEnv): Promise<ImageNode> {
+async function resolveImageRef(data: ImageRefData, env: StoreBufferEnv): Promise<ImageData> {
     if (env.args.restoreBuffer === undefined) {
-        return node;
+        return data;
     }
 
-    const buffer = await env.args.restoreBuffer(node.imageRef, node.imageId);
+    const buffer = await env.args.restoreBuffer(data.ref, data.imageId);
     if (buffer) {
         return {
-            node: 'image-data',
-            imageId: node.imageId,
-            data: buffer,
+            ...data,
+            kind: 'buffer',
+            buffer: buffer,
         };
     } else {
-        return node;
+        return data;
     }
 }
 
-async function resolveImageData(node: ImageDataNode, env: StoreBufferEnv): Promise<ImageNode> {
+async function resolveImageData(data: ImageBufferData, env: StoreBufferEnv): Promise<ImageData> {
     if (env.args.storeBuffer === undefined) {
-        return node;
+        return data;
     }
 
-    const stored = env.resolved[node.imageId];
-    const url = stored || await env.args.storeBuffer(node.data, node.imageId, env.title);
+    const stored = env.resolved[data.imageId];
+    const url = stored || await env.args.storeBuffer(data.buffer, data.imageId, env.title);
     if (url) {
-        env.resolved[node.imageId] = url;
+        env.resolved[data.imageId] = url;
         return {
-            node: 'image-ref',
-            imageId: node.imageId,
-            imageRef: url,
+            ...data,
+            kind: 'ref',
+            ref: url,
         };
     } else {
-        return node;
+        return data;
     }
 }

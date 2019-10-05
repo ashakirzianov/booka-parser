@@ -1,4 +1,4 @@
-import { Book, KnownTag, processNodeAsync } from 'booka-common';
+import { Book, KnownTag, processNodeImagesAsync } from 'booka-common';
 import { equalsToOneOf } from '../utils';
 import {
     makeStream, yieldLast, andAsync, AsyncFullParser, pipeAsync, ParserDiagnostic, compoundDiagnostic, StreamParser,
@@ -41,17 +41,25 @@ export const epubBookParser: AsyncFullParser<EpubBook, Book> = pipeAsync(
     // Resolve image references
     async ({ book, epub }) => {
         const diags: ParserDiagnostic[] = [];
-        const resolved = await processNodeAsync(book.volume, 'image-ref', async node => {
-            const buffer = await epub.imageResolver(node.imageRef);
-            if (buffer) {
-                return {
-                    node: 'image-data',
-                    imageId: node.imageId,
-                    data: buffer,
-                };
+        const resolved = await processNodeImagesAsync(book.volume, async image => {
+            if (image.kind === 'ref') {
+                const buffer = await epub.imageResolver(image.ref);
+                if (buffer) {
+                    return {
+                        ...image,
+                        kind: 'buffer',
+                        imageId: image.imageId,
+                        buffer: buffer,
+                    };
+                } else {
+                    diags.push({
+                        diag: 'couldnt-resolve-image',
+                        id: image.imageId,
+                    });
+                    return image;
+                }
             } else {
-                diags.push({ diag: 'couldnt-resolve-image', id: node.imageId });
-                return node;
+                return image;
             }
         });
         return yieldLast({ ...book, volume: resolved }, compoundDiagnostic(diags));

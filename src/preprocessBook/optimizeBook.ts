@@ -39,8 +39,7 @@ function optimizeNode(node: BookContentNode): BookContentNode {
         case 'table':
         case 'list':
             return node;
-        case 'image-ref':
-        case 'image-data':
+        case 'image':
         case 'separator':
             return node;
         default:
