@@ -3,7 +3,7 @@ import {
     declare, translate, seq, some, choice,
     headParser, yieldLast, reject, Stream, maybe,
 } from '../combinators';
-import { elemChProj, textNode, TreeParser, elem } from './treeParser';
+import { elemChProj, textNode, TreeParser, elem, elemProj } from './treeParser';
 import { XmlTree } from '../xmlStringParser';
 import { TreeParserEnv, Tree2SpanParser } from './utils';
 
@@ -36,6 +36,29 @@ const big = attrsSpanParser(['big'], 'big', spanContent);
 const sup = attrsSpanParser(['sup'], 'sup', spanContent);
 const sub = attrsSpanParser(['sub'], 'sub', spanContent);
 const attr = choice(italic, bold, small, big, sup, sub);
+
+const imgSpan = elemProj({
+    name: 'img',
+    expectedAttrs: {
+        src: src => src !== undefined,
+        alt: null, title: null,
+    },
+    keepWhitespaces: 'both',
+    project: (xml): Span => {
+        if (xml.attributes.src) {
+            return {
+                image: {
+                    kind: 'ref',
+                    ref: xml.attributes.src!,
+                    imageId: xml.attributes.src!,
+                    title: xml.attributes.title || xml.attributes.alt,
+                },
+            };
+        } else {
+            return '';
+        }
+    },
+});
 
 const brTag = elem({
     name: 'br',
@@ -121,8 +144,8 @@ const aSpan: Tree2SpanParser = elemChProj({
 });
 
 span.implementation = choice(
-    text, attr, brSpan,
-    quoteSpan, correctionSpan, aSpan, spanSpan,
+    text, attr, brSpan, imgSpan, quoteSpan,
+    correctionSpan, aSpan, spanSpan,
 );
 
 function attrsSpanParser(tagNames: string[], attrName: AttributeName, contentParser: TreeParser<Span[], TreeParserEnv>): Tree2SpanParser {
