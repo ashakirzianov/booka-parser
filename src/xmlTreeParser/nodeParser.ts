@@ -116,7 +116,9 @@ const listElement: Tree2ElementsParser = elemChProj({
         content: {
             node: 'list',
             kind: element.name === 'ol' ? 'ordered' : 'basic',
-            items: children.map(compoundSpan),
+            items: children.map(ch => ({
+                item: compoundSpan(ch),
+            })),
         },
     }],
 });
