@@ -177,7 +177,9 @@ const table: Tree2ElementsParser = elemChProj({
     children: tableContent,
     project: children => fromContent({
         node: 'table',
-        rows: children,
+        rows: children.map(ch => ({
+            cells: ch,
+        })),
     }),
 });
 
