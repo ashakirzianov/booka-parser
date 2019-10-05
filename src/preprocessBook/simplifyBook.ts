@@ -67,28 +67,29 @@ function simplifyParagraph(paragraph: ParagraphNode): BookContentNode | undefine
 }
 
 function simplifySpan(span: Span): Span | undefined {
-    switch (span.span) {
-        case undefined:
-            return span;
-        case 'attrs':
-        case 'ref':
-            const content = simplifySpan(span.content);
-            return content === undefined
-                ? undefined
-                : {
-                    ...span,
-                    content,
-                };
-        case 'compound':
-            const spans = filterUndefined(span.spans.map(simplifySpan));
-            return spans.length === 0
-                ? undefined
-                : {
-                    ...span,
-                    spans,
-                };
-        default:
-            assertNever(span);
-            return span;
-    }
+    // switch (span.span) {
+    //     case undefined:
+    //         return span;
+    //     case 'attrs':
+    //     case 'ref':
+    //         const content = simplifySpan(span.content);
+    //         return content === undefined
+    //             ? undefined
+    //             : {
+    //                 ...span,
+    //                 content,
+    //             };
+    //     case 'compound':
+    //         const spans = filterUndefined(span.spans.map(simplifySpan));
+    //         return spans.length === 0
+    //             ? undefined
+    //             : {
+    //                 ...span,
+    //                 spans,
+    //             };
+    //     default:
+    //         assertNever(span);
+    //         return span;
+    // }
+    return span;
 }

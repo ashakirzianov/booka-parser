@@ -1,5 +1,5 @@
 import {
-    ParagraphNode, makePph, KnownTag, flatten,
+    ParagraphNode, makePph, KnownTag, flatten, compoundSpan,
 } from 'booka-common';
 import { EpubBookParserHooks, MetadataRecordParser } from './epubBookParser';
 import {
@@ -147,10 +147,7 @@ function footnote(): Tree2ElementsParser {
 
         const pph = translate(
             some(env.spanParser),
-            (spans): ParagraphNode => makePph({
-                span: 'compound',
-                spans,
-            }),
+            (spans): ParagraphNode => makePph(compoundSpan(spans)),
         );
         const footnoteContent = seq(maybe(footnoteTitleLine), pph);
         const footnoteContainer = elemChProj({

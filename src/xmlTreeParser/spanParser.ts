@@ -57,8 +57,8 @@ const correctionSpan: Tree2SpanParser = elemChProj({
     expectedAttrs: { title: null },
     children: spanContent,
     project: (content, xml) => ({
-        span: 'compound',
-        spans: content,
+        span: 'complex',
+        content: compoundSpan(content),
         semantic: {
             correction: {
                 note: xml.attributes.title,
