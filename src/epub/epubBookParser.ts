@@ -41,20 +41,16 @@ export const epubBookParser: AsyncFullParser<EpubBook, Book> = pipeAsync(
     // Resolve image references
     async ({ book, epub }) => {
         const diags: ParserDiagnostic[] = [];
-        const resolved = await processNodeAsync(book.volume, async node => {
-            if (node.node === 'image-ref') {
-                const buffer = await epub.imageResolver(node.imageRef);
-                if (buffer) {
-                    return {
-                        node: 'image-data',
-                        imageId: node.imageId,
-                        data: buffer,
-                    };
-                } else {
-                    diags.push({ diag: 'couldnt-resolve-image', id: node.imageId });
-                    return node;
-                }
+        const resolved = await processNodeAsync(book.volume, 'image-ref', async node => {
+            const buffer = await epub.imageResolver(node.imageRef);
+            if (buffer) {
+                return {
+                    node: 'image-data',
+                    imageId: node.imageId,
+                    data: buffer,
+                };
             } else {
+                diags.push({ diag: 'couldnt-resolve-image', id: node.imageId });
                 return node;
             }
         });

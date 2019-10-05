@@ -1,5 +1,5 @@
 import {
-    Book, ImageRefNode, ImageDataNode, ImageNode, processNodeAsync, Node,
+    Book, ImageRefNode, ImageDataNode, ImageNode, processNodeAsync,
 } from 'booka-common';
 
 export type StoreBufferFn = (buffer: Buffer, id: string, title?: string) => Promise<string | undefined>;
@@ -15,24 +15,20 @@ export async function storeBuffers(book: Book, args: ProcessImagesArgs): Promise
         resolved: {},
     };
 
-    const processedVolume = await processNodeAsync(
+    let volume = await processNodeAsync(
         book.volume,
-        async node => {
-            const n = node as Node;
-            switch (n.node) {
-                case 'image-ref':
-                    return resolveImageRef(n, env);
-                case 'image-data':
-                    return resolveImageData(n, env);
-                default:
-                    return node;
-            }
-        },
+        'image-ref',
+        async imageRefNode => resolveImageRef(imageRefNode, env),
+    );
+    volume = await processNodeAsync(
+        book.volume,
+        'image-data',
+        async imageDataNode => resolveImageData(imageDataNode, env),
     );
 
     return {
         ...book,
-        volume: processedVolume,
+        volume,
     };
 }
 
