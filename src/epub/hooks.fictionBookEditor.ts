@@ -5,7 +5,7 @@ import {
 import { XmlTreeWithChildren } from '../xmlStringParser';
 import { EpubBookParserHooks, MetadataRecordParser } from './epubBookParser';
 import {
-    Tree2ElementsParser, span, paragraphNode, elemChProj,
+    Tree2ElementsParser, span, paragraphNode, elemChProj, spanContent,
 } from '../xmlTreeParser';
 import { BookElement } from '../bookElementParser';
 
@@ -85,7 +85,7 @@ function cite(): Tree2ElementsParser {
     const textAuthor = elemChProj({
         name: ['div', 'p'],
         classes: 'text-author',
-        children: span,
+        children: spanContent,
         project: children => ({
             kind: 'signature' as const,
             line: extractSpanText(children),
