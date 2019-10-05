@@ -165,15 +165,13 @@ const table: Tree2ElementsParser = elemChProj({
     name: 'table',
     expectedClasses: [
         ...standardClasses,
-        // TODO: do not ignore ?
-        'illus',
     ],
     expectedAttrs: {
         border: null, cellpadding: null, cellspacing: null, width: null,
         summary: [
             undefined, '',
             // TODO: do not ignore ?
-            'Illustrations', 'carol',
+            'Illustrations', 'carol', 'Toc',
         ],
     },
     children: tableContent,

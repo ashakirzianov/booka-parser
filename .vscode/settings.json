@@ -31,6 +31,7 @@
         "cellpadding",
         "cellspacing",
         "chapterhead",
+        "chaptername",
         "colspan",
         "coverpage",
         "deserialize",

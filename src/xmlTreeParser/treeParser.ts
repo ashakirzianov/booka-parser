@@ -121,7 +121,6 @@ function elementParserImpl<TC, T = TC>(
             ? {
                 context: ec.context || ec.name || 'unspecified',
                 xml: tree2String(head, 1),
-                parentXml: tree2String(head.parent, 1),
                 diagnostic: compoundDiagnostic(diags),
             }
             : undefined;

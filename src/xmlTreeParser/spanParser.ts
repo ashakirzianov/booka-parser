@@ -15,8 +15,10 @@ export const standardClasses = [
     // Project Gutenberg:
     'i2', 'i4', 'i6', 'i8', 'i10', 'i16', 'i20', 'i21',
     'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'c9', 'c10', 'c11',
+    'z1',
     'pgmonospaced', 'center', 'pgheader', 'fig', 'figleft',
-    'indexpageno', 'imageref',
+    'indexpageno', 'imageref', 'image', 'chapterhead',
+    'right', 'chaptername', 'illus', 'floatright',
 ];
 
 export const span = declare<Stream<XmlTree, TreeParserEnv>, Span>('span');
@@ -39,9 +41,11 @@ const attr = choice(italic, bold, small, big, sup, sub);
 
 const imgSpan = elemProj({
     name: 'img',
+    expectedClasses: standardClasses,
     expectedAttrs: {
         src: src => src !== undefined,
         alt: null, title: null,
+        tag: null, width: null,
     },
     keepWhitespaces: 'both',
     project: (xml): Span => {
