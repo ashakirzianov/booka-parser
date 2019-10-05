@@ -29,14 +29,13 @@ const text: Tree2SpanParser = headParser(node => {
         : reject();
 });
 
-const italic = attrsSpanParser(['em', 'i'], ['italic'], spanContent);
-const bold = attrsSpanParser(['strong', 'b'], ['bold'], spanContent);
-const quote = attrsSpanParser(['q'], ['quote'], spanContent);
-const small = attrsSpanParser(['small'], ['small'], spanContent);
-const big = attrsSpanParser(['big'], ['big'], spanContent);
-const sup = attrsSpanParser(['sup'], ['superscript'], spanContent);
-const sub = attrsSpanParser(['sub'], ['subscript'], spanContent);
-const attr = choice(italic, bold, quote, small, big, sup, sub);
+const italic = attrsSpanParser(['em', 'i'], 'italic', spanContent);
+const bold = attrsSpanParser(['strong', 'b'], 'bold', spanContent);
+const small = attrsSpanParser(['small'], 'small', spanContent);
+const big = attrsSpanParser(['big'], 'big', spanContent);
+const sup = attrsSpanParser(['sup'], 'sup', spanContent);
+const sub = attrsSpanParser(['sub'], 'sub', spanContent);
+const attr = choice(italic, bold, small, big, sup, sub);
 
 const brTag = elem({
     name: 'br',
@@ -50,15 +49,25 @@ const brSpan = translate(
         : '\n' + nextText.trimLeft(),
 );
 
-const correctionSpan: Tree2SpanParser = elemChProj({
+const quoteSpan = elemChProj({
+    name: ['q', 'quote'],
+    keepWhitespaces: 'both',
+    children: spanContent,
+    project: (content, xml): Span => ({
+        span2: compoundSpan(content),
+        semantic: {
+            quote: {},
+        },
+    }),
+});
+const correctionSpan = elemChProj({
     name: 'ins',
     keepWhitespaces: 'both',
     expectedClasses: undefined,
     expectedAttrs: { title: null },
     children: spanContent,
-    project: (content, xml) => ({
-        span: 'complex',
-        content: compoundSpan(content),
+    project: (content, xml): Span => ({
+        span2: compoundSpan(content),
         semantic: {
             correction: {
                 note: xml.attributes.title,
@@ -98,13 +107,12 @@ const aSpan: Tree2SpanParser = elemChProj({
     },
     children: spanContent,
     onChildrenTail: 'break',
-    project: (children, element) => {
+    project: (children, element): Span => {
         const content = compoundSpan(children);
         if (element.attributes.href !== undefined) {
             return {
-                span: 'ref',
+                ref: content,
                 refToId: element.attributes.href,
-                content,
             };
         } else {
             return content;
@@ -114,10 +122,10 @@ const aSpan: Tree2SpanParser = elemChProj({
 
 span.implementation = choice(
     text, attr, brSpan,
-    correctionSpan, aSpan, spanSpan,
+    quoteSpan, correctionSpan, aSpan, spanSpan,
 );
 
-function attrsSpanParser(tagNames: string[], attrs: AttributeName[], contentParser: TreeParser<Span[], TreeParserEnv>): Tree2SpanParser {
+function attrsSpanParser(tagNames: string[], attrName: AttributeName, contentParser: TreeParser<Span[], TreeParserEnv>): Tree2SpanParser {
     return elemChProj({
         name: tagNames,
         expectedClasses: [
@@ -128,10 +136,8 @@ function attrsSpanParser(tagNames: string[], attrs: AttributeName[], contentPars
         expectedAttrs: { id: null },
         keepWhitespaces: 'both',
         children: contentParser,
-        project: (children) => ({
-            span: 'attrs',
-            attrs,
-            content: compoundSpan(children),
+        project: (children): Span => ({
+            [attrName]: compoundSpan(children),
         }),
     });
 }
