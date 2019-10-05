@@ -5,10 +5,10 @@ import {
 import { EpubBookParserHooks, MetadataRecordParser } from './epubBookParser';
 import {
     textNode, ignoreClass, buildRef, Tree2ElementsParser,
-    whitespaced, paragraphNode, span, elemChProj, elemCh, elemProj, xmlChildren,
+    whitespaced, paragraphNode, span, elemChProj, elemCh, elemProj, xmlChildren, whitespaces,
 } from '../xmlTreeParser';
 import {
-    some, translate, choice, seq, and, headParser, envParser, reject, yieldLast,
+    some, translate, seq, and, headParser, reject, yieldLast, choice, envParser,
 } from '../combinators';
 import { BookElement } from '../bookElementParser';
 import { XmlTree, tree2String } from '../xmlStringParser';
@@ -118,14 +118,6 @@ function poem(): Tree2ElementsParser {
 
 function footnoteSection(): Tree2ElementsParser {
     return envParser(env => {
-        const divId = elemProj({
-            name: 'div',
-            classes: 'section2',
-            attrs: {
-                id: id => id !== undefined,
-            },
-            project: el => el.attributes.id!,
-        });
         const h = elemCh({
             name: n => n ? n.match(/^h[0-9]+$/) !== null : false,
             children: textNode(),
@@ -139,23 +131,14 @@ function footnoteSection(): Tree2ElementsParser {
             name: 'a',
             classes: 'note_anchor',
             attrs: { href: null },
+            onChildrenTail: 'ignore',
             project: () => undefined,
-        });
-        const children = some(env.spanParser);
-        const pph = elemChProj({
-            name: 'p',
-            expectedClasses: null,
-            children: children,
-            project: (spans) => makePph(compoundSpan(spans)),
         });
         const br = elemProj({
             name: 'br',
             project: () => undefined,
         });
-        const skipWhitespaces = translate(
-            textNode(),
-            () => undefined,
-        );
+
         const ignoreAndReport = headParser((el: XmlTree) =>
             yieldLast(undefined, {
                 diag: 'unexpected-node',
@@ -163,21 +146,26 @@ function footnoteSection(): Tree2ElementsParser {
                 xml: tree2String(el),
             }),
         );
-        const contentNode = choice(skipWhitespaces, back, br, pph, ignoreAndReport);
+        const pphChildren = choice(br, back, env.paragraphParser, ignoreAndReport);
         const content = translate(
-            some(contentNode),
+            some(pphChildren),
             (pNodes): BookContentNode[] => {
                 const defined = filterUndefined(pNodes);
                 return defined;
             }
         );
 
-        const parser = translate(
-            and(
-                divId,
-                xmlChildren(seq(whitespaced(title), content)),
-            ),
-            ([id, [tls, footnoteContent]]) => {
+        const footnoteChildren = seq(whitespaced(title), content);
+        return elemChProj({
+            context: 'fb2epub footnote',
+            name: 'div',
+            classes: 'section2',
+            attrs: {
+                id: id => id !== undefined,
+            },
+            children: footnoteChildren,
+            project: ([tls, footnoteContent], el) => {
+                const id = el.attributes.id!;
                 const ref = buildRef(env.filePath, id);
                 const node: BookElement = {
                     element: 'content',
@@ -194,9 +182,7 @@ function footnoteSection(): Tree2ElementsParser {
                 };
                 return [node];
             },
-        );
-
-        return parser;
+        });
     });
 }
 
@@ -219,7 +205,7 @@ function titlePage(): Tree2ElementsParser {
     });
     const ignore = headParser(
         (x: XmlTree) =>
-            equalsToOneOf(x.name, [undefined, 'br', 'h3'])
+            equalsToOneOf(x.name, [undefined, 'br', 'h2', 'h3'])
                 ? yieldLast({ element: 'ignore' as const })
                 : reject(),
     );
@@ -235,7 +221,8 @@ function titlePage(): Tree2ElementsParser {
     );
 
     const parser = elemCh({
-        name: null,
+        context: 'fb2epub title page',
+        name: 'div',
         classes: 'titlepage',
         children: some(choice(bookTitle, bookAuthor, ignore, report)),
     });
