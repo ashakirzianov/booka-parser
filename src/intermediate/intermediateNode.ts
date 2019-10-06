@@ -12,13 +12,14 @@ export type IntermTextSpan = Interm<'text'> & {
 };
 export const interSpanNames = [
     'italic', 'bold', 'small', 'big', 'sub', 'sup', 'a',
+    'img', 'span', 'quote', 'ins',
 ] as const;
 export type IntermSpanName = typeof interSpanNames[number];
-export type InterNamedSpan = Interm<'span'> & {
+export type IntermNamedSpan = Interm<'span'> & {
     name: IntermSpanName,
     content: IntermSpan[],
 };
-export type IntermSpan = IntermTextSpan | InterNamedSpan;
+export type IntermSpan = IntermTextSpan | IntermNamedSpan;
 
 export type IntermPph = Interm<'pph'> & {
     content: IntermSpan[],

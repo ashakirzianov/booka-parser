@@ -1,11 +1,6 @@
 import {
-    BookContentNode, ParagraphNode, Span,
-    compoundSpan,
-    assertNever,
-    makePph,
-    TitleNode,
-    extractSpanText,
-    GroupNode,
+    BookContentNode, ParagraphNode, Span, TitleNode, GroupNode,
+    makePph, compoundSpan, extractSpanText, assertNever,
 } from 'booka-common';
 import { SuccessLast, yieldLast } from '../combinators';
 import {
@@ -61,13 +56,37 @@ function fromSpan(s: IntermSpan, env: Env): Span {
         case 'span':
             {
                 switch (s.name) {
-                    case 'italic':
-                    case 'bold':
-                    case 'big':
-                    case 'small':
-                    case 'sub':
-                    case 'sup':
+                    case 'italic': case 'bold':
+                    case 'big': case 'small':
+                    case 'sub': case 'sup':
                         return { [s.name]: fromSpans(s.content, env) };
+                    case 'span':
+                        return fromSpans(s.content, env);
+                    case 'img':
+                        return s.attrs.src
+                            ? {
+                                image: {
+                                    kind: 'ref',
+                                    imageId: s.attrs.src,
+                                    ref: s.attrs.src,
+                                    title: s.attrs.title || s.attrs.alt,
+                                },
+                            }
+                            : '';
+                    case 'quote':
+                        return {
+                            span: fromSpans(s.content, env),
+                            semantic: { quote: {} },
+                        };
+                    case 'ins':
+                        return {
+                            span: fromSpans(s.content, env),
+                            semantic: {
+                                correction: {
+                                    note: s.attrs.title,
+                                },
+                            },
+                        };
                     case 'a':
                         return s.attrs.href
                             ? { ref: fromSpans(s.content, env), refToId: s.attrs.ref }
