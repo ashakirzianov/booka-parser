@@ -9,7 +9,7 @@ import {
 } from 'booka-common';
 import { SuccessLast, yieldLast } from '../combinators';
 import {
-    InterSpan, InterPph, InterHeader, InterContainer, IntermediateNode,
+    IntermSpan, IntermPph, IntermHeader, IntermContainer, IntermediateNode,
 } from './intermediateNode';
 
 export function parseIntermediateNodes(inters: IntermediateNode[], filePath: string): SuccessLast<BookContentNode[]> {
@@ -23,7 +23,7 @@ type Env = {
     filePath: string,
 };
 function fromInter(inter: IntermediateNode, env: Env): BookContentNode {
-    switch (inter.inter) {
+    switch (inter.interm) {
         case 'pph':
             return fromPph(inter, env);
         case 'header':
@@ -54,8 +54,8 @@ function fromInters(inters: IntermediateNode[], env: Env): BookContentNode[] {
     });
 }
 
-function fromSpan(s: InterSpan, env: Env): Span {
-    switch (s.inter) {
+function fromSpan(s: IntermSpan, env: Env): Span {
+    switch (s.interm) {
         case 'text':
             return s.content;
         case 'span':
@@ -83,15 +83,15 @@ function fromSpan(s: InterSpan, env: Env): Span {
     }
 }
 
-function fromSpans(ss: InterSpan[], env: Env): Span {
+function fromSpans(ss: IntermSpan[], env: Env): Span {
     return compoundSpan(ss.map(s => fromSpan(s, env)));
 }
 
-function fromPph(p: InterPph, env: Env): ParagraphNode {
+function fromPph(p: IntermPph, env: Env): ParagraphNode {
     return makePph(fromSpans(p.content, env));
 }
 
-function fromHeader(h: InterHeader, env: Env): TitleNode {
+function fromHeader(h: IntermHeader, env: Env): TitleNode {
     const s = fromSpans(h.content, env);
     const text = extractSpanText(s);
     return {
@@ -101,7 +101,7 @@ function fromHeader(h: InterHeader, env: Env): TitleNode {
     };
 }
 
-function fromContainer(c: InterContainer, env: Env): GroupNode {
+function fromContainer(c: IntermContainer, env: Env): GroupNode {
     const nodes = fromInters(c.content, env);
     return {
         node: 'group',

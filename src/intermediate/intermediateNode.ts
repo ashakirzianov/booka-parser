@@ -1,5 +1,5 @@
-type Inter<K extends string> = {
-    inter: K,
+type Interm<K extends string> = {
+    interm: K,
     attrs: Attributes,
 };
 
@@ -7,38 +7,38 @@ export type Attributes = {
     [k: string]: string | undefined,
 };
 
-export type InterTextSpan = Inter<'text'> & {
+export type IntermTextSpan = Interm<'text'> & {
     content: string,
 };
 export const interSpanNames = [
     'italic', 'bold', 'small', 'big', 'sub', 'sup', 'a',
 ] as const;
-export type InterSpanName = typeof interSpanNames[number];
-export type InterNamedSpan = Inter<'span'> & {
-    name: InterSpanName,
-    content: InterSpan[],
+export type IntermSpanName = typeof interSpanNames[number];
+export type InterNamedSpan = Interm<'span'> & {
+    name: IntermSpanName,
+    content: IntermSpan[],
 };
-export type InterSpan = InterTextSpan | InterNamedSpan;
+export type IntermSpan = IntermTextSpan | InterNamedSpan;
 
-export type InterPph = Inter<'pph'> & {
-    content: InterSpan[],
+export type IntermPph = Interm<'pph'> & {
+    content: IntermSpan[],
 };
 
-export type InterHeader = Inter<'header'> & {
+export type IntermHeader = Interm<'header'> & {
     level: number,
-    content: InterSpan[],
+    content: IntermSpan[],
 };
 
-export type InterContainer = Inter<'container'> & {
+export type IntermContainer = Interm<'container'> & {
     content: IntermediateNode[],
 };
 
 export type IntermediateNode =
-    | InterPph
-    | InterHeader
-    | InterContainer
+    | IntermPph
+    | IntermHeader
+    | IntermContainer
     ;
-export type IntermediateNodeKey = IntermediateNode['inter'];
+export type IntermediateNodeKey = IntermediateNode['interm'];
 export type IntermediateNodeForKey<K extends IntermediateNodeKey> =
     Extract<IntermediateNode, { inter: K }>;
 export type IntermediateNodeContent<K extends IntermediateNodeKey> = IntermediateNodeForKey<K>['content'];
