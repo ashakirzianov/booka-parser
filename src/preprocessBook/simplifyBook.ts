@@ -37,6 +37,7 @@ function simplifyNode(node: BookContentNode): BookContentNode | undefined {
             return node;
         case 'image':
         case 'separator':
+        case 'title':
             return node;
         default:
             assertNever(node);
