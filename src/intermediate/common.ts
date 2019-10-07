@@ -3,7 +3,7 @@ import {
 } from '../combinators';
 import { IntermTop, IntermAttrs, IntermNode, IntermContent, IntermNodeKey, IntermSpan } from './intermediateNode';
 import { EpubBook } from '../epub';
-import { ObjectMatcher, ValueMatcher, matchValue, matchObject } from '../utils';
+import { ObjectMatcher, ValueMatcher, matchValue, matchObject, CompoundMatcher } from '../utils';
 import { flatten, Semantic, FlagSemantic, assertNever } from 'booka-common';
 
 type Env = { filePath: string };
@@ -70,6 +70,15 @@ export function diagnose(diagnoser: (interm: IntermNode) => ParserDiagnostic): P
             diag: compoundDiagnostic(all),
         };
     };
+}
+
+export function expectAttrsMap(expectedAttrsMap: ExpectedAttrsMap) {
+    return diagnose(node => {
+        const expected = expectedAttrsMap[node.interm];
+        return expected
+            ? expectAttrs(node, expected)
+            : undefined;
+    });
 }
 
 export function expectAttrs(interm: IntermNode, expected: ObjectMatcher<IntermAttrs>): ParserDiagnostic {
@@ -232,3 +241,11 @@ function processContainedSpans<N extends IntermNode>(node: N, fn: (span: IntermS
 //         return yieldLast(node);
 //     });
 // }
+
+export type ExpectedAttrs = {
+    [k: string]: ValueMatcher<string>,
+    class?: CompoundMatcher<string>,
+};
+export type ExpectedAttrsMap = {
+    [k in IntermNodeKey]?: ExpectedAttrs;
+};

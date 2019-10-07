@@ -1,6 +1,9 @@
-import { PreResolver, IntermPreprocessor, expectAttrs, diagnose, stepsProcessor, assignSemantic, flagClass, processSpan, hasClass } from './common';
-import { ValueMatcher, ObjectMatcher, CompoundMatcher } from '../utils';
-import { IntermAttrs, IntermNodeKey } from './intermediateNode';
+import {
+    PreResolver, IntermPreprocessor, stepsProcessor, assignSemantic,
+    flagClass, processSpan,
+    hasClass, expectAttrsMap, ExpectedAttrsMap,
+} from './common';
+import { CompoundMatcher } from '../utils';
 
 const steps = stepsProcessor([
     processSpan(s =>
@@ -19,17 +22,7 @@ const steps = stepsProcessor([
             ? { semantic: 'formated' }
             : undefined,
     ),
-    diagnose(node => {
-        const ext = expectedAttrsMap[node.interm] || {};
-        const expected = {
-            ...standardAttrs,
-            ...ext,
-            class: ext.class
-                ? [...standardClass, ...ext.class]
-                : standardClass,
-        };
-        return expectAttrs(node, expected);
-    }),
+    expectAttrsMap(expectations()),
 ]);
 
 const gutenbergPrep: IntermPreprocessor = steps;
@@ -55,56 +48,54 @@ export const gutenberg: PreResolver = ({ rawMetadata }) => {
         : undefined;
 };
 
-const standardClass: CompoundMatcher<string> = [
-    undefined,
-    c => c && c.match(/i\d*$/) ? true : false,
-    c => c && c.match(/c\d*$/) ? true : false,
-    c => c && c.match(/z\d*$/) ? true : false,
-    'smcap', 'indexpageno',
-    // 'pgmonospaced', 'center', 'pgheader', 'fig', 'figleft',
-    // 'indexpageno', 'imageref', 'image', 'chapterhead',
-    // 'right', 'chaptername', 'illus', 'floatright',
-    // // TODO: do not ignore ?
-    // 'letterdate', 'letter1', 'titlepage', 'footer', 'intro',
-    // 'poem', 'poem1', 'gapspace', 'gapshortline', 'noindent',
-    // 'figcenter', 'stanza', 'foot', 'letter', 'gutindent', 'poetry',
-    // 'finis', 'verse', 'gutsumm', 'pfirst', 'right', 'state', 'book',
-    // 'contents', 'preface1', 'preface2',
-    // 'extracts', 'mynote', 'letterdate', 'letter1', 'titlepage',
-    // 'contents', 'centered', 'poem', 'figcenter', 'blockquot',
-    // 'stanza', 'book', 'title', 'title2',
-    // // TODO: handle properly !!!
-    // 'footnote', 'toc',
-];
-
-const standardAttrs: ObjectMatcher<IntermAttrs> = {
-    class: standardClass,
-};
-
-type ExpectedAttrsMap = {
-    [k in IntermNodeKey]?: {
-        [k: string]: ValueMatcher<string>,
-        class?: CompoundMatcher<string>,
+function expectations(): ExpectedAttrsMap {
+    const classes = standardClasses();
+    return {
+        a: {
+            class: [
+                ...classes,
+                'pginternal', 'x-ebookmaker-pageno',
+            ],
+            tag: null, href: null,
+            // TODO: double check
+            title: null,
+        },
+        pph: {
+            class: [
+                ...classes,
+                'pgmonospaced', 'pgheader',
+            ],
+            'xml:space': 'preserve',
+        },
+        container: {
+            class: [
+                ...classes,
+                'mynote', 'extracts',
+            ],
+        },
     };
-};
-const expectedAttrsMap: ExpectedAttrsMap = {
-    a: {
-        class: [
-            'pginternal', 'x-ebookmaker-pageno',
-        ],
-        tag: null, href: null,
-        // TODO: double check
-        title: null,
-    },
-    pph: {
-        class: [
-            'pgmonospaced', 'pgheader',
-        ],
-        'xml:space': 'preserve',
-    },
-    container: {
-        class: [
-            'mynote', 'extracts',
-        ],
-    },
-};
+}
+
+function standardClasses(): CompoundMatcher<string> {
+    return [
+        undefined,
+        c => c && c.match(/i\d*$/) ? true : false,
+        c => c && c.match(/c\d*$/) ? true : false,
+        c => c && c.match(/z\d*$/) ? true : false,
+        'smcap', 'indexpageno',
+        // 'pgmonospaced', 'center', 'pgheader', 'fig', 'figleft',
+        // 'indexpageno', 'imageref', 'image', 'chapterhead',
+        // 'right', 'chaptername', 'illus', 'floatright',
+        // // TODO: do not ignore ?
+        // 'letterdate', 'letter1', 'titlepage', 'footer', 'intro',
+        // 'poem', 'poem1', 'gapspace', 'gapshortline', 'noindent',
+        // 'figcenter', 'stanza', 'foot', 'letter', 'gutindent', 'poetry',
+        // 'finis', 'verse', 'gutsumm', 'pfirst', 'right', 'state', 'book',
+        // 'contents', 'preface1', 'preface2',
+        // 'extracts', 'mynote', 'letterdate', 'letter1', 'titlepage',
+        // 'contents', 'centered', 'poem', 'figcenter', 'blockquot',
+        // 'stanza', 'book', 'title', 'title2',
+        // // TODO: handle properly !!!
+        // 'footnote', 'toc',
+    ];
+}
