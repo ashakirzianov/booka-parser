@@ -97,7 +97,7 @@ function elementParserImpl<TC, T = TC>(
             }
         }
         if (ec.expectedAttrs) {
-            const attrsCheck = checkObjectFull(head.attributes, {
+            const attrsCheck = checkObject(head.attributes, {
                 ...ec.expectedAttrs, class: null,
             });
             if (attrsCheck.length > 0) {

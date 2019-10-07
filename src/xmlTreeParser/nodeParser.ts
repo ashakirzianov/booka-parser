@@ -163,6 +163,7 @@ const image: TreeParser<IntermTop> = elemProj({
     expectedAttrs: {
         'xlink:href': href => href ? true : false,
     },
+    onChildrenTail: 'ignore',
     project: ({ attributes }) => {
         return {
             interm: 'image',
@@ -186,7 +187,9 @@ const header: TreeParser<IntermTop> = elemChProj({
 });
 
 const ignore: TreeParser<IntermTop> = elemProj({
+    context: 'ignore',
     name: ['svg'],
+    onChildrenTail: 'ignore',
     project: ({ attributes }) => {
         return {
             interm: 'ignore',

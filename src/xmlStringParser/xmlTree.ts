@@ -143,7 +143,7 @@ export function tree2String(n: XmlTree, depth: number = 0): string {
             const chs = depth !== 0
                 ? n.children
                     .map(ch => tree2String(ch, depth - 1))
-                    .reduce((all, cur) => all + cur, '')
+                    .join('')
                 : '';
             return chs.length > 0
                 ? `<${name}${attrsStr}>${chs}</${name}>`
