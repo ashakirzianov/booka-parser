@@ -1,10 +1,10 @@
 #! /usr/bin/env node
 // tslint:disable: no-console
 import * as fs from 'fs';
-import { extname, join } from 'path';
+import { extname, join, dirname, basename } from 'path';
 import { parseEpub } from '.';
 import { promisify, inspect } from 'util';
-import { extractNodeText, tagValue } from 'booka-common';
+import { extractNodeText, tagValue, Book } from 'booka-common';
 import { topDiagnostic } from './combinators';
 import { parseEpubText } from './epub';
 
@@ -42,6 +42,8 @@ async function processEpubFile(filePath: string, reportMeta: boolean) {
     }
     const book = result.value.book;
     console.log(`---- ${filePath}:`);
+    const pathToSave = join(dirname(filePath), `${basename(filePath, '.epub')}.booka`);
+    await saveBook(pathToSave, book);
     if (reportMeta) {
         console.log('Tags:');
         console.log(book.tags);
@@ -98,6 +100,11 @@ async function logTimeAsync(marker: string, f: () => Promise<void>) {
 
 async function saveString(path: string, content: string) {
     return promisify(fs.writeFile)(path, content);
+}
+
+async function saveBook(path: string, book: Book) {
+    const str = JSON.stringify({ book });
+    return saveString(path, str);
 }
 
 export async function wait(n: number) {
