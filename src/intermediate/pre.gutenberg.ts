@@ -1,28 +1,35 @@
-import { PreResolver, IntermPreprocessor } from './common';
+import { PreResolver, IntermPreprocessor, diagnoseIntermAttrs, diagnoseInterm } from './common';
 import { reject, ParserDiagnostic, headParser, yieldLast } from '../combinators';
 import { IntermNode } from './intermediateNode';
 import { assertNever } from 'booka-common';
+import { ValueMatcher } from '../utils';
+
+const classes: ValueMatcher<string> = [
+    undefined,
+    c => c && c.match(/i\d*$/) ? true : false,
+    c => c && c.match(/c\d*$/) ? true : false,
+    c => c && c.match(/z\d*$/) ? true : false,
+    'pgmonospaced', 'center', 'pgheader', 'fig', 'figleft',
+    'indexpageno', 'imageref', 'image', 'chapterhead',
+    'right', 'chaptername', 'illus', 'floatright',
+];
 
 const expectAttrs: IntermPreprocessor = headParser(node => {
-    const diag = diagnoseAttrs(node);
+    const diag = diagnoseInterm(node, diagnoseSingle);
     return yieldLast([node], diag);
 });
 
-function diagnoseAttrs(node: IntermNode): ParserDiagnostic {
+function diagnoseSingle(node: IntermNode): ParserDiagnostic {
     switch (node.interm) {
-        case 'text': case 'a': case 'span': case 'quote': case 'ins': case 'image':
+        case 'text': case 'a': case 'span': case 'quote': case 'ins':
         case 'bold': case 'italic': case 'small': case 'big': case 'sub': case 'sup':
-            return undefined;
-        case 'pph':
-            return undefined;
+        case 'image':
+        case 'pph': case 'header': case 'separator': case 'container':
         case 'table': case 'row': case 'cell':
-            return undefined;
         case 'list': case 'item':
-            return undefined;
-        case 'header': case 'separator':
-            return undefined;
-        case 'container':
-            return undefined;
+            return diagnoseIntermAttrs(node, {
+                class: classes,
+            });
         case 'ignore':
             return undefined;
         default:

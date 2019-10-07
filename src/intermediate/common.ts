@@ -24,18 +24,20 @@ export function diagnoseInterm(node: IntermNode, diagnoser: (node: IntermNode) =
             break;
     }
 
-    return compoundDiagnostic(diags);
+    const result = compoundDiagnostic(diags);
+    return result;
 }
 
-export function diagnoseAttrs(attrs: IntermAttrs, expected: ObjectMatcher<IntermAttrs>): ParserDiagnostic {
+export function diagnoseIntermAttrs(interm: IntermNode, expected: ObjectMatcher<IntermAttrs>): ParserDiagnostic {
     const clsDiagnostic = expected.class
-        ? diagnoseClass(attrs.class, expected.class)
+        ? diagnoseClass(interm.attrs.class, expected.class)
         : undefined;
-    const restMatch = matchObject(attrs, {
+    const restMatch = matchObject(interm.attrs, {
+        id: null,
         ...expected,
         class: null,
     });
-    const fails = Object.values(restMatch);
+    const fails = Object.entries(restMatch);
     const restDiagnostic = fails.length > 0
         ? {
             diag: 'unexpected-attrs',
@@ -43,7 +45,10 @@ export function diagnoseAttrs(attrs: IntermAttrs, expected: ObjectMatcher<Interm
         }
         : undefined;
 
-    return compoundDiagnostic([clsDiagnostic, restDiagnostic]);
+    const result = compoundDiagnostic([clsDiagnostic, restDiagnostic]);
+    return result
+        ? { context: interm.interm, diagnostic: result }
+        : undefined;
 }
 
 export function diagnoseClass(classToCheck: string | undefined, expected: ValueMatcher<string>): ParserDiagnostic {
@@ -64,6 +69,21 @@ export function diagnoseClass(classToCheck: string | undefined, expected: ValueM
             diag: 'unexpected-class',
             classes: fails,
         };
+}
+
+function intermToString(interm: IntermContent | IntermNode): string {
+    if (typeof interm === 'string') {
+        return interm;
+    } else if (interm === undefined) {
+        return '';
+    } else if (Array.isArray(interm)) {
+        const content = interm as IntermNode[];
+        return content
+            .map(intermToString)
+            .join('');
+    } else {
+        return `[${interm.interm}: ${intermToString(interm.content)}]`;
+    }
 }
 
 // export type IntermParser<T extends IntermContent> = StreamParser<T, T, Env>;

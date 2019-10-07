@@ -69,4 +69,4 @@ export type IntermNodeKey = IntermNode['interm'];
 export type IntermForKey<K extends IntermNodeKey> = Extract<IntermNode, { interm: K }>;
 export type IntermContentForKey<K extends IntermNodeKey> =
     IntermForKey<K>['content'];
-export type IntermContent = IntermNode['content'] | IntermNode;
+export type IntermContent = IntermNode['content'];

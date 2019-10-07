@@ -4,21 +4,6 @@ import {
 import { elemChProj, TreeParser, elemProj, TreeStream } from './treeParser';
 import { IntermSpan, IntermSpanName } from '../intermediate';
 
-//  TODO: move
-export const standardClasses = [
-    undefined,
-    'p', 'p1', 'v', 'empty-line',
-    'dropcap', 'drop',
-    'section1', 'section2', 'section3', 'section4', 'section5', 'section6',
-    //  Project Gutenberg:
-    'i2', 'i4', 'i6', 'i8', 'i10', 'i16', 'i20', 'i21',
-    'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'c9', 'c10', 'c11',
-    'z1',
-    'pgmonospaced', 'center', 'pgheader', 'fig', 'figleft',
-    'indexpageno', 'imageref', 'image', 'chapterhead',
-    'right', 'chaptername', 'illus', 'floatright',
-];
-
 type SpanParser = TreeParser<IntermSpan>;
 export const span = declare<TreeStream, IntermSpan>('span');
 
