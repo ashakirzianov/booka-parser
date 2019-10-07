@@ -1,7 +1,7 @@
 import { KnownTag, buildTagSet } from 'booka-common';
 import {
     headParser, yieldLast, makeStream, choice,
-    AsyncFullParser, some, reportUnparsedTail,
+    AsyncFullParser, some, reportUnparsedTail, reject,
 } from '../combinators';
 import { EpubBook } from './epubFileParser';
 import { MetadataRecordParser } from './epubBookParser';
@@ -54,6 +54,8 @@ const defaultMetadataParser: MetadataRecordParser = headParser(([key, value]) =>
         case 'dc:identifier':
             return yieldLast([] as KnownTag[]);
         default:
-            return fail();
+            // TODO: reject
+            // return reject();
+            return yieldLast([] as KnownTag[]);
     }
 });
