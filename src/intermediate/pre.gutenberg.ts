@@ -1,7 +1,7 @@
 import {
     PreResolver, IntermPreprocessor, stepsProcessor, assignSemantic,
     flagClass, processSpan,
-    hasClass, expectAttrsMap, ExpectedAttrsMap,
+    hasClass, expectAttrsMap, ExpectedAttrsMap, ExpectedAttrs,
 } from './common';
 import { CompoundMatcher } from '../utils';
 
@@ -49,35 +49,7 @@ export const gutenberg: PreResolver = ({ rawMetadata }) => {
 };
 
 function expectations(): ExpectedAttrsMap {
-    const classes = standardClasses();
-    return {
-        a: {
-            class: [
-                ...classes,
-                'pginternal', 'x-ebookmaker-pageno',
-            ],
-            tag: null, href: null,
-            // TODO: double check
-            title: null,
-        },
-        pph: {
-            class: [
-                ...classes,
-                'pgmonospaced', 'pgheader',
-            ],
-            'xml:space': 'preserve',
-        },
-        container: {
-            class: [
-                ...classes,
-                'mynote', 'extracts',
-            ],
-        },
-    };
-}
-
-function standardClasses(): CompoundMatcher<string> {
-    return [
+    const classes: CompoundMatcher<string> = [
         undefined,
         c => c && c.match(/i\d*$/) ? true : false,
         c => c && c.match(/c\d*$/) ? true : false,
@@ -98,4 +70,46 @@ function standardClasses(): CompoundMatcher<string> {
         // // TODO: handle properly !!!
         // 'footnote', 'toc',
     ];
+    const base: ExpectedAttrs = {
+        class: classes,
+    };
+    const forSpan: ExpectedAttrs = {
+        class: [
+            ...classes,
+            'GutSmall',
+        ],
+    };
+    return {
+        text: forSpan,
+        ins: forSpan, quote: forSpan, image: forSpan,
+        big: forSpan, small: forSpan, italic: forSpan, bold: forSpan,
+        sub: forSpan, sup: forSpan,
+        span: forSpan,
+        a: {
+            class: [
+                ...forSpan.class,
+                'pginternal', 'x-ebookmaker-pageno',
+            ],
+            tag: null, href: null,
+            // TODO: double check
+            title: null,
+        },
+        pph: {
+            class: [
+                ...classes,
+                'pgmonospaced', 'pgheader',
+            ],
+            'xml:space': 'preserve',
+        },
+        container: {
+            class: [
+                ...classes,
+                'mynote', 'extracts',
+            ],
+        },
+        separator: base, header: base,
+        table: base, row: base, cell: base,
+        list: base, item: base,
+        ignore: base,
+    };
 }

@@ -18,6 +18,7 @@ export type ProcessorStep = (interm: IntermTop) => ProcessorStepResult;
 
 export function stepsProcessor(steps: ProcessorStep[]): IntermPreprocessor {
     return headParser(node => {
+        // return yieldLast([node]);
         const diags: ParserDiagnostic[] = [];
         let input = node;
         for (const step of steps) {
@@ -244,8 +245,8 @@ function processContainedSpans<N extends IntermNode>(node: N, fn: (span: IntermS
 
 export type ExpectedAttrs = {
     [k: string]: ValueMatcher<string>,
-    class?: CompoundMatcher<string>,
+    class: CompoundMatcher<string>,
 };
 export type ExpectedAttrsMap = {
-    [k in IntermNodeKey]?: ExpectedAttrs;
+    [k in IntermNodeKey]: ExpectedAttrs;
 };
