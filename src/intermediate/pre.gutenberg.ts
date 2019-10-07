@@ -1,15 +1,25 @@
-import { PreResolver, IntermPreprocessor, expectAttrs, diagnose, stepsProcessor, assignSemantic } from './common';
-import { ValueMatcher, ObjectMatcher } from '../utils';
-import { IntermAttrs } from './intermediateNode';
+import { PreResolver, IntermPreprocessor, expectAttrs, diagnose, stepsProcessor, assignSemantic, flagClass } from './common';
+import { ValueMatcher, ObjectMatcher, CompoundMatcher } from '../utils';
+import { IntermAttrs, IntermNodeKey } from './intermediateNode';
 
 const steps = stepsProcessor([
+    flagClass('mynote', 'editor-note'),
+    flagClass('extracts', 'extracts'),
     assignSemantic(node =>
         node.attrs['xml:space'] === 'preserve'
             ? { semantic: 'formated' }
             : undefined,
     ),
     diagnose(node => {
-        return expectAttrs(node, standardAttrs);
+        const ext = expectedAttrsMap[node.interm] || {};
+        const expected = {
+            ...standardAttrs,
+            ...ext,
+            class: ext.class
+                ? [...standardClass, ...ext.class]
+                : standardClass,
+        };
+        return expectAttrs(node, expected);
     }),
 ]);
 
@@ -36,12 +46,11 @@ export const gutenberg: PreResolver = ({ rawMetadata }) => {
         : undefined;
 };
 
-const classes: ValueMatcher<string> = [
+const standardClass: CompoundMatcher<string> = [
     undefined,
     c => c && c.match(/i\d*$/) ? true : false,
     c => c && c.match(/c\d*$/) ? true : false,
     c => c && c.match(/z\d*$/) ? true : false,
-    'pgmonospaced',
     // 'pgmonospaced', 'center', 'pgheader', 'fig', 'figleft',
     // 'indexpageno', 'imageref', 'image', 'chapterhead',
     // 'right', 'chaptername', 'illus', 'floatright',
@@ -59,6 +68,29 @@ const classes: ValueMatcher<string> = [
 ];
 
 const standardAttrs: ObjectMatcher<IntermAttrs> = {
-    'xml:space': 'preserve',
-    class: classes,
+    class: standardClass,
+};
+
+type ExpectedAttrsMap = {
+    [k in IntermNodeKey]?: {
+        [k: string]: ValueMatcher<string>,
+        class?: CompoundMatcher<string>,
+    };
+};
+const expectedAttrsMap: ExpectedAttrsMap = {
+    a: {
+        class: ['pginternal'],
+        tag: null, href: null,
+    },
+    pph: {
+        class: [
+            'pgmonospaced', 'pgheader',
+        ],
+        'xml:space': 'preserve',
+    },
+    container: {
+        class: [
+            'mynote', 'extracts',
+        ],
+    },
 };

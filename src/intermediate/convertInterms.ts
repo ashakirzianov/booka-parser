@@ -44,9 +44,6 @@ function fromInterm(inter: IntermTop, env: Env): BookContentNode {
 
 function fromInterms(inters: IntermTop[], env: Env): BookContentNode[] {
     return inters.map(i => {
-        if (i.semantics !== undefined) {
-            console.log(i.semantics);
-        }
         let result = fromInterm(i, env);
         result = i.attrs.id !== undefined
             ? assignId(result, i.attrs.id)

@@ -4,7 +4,7 @@ type SimpleMatcher<Value, C extends Value = Value> =
     | null
     | undefined
     ;
-type CompoundMatcher<Value, C extends Value = Value> = Array<SimpleMatcher<Value, C>>;
+export type CompoundMatcher<Value, C extends Value = Value> = Array<SimpleMatcher<Value, C>>;
 export type ValueMatcher<Value, C extends Value = Value> =
     | SimpleMatcher<Value, C>
     | CompoundMatcher<Value, C>

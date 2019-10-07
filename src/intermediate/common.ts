@@ -1,10 +1,10 @@
 import {
     StreamParser, ParserDiagnostic, compoundDiagnostic, headParser, yieldLast,
 } from '../combinators';
-import { IntermTop, IntermAttrs, IntermNode, IntermContent } from './intermediateNode';
+import { IntermTop, IntermAttrs, IntermNode, IntermContent, IntermNodeKey } from './intermediateNode';
 import { EpubBook } from '../epub';
 import { ObjectMatcher, ValueMatcher, matchValue, matchObject } from '../utils';
-import { flatten, Semantic } from 'booka-common';
+import { flatten, Semantic, FlagSemantic } from 'booka-common';
 
 type Env = { filePath: string };
 export type IntermPreprocessor = StreamParser<IntermTop, IntermTop[], Env>;
@@ -42,6 +42,19 @@ export function assignSemantic(fn: (node: IntermNode) => Semantic | undefined): 
     };
 }
 
+export function semanticForClass(cls: string, semantic: Semantic): ProcessorStep {
+    return assignSemantic(
+        node =>
+            getClasses(node.attrs.class).some(c => c === cls)
+                ? semantic
+                : undefined,
+    );
+}
+
+export function flagClass(cls: string, semanticKey: FlagSemantic['semantic']): ProcessorStep {
+    return semanticForClass(cls, { semantic: semanticKey });;
+}
+
 export function diagnose(diagnoser: (interm: IntermNode) => ParserDiagnostic): ProcessorStep {
     return node => {
         const all = visitNodes(node, diagnoser);
@@ -75,9 +88,7 @@ export function expectAttrs(interm: IntermNode, expected: ObjectMatcher<IntermAt
 }
 
 export function expectClass(classToCheck: string | undefined, expected: ValueMatcher<string>): ParserDiagnostic {
-    const classes = classToCheck
-        ? classToCheck.split(' ')
-        : [undefined];
+    const classes = getClasses(classToCheck);
     const fails: any[] = [];
     for (const cls of classes) {
         const check = matchValue(cls, expected);
@@ -136,6 +147,12 @@ function assignNodeSemantic<N extends IntermNode>(node: N, semantic: Semantic): 
             ? [...node.semantics, semantic]
             : [semantic],
     };
+}
+
+function getClasses(cls: string | undefined): string[] {
+    return cls !== undefined
+        ? cls.split(' ')
+        : [];
 }
 
 // export type IntermParser<T extends IntermContent> = StreamParser<T, T, Env>;
