@@ -14,9 +14,7 @@ export type IntermIgnore = Interm<'ignore'> & NoContent;
 export type IntermImage = Interm<'image'> & NoContent;
 export type IntermSeparator = Interm<'separator'> & NoContent;
 
-export type IntermTextSpan = {
-    interm: 'text',
-    attrs: IntermAttrs,
+export type IntermTextSpan = Interm<'text'> & {
     content: string,
 };
 export const interSpanNames = [

@@ -4,7 +4,7 @@ import {
 import { IntermTop, IntermAttrs, IntermNode, IntermContent } from './intermediateNode';
 import { EpubBook } from '../epub';
 import { ObjectMatcher, ValueMatcher, matchValue, matchObject } from '../utils';
-import { flatten } from 'booka-common';
+import { flatten, Semantic } from 'booka-common';
 
 type Env = { filePath: string };
 export type IntermPreprocessor = StreamParser<IntermTop, IntermTop[], Env>;
@@ -33,6 +33,15 @@ export function stepsProcessor(steps: ProcessorStep[]): IntermPreprocessor {
     });
 }
 
+export function assignSemantic(fn: (node: IntermNode) => Semantic | undefined): ProcessorStep {
+    return node => {
+        const semantic = fn(node);
+        return semantic !== undefined
+            ? assignNodeSemantic(node, semantic)
+            : {};
+    };
+}
+
 export function diagnose(diagnoser: (interm: IntermNode) => ParserDiagnostic): ProcessorStep {
     return node => {
         const all = visitNodes(node, diagnoser);
@@ -51,7 +60,7 @@ export function expectAttrs(interm: IntermNode, expected: ObjectMatcher<IntermAt
         ...expected,
         class: null,
     });
-    const fails = Object.entries(restMatch);
+    const fails = Object.entries(restMatch).filter(([_, { value }]) => value !== undefined);
     const restDiagnostic = fails.length > 0
         ? {
             diag: 'unexpected-attrs',
@@ -118,6 +127,15 @@ export function visitNodes<T>(root: IntermNode, visitor: (n: IntermNode) => T): 
     }
 
     return results;
+}
+
+function assignNodeSemantic(node: IntermNode, semantic: Semantic): IntermNode {
+    return {
+        ...node,
+        semantics: node.semantics
+            ? [...node.semantics, semantic]
+            : [semantic],
+    };
 }
 
 // export type IntermParser<T extends IntermContent> = StreamParser<T, T, Env>;
