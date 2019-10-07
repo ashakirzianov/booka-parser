@@ -1,9 +1,12 @@
+import { Semantic } from 'booka-common';
+
 export type IntermAttrs = {
     [k: string]: string | undefined,
 };
 type Interm<K extends string> = {
     interm: K,
     attrs: IntermAttrs,
+    semantics?: Semantic[],
 };
 
 type NoContent = { content?: undefined };

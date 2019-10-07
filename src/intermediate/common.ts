@@ -1,36 +1,50 @@
-import { StreamParser, ParserDiagnostic, compoundDiagnostic } from '../combinators';
+import {
+    StreamParser, ParserDiagnostic, compoundDiagnostic, headParser, yieldLast,
+} from '../combinators';
 import { IntermTop, IntermAttrs, IntermNode, IntermContent } from './intermediateNode';
 import { EpubBook } from '../epub';
 import { ObjectMatcher, ValueMatcher, matchValue, matchObject } from '../utils';
+import { flatten } from 'booka-common';
 
 type Env = { filePath: string };
 export type IntermPreprocessor = StreamParser<IntermTop, IntermTop[], Env>;
 export type PreResolver = (epub: EpubBook) => IntermPreprocessor | undefined;
 
-export function diagnoseInterm(node: IntermNode, diagnoser: (node: IntermNode) => ParserDiagnostic): ParserDiagnostic {
-    const diags: ParserDiagnostic[] = [];
-    diags.push(diagnoser(node));
+export type ProcessorStepResult = {
+    node?: IntermTop,
+    diag?: ParserDiagnostic,
+};
+export type ProcessorStep = (interm: IntermTop) => ProcessorStepResult;
 
-    switch (node.interm) {
-        case 'text':
-        case 'separator':
-        case 'ignore':
-        case 'image':
-            break;
-        default:
-            const content = node.content as IntermNode[];
-            const inside = content.map((x: any) => diagnoser(x));
-            diags.push(...inside);
-            break;
-    }
+export function stepsProcessor(steps: ProcessorStep[]): IntermPreprocessor {
+    return headParser(node => {
+        const diags: ParserDiagnostic[] = [];
+        let input = node;
+        for (const step of steps) {
+            const result = step(input);
+            diags.push(result.diag);
+            if (result.node) {
+                input = result.node;
+            }
+        }
+        const diag = compoundDiagnostic(diags);
 
-    const result = compoundDiagnostic(diags);
-    return result;
+        return yieldLast([input], diag);
+    });
 }
 
-export function diagnoseIntermAttrs(interm: IntermNode, expected: ObjectMatcher<IntermAttrs>): ParserDiagnostic {
+export function diagnose(diagnoser: (interm: IntermNode) => ParserDiagnostic): ProcessorStep {
+    return node => {
+        const all = visitNodes(node, diagnoser);
+        return {
+            diag: compoundDiagnostic(all),
+        };
+    };
+}
+
+export function expectAttrs(interm: IntermNode, expected: ObjectMatcher<IntermAttrs>): ParserDiagnostic {
     const clsDiagnostic = expected.class
-        ? diagnoseClass(interm.attrs.class, expected.class)
+        ? expectClass(interm.attrs.class, expected.class)
         : undefined;
     const restMatch = matchObject(interm.attrs, {
         id: null,
@@ -51,7 +65,7 @@ export function diagnoseIntermAttrs(interm: IntermNode, expected: ObjectMatcher<
         : undefined;
 }
 
-export function diagnoseClass(classToCheck: string | undefined, expected: ValueMatcher<string>): ParserDiagnostic {
+export function expectClass(classToCheck: string | undefined, expected: ValueMatcher<string>): ParserDiagnostic {
     const classes = classToCheck
         ? classToCheck.split(' ')
         : [undefined];
@@ -71,7 +85,7 @@ export function diagnoseClass(classToCheck: string | undefined, expected: ValueM
         };
 }
 
-function intermToString(interm: IntermContent | IntermNode): string {
+export function intermToString(interm: IntermContent | IntermNode): string {
     if (typeof interm === 'string') {
         return interm;
     } else if (interm === undefined) {
@@ -84,6 +98,26 @@ function intermToString(interm: IntermContent | IntermNode): string {
     } else {
         return `[${interm.interm}: ${intermToString(interm.content)}]`;
     }
+}
+
+export function visitNodes<T>(root: IntermNode, visitor: (n: IntermNode) => T): T[] {
+    const results: T[] = [];
+    results.push(visitor(root));
+
+    switch (root.interm) {
+        case 'text':
+        case 'separator':
+        case 'ignore':
+        case 'image':
+            break;
+        default:
+            const content = root.content as IntermNode[];
+            const inside = flatten(content.map(n => visitNodes(n, visitor)));
+            results.push(...inside);
+            break;
+    }
+
+    return results;
 }
 
 // export type IntermParser<T extends IntermContent> = StreamParser<T, T, Env>;
