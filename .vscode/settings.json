@@ -89,4 +89,5 @@
     ],
     "typescript.preferences.importModuleSpecifier": "relative",
     "editor.wordWrap": "bounded",
+    "typescript.tsdk": "node_modules/typescript/lib",
 }

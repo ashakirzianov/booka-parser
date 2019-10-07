@@ -1,15 +1,14 @@
 import { KnownTag, buildTagSet } from 'booka-common';
 import {
     headParser, yieldLast, makeStream, choice,
-    AsyncFullParser, parseAll, some, reportUnparsedTail,
+    AsyncFullParser, some, reportUnparsedTail,
 } from '../combinators';
-import { epubParserHooks } from './hooks';
-import { EpubBook } from './epubBook';
+import { EpubBook } from './epubFileParser';
 import { MetadataRecordParser } from './epubBookParser';
 import { flattenResult } from '../xmlTreeParser';
 
 export const metadataParser: AsyncFullParser<EpubBook, KnownTag[]> = async epub => {
-    const hooks = epubParserHooks[epub.kind].metadataHooks;
+    const hooks = [] as MetadataRecordParser[]; // epubParserHooks[epub.kind].metadataHooks;
     const allParsers = hooks.concat(defaultMetadataParser);
     const singleParser = choice(...allParsers);
     const full = flattenResult(reportUnparsedTail(some(singleParser), tail => ({

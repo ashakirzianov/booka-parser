@@ -7,7 +7,7 @@ import {
     pipe, some, reportUnparsedTail, ResultLast,
 } from '../combinators';
 import { AsyncIter } from '../utils';
-import { EpubSection, EpubBook } from './epubBook';
+import { EpubSection, EpubBook } from './epubFileParser';
 import { xmlStringParser, tree2String } from '../xmlStringParser';
 import { buildInterms2nodes } from '../intermediate';
 

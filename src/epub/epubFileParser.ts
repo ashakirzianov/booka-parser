@@ -1,9 +1,21 @@
 import { EPub } from 'epub2';
-import {
-    EpubBook, EpubSection, EpubKind, EpubKindResolver, resolveEpubKind, EpubMetadata,
-} from './epubBook';
 import { last } from '../utils';
 import { AsyncParser, yieldLast } from '../combinators';
+
+export type EpubSection = {
+    filePath: string,
+    id: string,
+    content: string,
+};
+export type EpubMetadata = {
+    [key: string]: string | string[] | undefined;
+};
+export type EpubBook = {
+    rawMetadata: any,
+    metadata: EpubMetadata,
+    imageResolver(id: string): Promise<Buffer | undefined>,
+    sections(): AsyncGenerator<EpubSection>,
+};
 
 export type EpubFileParserInput = {
     filePath: string,
@@ -13,9 +25,8 @@ export type EpubParser = AsyncParser<EpubFileParserInput, EpubBook>;
 export const epubFileParser: EpubParser = async input => {
     const epub = await FixedEpub.createAsync(input.filePath) as FixedEpub;
 
-    const kind = identifyKind(epub);
     const book: EpubBook = {
-        kind: kind,
+        rawMetadata: getRawData(epub.metadata),
         metadata: extractMetadata(epub),
         imageResolver: async href => {
 
@@ -81,52 +92,6 @@ function extractMetadata(epub: EPub): EpubMetadata {
 
     return metadata;
 }
-
-function identifyKind(epub: EPub): EpubKind {
-    return resolveEpubKind(epub, kindResolver);
-}
-
-const kindResolver: EpubKindResolver<EPub> = {
-    gutenberg: epub => {
-        const rawMetadata = getRawData(epub.metadata) as any;
-        if (!rawMetadata) {
-            return false;
-        }
-
-        const gutenbergUrl = 'http://www.gutenberg.org';
-        const source = rawMetadata['dc:source'];
-        const isGutenbergSource = typeof source === 'string'
-            && source.startsWith(gutenbergUrl);
-        if (isGutenbergSource) {
-            return isGutenbergSource;
-        }
-        const id = rawMetadata['dc:identifier'];
-        const marker = id && id['#'];
-        return typeof marker === 'string'
-            && marker.startsWith(gutenbergUrl);
-    },
-    fb2epub: epub => {
-        const rawMetadata = getRawData(epub.metadata) as any;
-        if (!rawMetadata) {
-            return false;
-        }
-
-        const contributor = rawMetadata['dc:contributor'];
-        if (!contributor || !Array.isArray(contributor)) {
-            return false;
-        }
-
-        const fb2epub = contributor
-            .map(i => i['#'])
-            .find(i => typeof i === 'string' && i.startsWith('Fb2epub'));
-
-        return fb2epub !== undefined;
-    },
-    fictionBookEditor: epub => {
-        const marker = epub.metadata['FB2.document-info.program-used'];
-        return marker !== undefined && marker.startsWith('FictionBook Editor');
-    },
-};
 
 function getRawData(object: any): any {
     const symbol = EPub.SYMBOL_RAW_DATA;
