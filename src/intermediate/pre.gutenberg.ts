@@ -1,7 +1,4 @@
-import { PreResolver, IntermPreprocessor, diagnoseIntermAttrs, diagnoseInterm } from './common';
-import { reject, ParserDiagnostic, headParser, yieldLast } from '../combinators';
-import { IntermNode } from './intermediateNode';
-import { assertNever } from 'booka-common';
+import { PreResolver, IntermPreprocessor, expectAttrs, diagnose, stepsProcessor } from './common';
 import { ValueMatcher } from '../utils';
 
 const classes: ValueMatcher<string> = [
@@ -12,34 +9,28 @@ const classes: ValueMatcher<string> = [
     'pgmonospaced', 'center', 'pgheader', 'fig', 'figleft',
     'indexpageno', 'imageref', 'image', 'chapterhead',
     'right', 'chaptername', 'illus', 'floatright',
+    // TODO: do not ignore ?
+    'letterdate', 'letter1', 'titlepage', 'footer', 'intro',
+    'poem', 'poem1', 'gapspace', 'gapshortline', 'noindent',
+    'figcenter', 'stanza', 'foot', 'letter', 'gutindent', 'poetry',
+    'finis', 'verse', 'gutsumm', 'pfirst', 'right', 'state', 'book',
+    'contents', 'preface1', 'preface2',
+    'extracts', 'mynote', 'letterdate', 'letter1', 'titlepage',
+    'contents', 'centered', 'poem', 'figcenter', 'blockquot',
+    'stanza', 'book', 'title', 'title2',
+    // TODO: handle properly !!!
+    'footnote', 'toc',
 ];
 
-const expectAttrs: IntermPreprocessor = headParser(node => {
-    const diag = diagnoseInterm(node, diagnoseSingle);
-    return yieldLast([node], diag);
-});
+const steps = stepsProcessor([
+    diagnose(node => {
+        return expectAttrs(node, {
+            class: classes,
+        });
+    }),
+]);
 
-function diagnoseSingle(node: IntermNode): ParserDiagnostic {
-    switch (node.interm) {
-        case 'text': case 'a': case 'span': case 'quote': case 'ins':
-        case 'bold': case 'italic': case 'small': case 'big': case 'sub': case 'sup':
-        case 'image':
-        case 'pph': case 'header': case 'separator': case 'container':
-        case 'table': case 'row': case 'cell':
-        case 'list': case 'item':
-            return diagnoseIntermAttrs(node, {
-                class: classes,
-            });
-        case 'ignore':
-            return undefined;
-        default:
-            assertNever(node);
-            return undefined;
-    }
-}
-
-const gutenbergPrep: IntermPreprocessor = expectAttrs;
-
+const gutenbergPrep: IntermPreprocessor = steps;
 export const gutenberg: PreResolver = ({ rawMetadata }) => {
     if (!rawMetadata) {
         return undefined;
