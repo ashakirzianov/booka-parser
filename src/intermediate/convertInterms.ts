@@ -11,7 +11,7 @@ type Interm2BookArgs = {
     interms: IntermTop[],
     filePath: string,
 };
-export function interms2nodes({ interms, filePath }: Interm2BookArgs): SuccessLast<BookContentNode[]> {
+export function convertInterms({ interms, filePath }: Interm2BookArgs): SuccessLast<BookContentNode[]> {
     const nodes = fromInterms(interms, {
         filePath,
     });

@@ -9,10 +9,23 @@ import {
 import { AsyncIter } from '../utils';
 import { EpubSection, EpubBook } from './epubBook';
 import { xmlStringParser, tree2String } from '../xmlStringParser';
-import { interms2nodes } from '../intermediate/intermediateParser';
+import { buildInterms2nodes } from '../intermediate';
 
 export async function epub2nodes(epub: EpubBook): Promise<ResultLast<BookContentNode[]>> {
     const sectionsStream = makeStream(await AsyncIter.toArray(epub.sections()));
+
+    const interms2nodes = buildInterms2nodes(epub);
+    const singleSection = pipe(section2interms, interms2nodes);
+
+    const sections = reportUnparsedTail(some(headParser(singleSection)), tail => ({
+        diag: 'unexpected-sections',
+        sections: tail.stream,
+    }));
+
+    const fullEpubParser = translate(
+        sections,
+        els => flatten(els),
+    );
 
     return fullEpubParser(sectionsStream);
 }
@@ -26,7 +39,7 @@ const body = xmlChildren(reportUnparsedTail(
 ));
 const document2interms = path(['html', 'body'], body);
 
-const singleSection = pipe(
+const section2interms = pipe(
     (section: EpubSection) => {
         const xmlDocument = xmlStringParser({
             xmlString: section.content,
@@ -34,32 +47,23 @@ const singleSection = pipe(
         });
         if (!xmlDocument.success) {
             return xmlDocument;
+        } else {
+            return yieldLast({
+                filePath: section.filePath,
+                document: xmlDocument.value,
+            });
         }
-
-        return yieldLast({
-            filePath: section.filePath,
-            document: xmlDocument.value,
-        });
     },
     ({ filePath, document }) => {
         const docStream = makeStream(document.children);
-        const interms = document2interms(docStream);
-        return interms.success
-            ? yieldLast({
+        const result = document2interms(docStream);
+        if (result.success) {
+            const stream = makeStream(result.value, {
                 filePath,
-                interms: interms.value,
-            }, interms.diagnostic)
-            : interms;
+            });
+            return yieldLast(stream, result.diagnostic);
+        } else {
+            return result;
+        }
     },
-    ({ filePath, interms }) => interms2nodes({ filePath, interms }),
-);
-
-const sections = reportUnparsedTail(some(headParser(singleSection)), tail => ({
-    diag: 'unexpected-sections',
-    sections: tail.stream,
-}));
-
-const fullEpubParser = translate(
-    sections,
-    els => flatten(els),
 );

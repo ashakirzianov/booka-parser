@@ -176,13 +176,13 @@ export function guard<TI, TO>(parser: Parser<TI, TO>, f: (x: TO) => boolean): Pa
     };
 }
 
-export function translate<TI, From, To>(parser: SuccessParser<TI, From>, f: (from: From) => To): SuccessParser<TI, To>;
-export function translate<TI, From, To>(parser: Parser<TI, From>, f: (from: From) => To | null): Parser<TI, To>;
-export function translate<TI, From, To>(parser: Parser<TI, From>, f: (from: From) => To): Parser<TI, To> {
+export function translate<TI, From, To>(parser: SuccessParser<TI, From>, f: (from: From, input: TI) => To): SuccessParser<TI, To>;
+export function translate<TI, From, To>(parser: Parser<TI, From>, f: (from: From, input: TI) => To | null): Parser<TI, To>;
+export function translate<TI, From, To>(parser: Parser<TI, From>, f: (from: From, input: TI) => To): Parser<TI, To> {
     return input => {
         const from = parser(input);
         if (from.success) {
-            const translated = f(from.value);
+            const translated = f(from.value, input);
             return yieldNext(translated, from.next, from.diagnostic);
         } else {
             return from;
