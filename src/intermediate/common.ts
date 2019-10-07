@@ -1,10 +1,10 @@
 import {
     StreamParser, ParserDiagnostic, compoundDiagnostic, headParser, yieldLast,
 } from '../combinators';
-import { IntermTop, IntermAttrs, IntermNode, IntermContent, IntermNodeKey } from './intermediateNode';
+import { IntermTop, IntermAttrs, IntermNode, IntermContent, IntermNodeKey, IntermSpan } from './intermediateNode';
 import { EpubBook } from '../epub';
 import { ObjectMatcher, ValueMatcher, matchValue, matchObject } from '../utils';
-import { flatten, Semantic, FlagSemantic } from 'booka-common';
+import { flatten, Semantic, FlagSemantic, assertNever } from 'booka-common';
 
 type Env = { filePath: string };
 export type IntermPreprocessor = StreamParser<IntermTop, IntermTop[], Env>;
@@ -33,6 +33,14 @@ export function stepsProcessor(steps: ProcessorStep[]): IntermPreprocessor {
     });
 }
 
+export function processSpan(fn: (span: IntermSpan) => IntermSpan | undefined): ProcessorStep {
+    return node => {
+        return {
+            node: processContainedSpans(node, s => fn(s) || s),
+        };
+    };
+}
+
 export function assignSemantic(fn: (node: IntermNode) => Semantic | undefined): ProcessorStep {
     return node => {
         const semantic = fn(node);
@@ -45,14 +53,14 @@ export function assignSemantic(fn: (node: IntermNode) => Semantic | undefined): 
 export function semanticForClass(cls: string, semantic: Semantic): ProcessorStep {
     return assignSemantic(
         node =>
-            getClasses(node.attrs.class).some(c => c === cls)
+            hasClass(node, cls)
                 ? semantic
                 : undefined,
     );
 }
 
 export function flagClass(cls: string, semanticKey: FlagSemantic['semantic']): ProcessorStep {
-    return semanticForClass(cls, { semantic: semanticKey });;
+    return semanticForClass(cls, { semantic: semanticKey });
 }
 
 export function diagnose(diagnoser: (interm: IntermNode) => ParserDiagnostic): ProcessorStep {
@@ -140,6 +148,11 @@ export function visitNodes<T>(root: IntermNode, visitor: (n: IntermNode) => T): 
     return results;
 }
 
+export function hasClass(node: IntermNode, toCheck: string): boolean {
+    return getClasses(node.attrs.class)
+        .some(c => c === toCheck);
+}
+
 function assignNodeSemantic<N extends IntermNode>(node: N, semantic: Semantic): N {
     return {
         ...node,
@@ -153,6 +166,54 @@ function getClasses(cls: string | undefined): string[] {
     return cls !== undefined
         ? cls.split(' ')
         : [];
+}
+
+function processContainedSpans<N extends IntermNode>(node: N, fn: (span: IntermSpan) => IntermSpan): N {
+    const n = node as IntermNode;
+    switch (n.interm) {
+        case 'pph':
+        case 'header':
+            return {
+                ...node,
+                content: n.content.map(fn),
+            };
+        case 'list':
+            return {
+                ...node,
+                content: n.content.map(sub => processContainedSpans(sub, fn)),
+            };
+        case 'item':
+            return {
+                ...node,
+                content: n.content.map(sub => processContainedSpans(sub, fn)),
+            };
+        case 'table':
+            return {
+                ...node,
+                content: n.content.map(sub => processContainedSpans(sub, fn)),
+            };
+        case 'row':
+            return {
+                ...node,
+                content: n.content.map(sub => processContainedSpans(sub, fn)),
+            };
+        case 'cell':
+            return {
+                ...node,
+                content: n.content.map(sub => processContainedSpans(sub, fn)),
+            };
+        case 'container':
+            return {
+                ...node,
+                content: n.content.map(sub => processContainedSpans(sub, fn)),
+            };
+        case 'image':
+        case 'separator':
+        case 'ignore':
+            return node;
+        default:
+            return fn(n) as N;
+    }
 }
 
 // export type IntermParser<T extends IntermContent> = StreamParser<T, T, Env>;

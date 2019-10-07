@@ -1,8 +1,17 @@
-import { PreResolver, IntermPreprocessor, expectAttrs, diagnose, stepsProcessor, assignSemantic, flagClass } from './common';
+import { PreResolver, IntermPreprocessor, expectAttrs, diagnose, stepsProcessor, assignSemantic, flagClass, processSpan, hasClass } from './common';
 import { ValueMatcher, ObjectMatcher, CompoundMatcher } from '../utils';
 import { IntermAttrs, IntermNodeKey } from './intermediateNode';
 
 const steps = stepsProcessor([
+    processSpan(s =>
+        hasClass(s, 'GutSmall')
+            ? {
+                interm: 'small',
+                attrs: {},
+                content: [s],
+            }
+            : undefined
+    ),
     flagClass('mynote', 'editor-note'),
     flagClass('extracts', 'extracts'),
     assignSemantic(node =>
@@ -51,6 +60,7 @@ const standardClass: CompoundMatcher<string> = [
     c => c && c.match(/i\d*$/) ? true : false,
     c => c && c.match(/c\d*$/) ? true : false,
     c => c && c.match(/z\d*$/) ? true : false,
+    'smcap', 'indexpageno',
     // 'pgmonospaced', 'center', 'pgheader', 'fig', 'figleft',
     // 'indexpageno', 'imageref', 'image', 'chapterhead',
     // 'right', 'chaptername', 'illus', 'floatright',
@@ -79,8 +89,12 @@ type ExpectedAttrsMap = {
 };
 const expectedAttrsMap: ExpectedAttrsMap = {
     a: {
-        class: ['pginternal'],
+        class: [
+            'pginternal', 'x-ebookmaker-pageno',
+        ],
         tag: null, href: null,
+        // TODO: double check
+        title: null,
     },
     pph: {
         class: [
