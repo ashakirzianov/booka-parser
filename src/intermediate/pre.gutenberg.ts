@@ -1,4 +1,4 @@
-import { PreResolver, IntermPreprocessor } from './preprocessor';
+import { PreResolver, IntermPreprocessor } from './common';
 import { reject } from '../combinators';
 
 export const gutenberg: PreResolver = ({ rawMetadata }) => {

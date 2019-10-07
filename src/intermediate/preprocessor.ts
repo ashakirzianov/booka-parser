@@ -1,14 +1,19 @@
-import { StreamParser, reject, choice, headParser, yieldLast, translate, some, makeStream } from '../combinators';
-import { IntermTop } from './intermediateNode';
+import {
+    choice, headParser, yieldLast, translate, some,
+    makeStream,
+} from '../combinators';
 import { EpubBook } from '../epub';
 import { flatten } from 'booka-common';
+import { PreResolver, IntermPreprocessor } from './common';
+import { gutenberg } from './pre.gutenberg';
+import { fb2epub } from './pre.fb2epub';
+import { fictionBookEditor } from './pre.fictionBookEditor';
 
-type Env = { filePath: string };
-export type IntermPreprocessor = StreamParser<IntermTop, IntermTop[], Env>;
-export type PreResolver = (epub: EpubBook) => IntermPreprocessor | undefined;
-
-export function buildPreprocessor(epub: EpubBook, resolvers: PreResolver[]) {
-    const hook = resolvePreprocessorHook(epub, resolvers);
+const allResolvers = [
+    gutenberg, fb2epub, fictionBookEditor,
+];
+export function buildPreprocessor(epub: EpubBook) {
+    const hook = resolvePreprocessorHook(epub, allResolvers);
     const single = choice(hook, headParser(interm => yieldLast([interm])));
     const preprocessor = translate(
         some(single),

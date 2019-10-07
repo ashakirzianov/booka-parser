@@ -1,13 +1,13 @@
-import { PreResolver } from './preprocessor';
+import { PreResolver } from './common';
 import { reject } from '../combinators';
 
-const fictionBookEditorP = () => reject();
-export const fictionBookEditorRes: PreResolver = epub => {
+const fictionBookEditorPrep = () => reject();
+export const fictionBookEditor: PreResolver = epub => {
     const marker = epub.metadata['FB2.document-info.program-used'];
     const isMarked = marker !== undefined
         && typeof marker === 'string'
         && marker.startsWith('FictionBook Editor');
     return isMarked
-        ? fictionBookEditorP
+        ? fictionBookEditorPrep
         : undefined;
 };
