@@ -1,7 +1,6 @@
-type Interm<K extends string, C extends IntermAllKey> = {
+type Interm<K extends string> = {
     interm: K,
     attrs: Attributes,
-    content: Array<IntermForKey<C>>,
 };
 
 export type Attributes = {
@@ -18,33 +17,44 @@ export const interSpanNames = [
     'img', 'span', 'quote', 'ins', 'text',
 ] as const;
 export type IntermSpanName = typeof interSpanNames[number];
-export type IntermNamedSpan = Interm<IntermSpanName, IntermSpanKey>;
-export type IntermSpanKey = IntermSpanName | 'text';
+export type IntermNamedSpan = Interm<IntermSpanName> & {
+    content: IntermSpan[],
+};
 export type IntermSpan = IntermTextSpan | IntermNamedSpan;
 
-export type IntermPph = Interm<'pph', IntermSpanKey>;
+export type IntermPph = Interm<'pph'> & {
+    content: IntermSpan[],
+};
 
-export type IntermHeader = Interm<'header', IntermSpanKey> & {
+export type IntermHeader = Interm<'header'> & {
     level: number,
+    content: IntermSpan,
 };
 
-export type IntermListItem = Interm<'item', IntermSpanKey>;
-export type IntermList = Interm<'list', 'item'> & {
+export type IntermListItem = Interm<'item'> & {
+    content: IntermSpan[],
+};
+export type IntermList = Interm<'list'> & {
     kind: 'ordered' | 'unordered',
+    content: IntermListItem[],
 };
 
-export type IntermTableCell = Interm<'cell', IntermSpanKey>;
-export type IntermTableRow = Interm<'row', 'cell'>;
-export type IntermTable = Interm<'table', 'row'>;
-export type IntermContainer = Interm<'container', IntermTopSimple['interm'] | 'container'>;
+export type IntermTableCell = Interm<'cell'> & {
+    content: IntermSpan[],
+};
+export type IntermTableRow = Interm<'row'> & {
+    content: IntermTableCell[],
+};
+export type IntermTable = Interm<'table'> & {
+    content: IntermTableRow[],
+};
+export type IntermContainer = Interm<'container'> & {
+    content: IntermTop[],
+};
 
-type IntermTopSimple =
-    | IntermPph | IntermTable | IntermList | IntermHeader;
-export type IntermTop = IntermTopSimple | IntermContainer;
-type IntermSub =
+export type IntermTop =
+    | IntermPph | IntermTable | IntermList | IntermHeader
+    | IntermContainer;
+export type IntermSub =
     | IntermTableRow | IntermTableCell | IntermListItem | IntermSpan;
-
-type IntermAll = IntermTop | IntermSub;
-type IntermAllKey = IntermAll['interm'];
-type IntermForKey<K extends IntermAllKey> =
-    Extract<IntermAll, { interm: K }>;
+export type IntermNode = IntermTop | IntermSub;
