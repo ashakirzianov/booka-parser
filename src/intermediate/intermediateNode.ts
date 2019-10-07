@@ -1,17 +1,19 @@
-type Attributes = {
+export type IntermAttrs = {
     [k: string]: string | undefined,
 };
 type Interm<K extends string> = {
     interm: K,
-    attrs: Attributes,
+    attrs: IntermAttrs,
 };
 
-export type IntermIgnore = Interm<'ignore'>;
-export type IntermImage = Interm<'image'>;
+type NoContent = { content?: undefined };
+export type IntermIgnore = Interm<'ignore'> & NoContent;
+export type IntermImage = Interm<'image'> & NoContent;
+export type IntermSeparator = Interm<'separator'> & NoContent;
 
 export type IntermTextSpan = {
     interm: 'text',
-    attrs: Attributes,
+    attrs: IntermAttrs,
     content: string,
 };
 export const interSpanNames = [
@@ -51,8 +53,6 @@ export type IntermTable = Interm<'table'> & {
     content: IntermTableRow[],
 };
 
-export type IntermSeparator = Interm<'separator'>;
-
 export type IntermContainer = Interm<'container'> & {
     content: IntermTop[],
 };
@@ -65,3 +65,8 @@ export type IntermTop =
 export type IntermSub =
     | IntermTableRow | IntermTableCell | IntermListItem | IntermSpan;
 export type IntermNode = IntermTop | IntermSub;
+export type IntermNodeKey = IntermNode['interm'];
+export type IntermForKey<K extends IntermNodeKey> = Extract<IntermNode, { interm: K }>;
+export type IntermContentForKey<K extends IntermNodeKey> =
+    IntermForKey<K>['content'];
+export type IntermContent = IntermNode['content'] | IntermNode;
