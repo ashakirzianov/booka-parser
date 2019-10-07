@@ -1,11 +1,13 @@
+type Attributes = {
+    [k: string]: string | undefined,
+};
 type Interm<K extends string> = {
     interm: K,
     attrs: Attributes,
 };
 
-export type Attributes = {
-    [k: string]: string | undefined,
-};
+export type IntermIgnore = Interm<'ignore'>;
+export type IntermImage = Interm<'image'>;
 
 export type IntermTextSpan = {
     interm: 'text',
@@ -20,7 +22,7 @@ export type IntermSpanName = typeof interSpanNames[number];
 export type IntermNamedSpan = Interm<IntermSpanName> & {
     content: IntermSpan[],
 };
-export type IntermSpan = IntermTextSpan | IntermNamedSpan;
+export type IntermSpan = IntermTextSpan | IntermNamedSpan | IntermImage;
 
 export type IntermPph = Interm<'pph'> & {
     content: IntermSpan[],
@@ -28,7 +30,7 @@ export type IntermPph = Interm<'pph'> & {
 
 export type IntermHeader = Interm<'header'> & {
     level: number,
-    content: IntermSpan,
+    content: IntermSpan[],
 };
 
 export type IntermListItem = Interm<'item'> & {
@@ -48,12 +50,17 @@ export type IntermTableRow = Interm<'row'> & {
 export type IntermTable = Interm<'table'> & {
     content: IntermTableRow[],
 };
+
+export type IntermSeparator = Interm<'separator'>;
+
 export type IntermContainer = Interm<'container'> & {
     content: IntermTop[],
 };
 
 export type IntermTop =
-    | IntermPph | IntermTable | IntermList | IntermHeader
+    | IntermPph | IntermHeader | IntermImage
+    | IntermTable | IntermList
+    | IntermSeparator | IntermIgnore
     | IntermContainer;
 export type IntermSub =
     | IntermTableRow | IntermTableCell | IntermListItem | IntermSpan;

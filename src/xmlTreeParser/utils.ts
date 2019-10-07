@@ -19,19 +19,6 @@ export type Tree2ElementsParser = EpubTreeParser<BookElement[]>;
 export type Tree2SpanParser = EpubTreeParser<Span>;
 export type Tree2NodeParser = EpubTreeParser<BookContentNode>;
 
-export function buildDocumentParser(nodeParser: Tree2ElementsParser): Tree2ElementsParser {
-    const insideParser = flattenResult(
-        reportUnparsedTail(some(nodeParser), tail => ({
-            diag: 'unexpected-xml',
-            xml: tail.stream.map(tree2String),
-        })),
-    );
-    const bodyParser = xmlChildren(insideParser);
-    const documentParser = path(['html', 'body'], bodyParser);
-
-    return documentParser;
-}
-
 export function ignoreClass(className: string): Tree2ElementsParser {
     return headParser(el =>
         el.type === 'element' && el.attributes.class === className

@@ -3,11 +3,11 @@ import { isWhitespaces } from '../utils';
 import {
     Result, yieldNext, reject, seq, some, translate,
     StreamParser, headParser, makeStream, nextStream, not, Stream,
-    yieldLast, maybe, ParserDiagnostic, compoundDiagnostic, expected, endOfInput, projectFirst,
+    yieldLast, maybe, ParserDiagnostic, compoundDiagnostic,
 } from '../combinators';
 import { Constraint, ConstraintMap, checkObject, checkValue, checkObjectFull, constraintToString } from './constraint';
-import { stream2string } from './utils';
 
+export type TreeStream<Env = undefined> = Stream<XmlTree, Env>;
 export type TreeParser<Out = XmlTree, Env = undefined> = StreamParser<XmlTree, Out, Env>;
 
 export type XmlElementConstraint = {

@@ -5,7 +5,7 @@ import {
 import { EpubBookParserHooks, MetadataRecordParser } from './epubBookParser';
 import {
     textNode, ignoreClass, buildRef, Tree2ElementsParser,
-    whitespaced, paragraphNode, span, elemChProj, elemCh, elemProj, xmlChildren, whitespaces,
+    whitespaced, span, elemChProj, elemCh, elemProj, xmlChildren, whitespaces,
 } from '../xmlTreeParser';
 import {
     some, translate, seq, and, headParser, reject, yieldLast, choice, envParser,
@@ -23,8 +23,8 @@ export const fb2epubHooks: EpubBookParserHooks = {
         divTitle(),
         footnoteSection(),
         titlePage(),
-        poem(),
-        epigraph(),
+        // poem(),
+        // epigraph(),
         subtitle(),
     ],
     metadataHooks: [metaHook()],
@@ -57,64 +57,64 @@ function subtitle(): Tree2ElementsParser {
     });
 }
 
-function epigraph(): Tree2ElementsParser {
-    const signature = whitespaced(elemCh({
-        name: 'p',
-        children: span,
-    }));
-    const signatureDiv = elemCh({
-        name: 'div',
-        classes: 'epigraph_author',
-        children: signature,
-    });
-    const content = seq(
-        whitespaced(paragraphNode),
-        whitespaced(signatureDiv),
-    );
+// function epigraph(): Tree2ElementsParser {
+//     const signature = whitespaced(elemCh({
+//         name: 'p',
+//         children: span,
+//     }));
+//     const signatureDiv = elemCh({
+//         name: 'div',
+//         classes: 'epigraph_author',
+//         children: signature,
+//     });
+//     const content = seq(
+//         whitespaced(paragraphNode),
+//         whitespaced(signatureDiv),
+//     );
 
-    return elemChProj({
-        name: 'div',
-        classes: 'epigraph',
-        children: content,
-        project: ([pph, sig]) => [{
-            element: 'content',
-            content: {
-                node: 'group',
-                nodes: [pph],
-                semantic: {
-                    epigraph: {
-                        signature: [extractSpanText(sig)],
-                    },
-                },
-            },
-        }],
-    });
-}
+//     return elemChProj({
+//         name: 'div',
+//         classes: 'epigraph',
+//         children: content,
+//         project: ([pph, sig]) => [{
+//             element: 'content',
+//             content: {
+//                 node: 'group',
+//                 nodes: [pph],
+//                 semantic: {
+//                     epigraph: {
+//                         signature: [extractSpanText(sig)],
+//                     },
+//                 },
+//             },
+//         }],
+//     });
+// }
 
-function poem(): Tree2ElementsParser {
-    const content = some(paragraphNode);
-    const stanza = elemCh({
-        name: 'div',
-        classes: 'stanza',
-        children: content,
-    });
-    const children = whitespaced(choice(stanza, content));
+// function poem(): Tree2ElementsParser {
+//     const content = some(paragraphNode);
+//     const stanza = elemCh({
+//         name: 'div',
+//         classes: 'stanza',
+//         children: content,
+//     });
+//     const children = whitespaced(choice(stanza, content));
 
-    return elemChProj(
-        {
-            name: 'div',
-            classes: 'poem',
-            children: children,
-            project: ch => [{
-                element: 'content',
-                content: {
-                    node: 'group',
-                    nodes: ch,
-                    semantic: { poem: {} },
-                },
-            }],
-        });
-}
+//     return elemChProj(
+//         {
+//             name: 'div',
+//             classes: 'poem',
+//             children: children,
+//             project: ch => [{
+//                 element: 'content',
+//                 content: {
+//                     node: 'group',
+//                     nodes: ch,
+//                     semantic: { poem: {} },
+//                 },
+//             }],
+//         });
+// }
 
 function footnoteSection(): Tree2ElementsParser {
     return envParser(env => {

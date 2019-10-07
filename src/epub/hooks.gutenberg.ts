@@ -4,7 +4,7 @@ import {
 import { EpubBookParserHooks, MetadataRecordParser } from './epubBookParser';
 import {
     textNode,
-    whitespaces, buildRef, Tree2ElementsParser, ignoreClass, elemProj, elem, elemChProj, elemCh, paragraphNode,
+    whitespaces, buildRef, Tree2ElementsParser, ignoreClass, elemProj, elem, elemChProj, elemCh,
 } from '../xmlTreeParser';
 import {
     translate, seq, maybe, envParser, headParser, reject, yieldLast, some,
@@ -16,9 +16,9 @@ export const gutenbergHooks: EpubBookParserHooks = {
         // skipTocP(),
         // skipTocTable(),
         // ignoreClass('chapterhead'),
+        // poem(),
         referenceBookMarker(),
         oldFashionTitle(),
-        poem(),
     ],
     metadataHooks: [metaHook()],
 };
@@ -178,20 +178,20 @@ function footnote(): Tree2ElementsParser {
     });
 }
 
-function poem(): Tree2ElementsParser {
-    return elemChProj({
-        name: 'p',
-        classes: 'verse',
-        children: paragraphNode,
-        project: p => {
-            return [{
-                element: 'content',
-                content: {
-                    node: 'pph',
-                    span: p,
-                    semantic: { poem: {} },
-                },
-            }];
-        },
-    });
-}
+// function poem(): Tree2ElementsParser {
+//     return elemChProj({
+//         name: 'p',
+//         classes: 'verse',
+//         children: paragraphNode,
+//         project: p => {
+//             return [{
+//                 element: 'content',
+//                 content: {
+//                     node: 'pph',
+//                     span: p,
+//                     semantic: { poem: {} },
+//                 },
+//             }];
+//         },
+//     });
+// }

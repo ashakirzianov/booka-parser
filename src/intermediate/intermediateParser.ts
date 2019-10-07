@@ -7,8 +7,12 @@ import {
     IntermTop, IntermSpan, IntermPph, IntermHeader, IntermContainer,
 } from './intermediateNode';
 
-export function parseIntermediateNodes(inters: IntermTop[], filePath: string): SuccessLast<BookContentNode[]> {
-    const nodes = fromInters(inters, {
+type Interm2BookArgs = {
+    interms: IntermTop[],
+    filePath: string,
+};
+export function interms2nodes({ interms, filePath }: Interm2BookArgs): SuccessLast<BookContentNode[]> {
+    const nodes = fromInterms(interms, {
         filePath,
     });
     return yieldLast(nodes);
@@ -17,7 +21,7 @@ export function parseIntermediateNodes(inters: IntermTop[], filePath: string): S
 type Env = {
     filePath: string,
 };
-function fromInter(inter: IntermTop, env: Env): BookContentNode {
+function fromInterm(inter: IntermTop, env: Env): BookContentNode {
     switch (inter.interm) {
         case 'pph':
             return fromPph(inter, env);
@@ -27,6 +31,9 @@ function fromInter(inter: IntermTop, env: Env): BookContentNode {
             return fromContainer(inter, env);
         case 'table':
         case 'list':
+        case 'image':
+        case 'separator':
+        case 'ignore':
             // TODO: implement
             return '';
         default:
@@ -35,9 +42,9 @@ function fromInter(inter: IntermTop, env: Env): BookContentNode {
     }
 }
 
-function fromInters(inters: IntermTop[], env: Env): BookContentNode[] {
+function fromInterms(inters: IntermTop[], env: Env): BookContentNode[] {
     return inters.map(i => {
-        let result = fromInter(i, env);
+        let result = fromInterm(i, env);
         if (i.attrs.id !== undefined) {
             if (result.node === undefined) {
                 result = {
@@ -92,6 +99,9 @@ function fromSpan(s: IntermSpan, env: Env): Span {
             return s.attrs.href
                 ? { ref: fromSpans(s.content, env), refToId: s.attrs.ref }
                 : fromSpans(s.content, env);
+        case 'image':
+            // TODO: implement
+            return '';
         default:
             assertNever(s);
             return '';
@@ -117,7 +127,7 @@ function fromHeader(h: IntermHeader, env: Env): TitleNode {
 }
 
 function fromContainer(c: IntermContainer, env: Env): GroupNode {
-    const nodes = fromInters(c.content, env);
+    const nodes = fromInterms(c.content, env);
     return {
         node: 'group',
         nodes,

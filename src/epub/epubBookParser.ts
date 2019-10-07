@@ -1,13 +1,11 @@
-import { Book, KnownTag, processNodeImagesAsync } from 'booka-common';
-import { equalsToOneOf } from '../utils';
+import { Book, KnownTag, processNodeImagesAsync, BookContentNode, VolumeMeta } from 'booka-common';
 import {
-    makeStream, yieldLast, andAsync, AsyncFullParser, pipeAsync, ParserDiagnostic, compoundDiagnostic, StreamParser,
+    yieldLast, andAsync, AsyncFullParser, pipeAsync, ParserDiagnostic, compoundDiagnostic, StreamParser,
 } from '../combinators';
-import { elements2book, BookElement } from '../bookElementParser';
 import { EpubBook } from './epubBook';
-import { sectionsParser } from './sectionParser';
 import { metadataParser } from './metaParser';
 import { Tree2ElementsParser } from '../xmlTreeParser';
+import { epub2nodes } from './sectionParser';
 
 export type MetadataRecordParser = StreamParser<[string, any], KnownTag[]>;
 export type EpubBookParserHooks = {
@@ -22,21 +20,12 @@ const diagnoseKind: AsyncFullParser<EpubBook, EpubBook> = async epub =>
 
 export const epubBookParser: AsyncFullParser<EpubBook, Book> = pipeAsync(
     // Diagnose book kind, parse metadata and sections
-    andAsync(diagnoseKind, metadataParser, sectionsParser),
+    andAsync(diagnoseKind, metadataParser, epub2nodes),
     // Parse book elements
-    async ([epub, tags, elements]) => {
-        const metaNodes = buildMetaElementsFromTags(tags);
-        const allNodes = elements.concat(metaNodes);
+    async ([epub, tags, nodes]) => {
+        const book: Book = buildBook(nodes, tags);
 
-        const bookResult = await elements2book(makeStream(allNodes));
-
-        if (!bookResult.success) {
-            return bookResult;
-        }
-
-        const book: Book = bookResult.value;
-
-        return yieldLast({ book, epub }, bookResult.diagnostic);
+        return yieldLast({ book, epub });
     },
     // Resolve image references
     async ({ book, epub }) => {
@@ -66,11 +55,38 @@ export const epubBookParser: AsyncFullParser<EpubBook, Book> = pipeAsync(
     }
 );
 
-function buildMetaElementsFromTags(tags: KnownTag[]): BookElement[] {
-    const filtered = tags.filter(t => equalsToOneOf(t.tag, ['author', 'title', 'cover-ref']));
-    const elements = filtered.map(t => ({
-        element: 'tag',
-        tag: t,
-    } as const));
-    return elements;
+function buildBook(nodes: BookContentNode[], tags: KnownTag[]): Book {
+    const meta = buildMeta(tags);
+    return {
+        volume: {
+            node: 'volume',
+            nodes,
+            meta,
+        },
+        tags,
+    };
+}
+
+function buildMeta(tags: KnownTag[]) {
+    const meta: VolumeMeta = {};
+    for (const tag of tags) {
+        switch (tag.tag) {
+            case 'title':
+                meta.title = tag.value;
+                continue;
+            case 'author':
+                meta.author = tag.value;
+                continue;
+            case 'cover-ref':
+                meta.coverImage = {
+                    kind: 'ref',
+                    title: 'cover',
+                    ref: tag.value,
+                    imageId: tag.value,
+                };
+                continue;
+        }
+    }
+
+    return meta;
 }

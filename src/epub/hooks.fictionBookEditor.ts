@@ -5,7 +5,7 @@ import {
 import { XmlTreeWithChildren } from '../xmlStringParser';
 import { EpubBookParserHooks, MetadataRecordParser } from './epubBookParser';
 import {
-    Tree2ElementsParser, span, paragraphNode, elemChProj, spanContent,
+    Tree2ElementsParser, span, elemChProj, spans,
 } from '../xmlTreeParser';
 import { BookElement } from '../bookElementParser';
 
@@ -13,8 +13,8 @@ export const fictionBookEditorHooks: EpubBookParserHooks = {
     nodeHooks: [
         subtitle(),
         titleElement(),
-        cite(),
-        epigraph(),
+        // cite(),
+        // epigraph(),
     ],
     metadataHooks: [metaHook()],
 };
@@ -59,82 +59,82 @@ function metaHook(): MetadataRecordParser {
     });
 }
 
-function epigraph(): Tree2ElementsParser {
-    const content = some(paragraphNode);
+// function epigraph(): Tree2ElementsParser {
+//     const content = null as any; // some(paragraphNode);
 
-    return elemChProj({
-        name: 'div',
-        classes: 'epigraph',
-        children: content,
-        project: children => [{
-            element: 'content',
-            content: {
-                node: 'group',
-                nodes: children,
-                semantic: {
-                    epigraph: {
-                        signature: [],
-                    },
-                },
-            },
-        }],
-    });
-}
+//     return elemChProj({
+//         name: 'div',
+//         classes: 'epigraph',
+//         children: content,
+//         project: children => [{
+//             element: 'content',
+//             content: {
+//                 node: 'group',
+//                 nodes: children,
+//                 semantic: {
+//                     epigraph: {
+//                         signature: [],
+//                     },
+//                 },
+//             },
+//         }],
+//     });
+// }
 
-function cite(): Tree2ElementsParser {
-    const textAuthor = elemChProj({
-        name: ['div', 'p'],
-        classes: 'text-author',
-        children: spanContent,
-        project: children => ({
-            kind: 'signature' as const,
-            line: extractSpanText(children),
-        }),
-    });
-    const p = translate(
-        paragraphNode,
-        pn => ({
-            kind: 'pph' as const,
-            paragraph: pn,
-        }),
-    );
-    const content = some(choice(textAuthor, p));
+// function cite(): Tree2ElementsParser {
+//     const textAuthor = elemChProj({
+//         name: ['div', 'p'],
+//         classes: 'text-author',
+//         children: spans,
+//         project: children => ({
+//             kind: 'signature' as const,
+//             line: extractSpanText(children),
+//         }),
+//     });
+//     const p = translate(
+//         paragraphNode,
+//         pn => ({
+//             kind: 'pph' as const,
+//             paragraph: pn,
+//         }),
+//     );
+//     const content = some(choice(textAuthor, p));
 
-    return elemChProj({
-        name: 'div',
-        classes: 'cite',
-        children: content,
-        project: children => {
-            const pphs = children.reduce(
-                (ps, c) =>
-                    c.kind === 'pph' ? ps.concat(c.paragraph) : ps,
-                [] as ParagraphNode[],
-            );
-            const signature = children.reduce(
-                (ss, c) =>
-                    c.kind === 'signature'
-                        ? ss.concat(c.line)
-                        : ss,
-                [] as string[],
-            );
+//     return elemChProj({
+//         name: 'div',
+//         classes: 'cite',
+//         children: content,
+//         project: children => {
+//             const pphs = children.reduce(
+//                 (ps, c) =>
+//                     c.kind === 'pph' ? ps.concat(c.paragraph) : ps,
+//                 [] as ParagraphNode[],
+//             );
+//             const signature = children.reduce(
+//                 (ss, c) =>
+//                     c.kind === 'signature'
+//                         ? ss.concat(c.line)
+//                         : ss,
+//                 [] as string[],
+//             );
 
-            const result: BookElement = {
-                element: 'content',
-                content: {
-                    node: 'group',
-                    nodes: pphs,
-                    semantic: {
-                        quote: {
-                            signature: signature,
-                        },
-                    },
-                },
-            };
+//             const result: BookElement = {
+//                 element: 'content',
+//                 content: {
+//                     node: 'group',
+//                     nodes: pphs,
+//                     semantic: {
+//                         quote: {
+//                             signature: signature,
+//                         },
+//                     },
+//                 },
+//             };
 
-            return [result];
-        },
-    });
-}
+//             return [result];
+//         },
+//     });
+// }
 
 function subtitle(): Tree2ElementsParser {
     return elemChProj({

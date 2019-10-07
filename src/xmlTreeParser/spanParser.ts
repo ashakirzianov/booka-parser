@@ -1,18 +1,16 @@
-import { Span, compoundSpan, AttributeName } from 'booka-common';
 import {
-    declare, translate, seq, some, choice,
-    headParser, yieldLast, reject, Stream, maybe,
+    declare, some, choice, headParser, yieldLast, reject,
 } from '../combinators';
-import { elemChProj, textNode, TreeParser, elem, elemProj } from './treeParser';
-import { XmlTree } from '../xmlStringParser';
-import { TreeParserEnv, Tree2SpanParser } from './utils';
+import { elemChProj, TreeParser, elemProj, TreeStream } from './treeParser';
+import { IntermSpan, IntermSpanName } from '../intermediate';
 
+//  TODO: move
 export const standardClasses = [
     undefined,
     'p', 'p1', 'v', 'empty-line',
     'dropcap', 'drop',
     'section1', 'section2', 'section3', 'section4', 'section5', 'section6',
-    // Project Gutenberg:
+    //  Project Gutenberg:
     'i2', 'i4', 'i6', 'i8', 'i10', 'i16', 'i20', 'i21',
     'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'c9', 'c10', 'c11',
     'z1',
@@ -21,150 +19,87 @@ export const standardClasses = [
     'right', 'chaptername', 'illus', 'floatright',
 ];
 
-export const span = declare<Stream<XmlTree, TreeParserEnv>, Span>('span');
+type SpanParser = TreeParser<IntermSpan>;
+export const span = declare<TreeStream, IntermSpan>('span');
 
-export const spanContent = some(span);
+export const spans = some(span);
 
-const text: Tree2SpanParser = headParser(node => {
+const text: SpanParser = headParser(node => {
     return node.type === 'text'
-        ? yieldLast(node.text)
+        ? yieldLast({
+            interm: 'text',
+            attrs: {},
+            content: node.text,
+        })
         : reject();
 });
 
-const italic = attrsSpanParser(['em', 'i'], 'italic', spanContent);
-const bold = attrsSpanParser(['strong', 'b'], 'bold', spanContent);
-const small = attrsSpanParser(['small'], 'small', spanContent);
-const big = attrsSpanParser(['big'], 'big', spanContent);
-const sup = attrsSpanParser(['sup'], 'sup', spanContent);
-const sub = attrsSpanParser(['sub'], 'sub', spanContent);
-const attr = choice(italic, bold, small, big, sup, sub);
+const italic = simple('italic', ['em', 'i']);
+const bold = simple('bold', ['strong', 'b']);
+const quote = simple('quote', ['q', 'quote']);
+const small = simple('small');
+const big = simple('big');
+const sup = simple('sup');
+const sub = simple('sub');
+const ins = simple('ins');
 
-const imgSpan = elemProj({
+const img: SpanParser = elemProj({
     name: 'img',
-    expectedClasses: standardClasses,
     expectedAttrs: {
         src: src => src !== undefined,
-        alt: null, title: null,
-        tag: null, width: null,
     },
     keepWhitespaces: 'both',
-    project: (xml): Span => {
-        if (xml.attributes.src) {
-            return {
-                image: {
-                    kind: 'ref',
-                    ref: xml.attributes.src!,
-                    imageId: xml.attributes.src!,
-                    title: xml.attributes.title || xml.attributes.alt,
-                },
-            };
-        } else {
-            return '';
-        }
-    },
-});
-
-const brTag = elem({
-    name: 'br',
-    keepWhitespaces: 'both',
-    expectedClasses: undefined,
-});
-const brSpan = translate(
-    seq(brTag, maybe(textNode())),
-    ([_, nextText]) => nextText === undefined
-        ? '\n'
-        : '\n' + nextText.trimLeft(),
-);
-
-const quoteSpan = elemChProj({
-    name: ['q', 'quote'],
-    keepWhitespaces: 'both',
-    children: spanContent,
-    project: (content, xml): Span => ({
-        span: compoundSpan(content),
-        semantic: {
-            quote: {},
-        },
+    project: el => ({
+        interm: 'img',
+        attrs: el.attributes,
+        content: [] as IntermSpan[],
     }),
 });
-const correctionSpan = elemChProj({
-    name: 'ins',
-    keepWhitespaces: 'both',
-    expectedClasses: undefined,
-    expectedAttrs: { title: null },
-    children: spanContent,
-    project: (content, xml): Span => ({
-        span: compoundSpan(content),
-        semantic: {
-            correction: {
-                note: xml.attributes.title,
-            },
-        },
-    }),
-});
-
-const spanSpan: Tree2SpanParser = elemChProj({
-    name: 'span',
-    keepWhitespaces: 'both',
-    expectedClasses: [
-        ...standardClasses,
-        // TODO: do not ignore ?
-        'smcap', 'GutSmall', 'caps',
-    ],
-    expectedAttrs: {
-        id: null,
-        href: null, title: null, tag: null,
-    },
-    children: spanContent,
-    onChildrenTail: 'break',
-    project: children => compoundSpan(children),
-});
-const aSpan: Tree2SpanParser = elemChProj({
+const a: SpanParser = elemChProj({
     name: 'a',
     keepWhitespaces: 'both',
-    expectedClasses: [
-        ...standardClasses, 'a',
-        // TODO: do not ignore ?
-        'pginternal', 'x-ebookmaker-pageno', 'footnote',
-        'citation',
-    ],
-    expectedAttrs: {
-        id: null,
-        href: null, title: null, tag: null,
-    },
-    children: spanContent,
+    children: spans,
+    project: (children, el) => ({
+        interm: 'a',
+        attrs: el.attributes,
+        content: children,
+    }),
+});
+const spanSpan: SpanParser = elemChProj({
+    name: 'span',
+    keepWhitespaces: 'both',
+    children: spans,
     onChildrenTail: 'break',
-    project: (children, element): Span => {
-        const content = compoundSpan(children);
-        if (element.attributes.href !== undefined) {
-            return {
-                ref: content,
-                refToId: element.attributes.href,
-            };
-        } else {
-            return content;
-        }
-    },
+    project: (children, el) => ({
+        interm: 'span',
+        attrs: el.attributes,
+        content: children,
+    }),
+});
+const br: SpanParser = elemProj({
+    name: 'br',
+    keepWhitespaces: 'leading',
+    project: (el): IntermSpan => ({
+        interm: 'text',
+        attrs: el.attributes,
+        content: '\n',
+    }),
 });
 
 span.implementation = choice(
-    text, attr, brSpan, imgSpan, quoteSpan,
-    correctionSpan, aSpan, spanSpan,
+    text, italic, bold, small, big, sub, sup,
+    a, img, spanSpan, ins, quote, br,
 );
 
-function attrsSpanParser(tagNames: string[], attrName: AttributeName, contentParser: TreeParser<Span[], TreeParserEnv>): Tree2SpanParser {
+function simple(name: IntermSpanName, tags?: string[]): SpanParser {
     return elemChProj({
-        name: tagNames,
-        expectedClasses: [
-            ...standardClasses,
-            // TODO: do not ignore?
-            'smcap', 'GutSmall',
-        ],
-        expectedAttrs: { id: null },
+        name: tags || name,
         keepWhitespaces: 'both',
-        children: contentParser,
-        project: (children): Span => ({
-            [attrName]: compoundSpan(children),
+        children: spans,
+        project: (children, el): IntermSpan => ({
+            interm: name,
+            attrs: el.attributes,
+            content: children,
         }),
     });
 }
