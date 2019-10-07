@@ -98,12 +98,16 @@ function expectations(): ExpectedAttrsMap {
             class: [
                 ...classes,
                 'pgmonospaced', 'pgheader',
+                'gapshortline', // TODO: handle as separator ?
+                // Ignore:
+                'gapspace',
             ],
             'xml:space': 'preserve',
         },
         container: {
             class: [
                 ...classes,
+                // Handling:
                 'mynote', 'extracts',
             ],
         },
