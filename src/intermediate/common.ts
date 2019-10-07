@@ -37,7 +37,7 @@ export function assignSemantic(fn: (node: IntermNode) => Semantic | undefined): 
     return node => {
         const semantic = fn(node);
         return semantic !== undefined
-            ? assignNodeSemantic(node, semantic)
+            ? { node: assignNodeSemantic(node, semantic) }
             : {};
     };
 }
@@ -129,7 +129,7 @@ export function visitNodes<T>(root: IntermNode, visitor: (n: IntermNode) => T): 
     return results;
 }
 
-function assignNodeSemantic(node: IntermNode, semantic: Semantic): IntermNode {
+function assignNodeSemantic<N extends IntermNode>(node: N, semantic: Semantic): N {
     return {
         ...node,
         semantics: node.semantics

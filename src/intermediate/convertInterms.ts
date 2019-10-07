@@ -1,6 +1,6 @@
 import {
     BookContentNode, ParagraphNode, Span, TitleNode, GroupNode,
-    makePph, compoundSpan, extractSpanText, assertNever,
+    makePph, compoundSpan, extractSpanText, assertNever, assignId, appendSemantics,
 } from 'booka-common';
 import { SuccessLast, yieldLast } from '../combinators';
 import {
@@ -44,18 +44,16 @@ function fromInterm(inter: IntermTop, env: Env): BookContentNode {
 
 function fromInterms(inters: IntermTop[], env: Env): BookContentNode[] {
     return inters.map(i => {
-        let result = fromInterm(i, env);
-        if (i.attrs.id !== undefined) {
-            if (result.node === undefined) {
-                result = {
-                    node: 'pph',
-                    span: result,
-                    refId: i.attrs.id,
-                };
-            } else {
-                result.refId = i.attrs.id;
-            }
+        if (i.semantics !== undefined) {
+            console.log(i.semantics);
         }
+        let result = fromInterm(i, env);
+        result = i.attrs.id !== undefined
+            ? assignId(result, i.attrs.id)
+            : result;
+        result = i.semantics !== undefined
+            ? appendSemantics(result, i.semantics)
+            : result;
         return result;
     });
 }
