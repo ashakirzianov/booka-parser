@@ -1,21 +1,18 @@
 import { XmlTree, hasChildren, XmlAttributes, XmlTreeElement, tree2String } from '../xmlStringParser';
-import { isWhitespaces } from '../utils';
+import { isWhitespaces, ValueMatcher, ObjectMatcher, matchValue, matchObject, failedKeys } from '../utils';
 import {
     Result, yieldNext, reject, seq, some, translate,
     StreamParser, headParser, makeStream, nextStream, not, Stream,
     yieldLast, maybe, ParserDiagnostic, compoundDiagnostic,
 } from '../combinators';
-import { Constraint, ConstraintMap, checkObject, checkValue, checkObjectFull, constraintToString } from './constraint';
 
 export type TreeStream<Env = undefined> = Stream<XmlTree, Env>;
 export type TreeParser<Out = XmlTree, Env = undefined> = StreamParser<XmlTree, Out, Env>;
 
 export type XmlElementConstraint = {
-    name?: Constraint<string>,
-    attrs?: ConstraintMap<XmlAttributes>,
-    expectedAttrs?: ConstraintMap<XmlAttributes>,
-    classes?: Constraint<string>,
-    expectedClasses?: Constraint<string>,
+    name?: ValueMatcher<string>,
+    attrs?: ObjectMatcher<XmlAttributes>,
+    expectedAttrs?: ObjectMatcher<XmlAttributes>,
     context?: any,
     keepWhitespaces?: 'trailing' | 'leading' | 'both' | 'none',
     onChildrenTail?: 'ignore' | 'warn' | 'break', // Default is 'warn'
@@ -68,15 +65,14 @@ function elementParserImpl<TC, T = TC>(
             return reject();
         }
 
-        if (!checkValue(head.name, ec.name)) {
+        if (!matchValue(head.name, ec.name)) {
             return reject();
         }
-        const cls = head.attributes.class;
-        if (ec.classes && checkClass(cls, ec.classes)) {
-            return reject();
-        }
-        if (ec.attrs && checkObject(head.attributes, ec.attrs).length > 0) {
-            return reject();
+        if (ec.attrs) {
+            const attrsMatch = matchObject(head.attributes, ec.attrs);
+            if (failedKeys(attrsMatch).length > 0) {
+                return reject();
+            }
         }
         const childrenResult = ec.children && ec.children(makeStream(head.children, input.env));
         if (childrenResult && childrenResult.success === false) {
@@ -90,16 +86,8 @@ function elementParserImpl<TC, T = TC>(
         }
 
         const diags: ParserDiagnostic[] = [];
-        if (ec.expectedClasses) {
-            const classCheck = checkClass(cls, ec.expectedClasses);
-            if (classCheck) {
-                diags.push(classCheck);
-            }
-        }
         if (ec.expectedAttrs) {
-            const attrsCheck = checkObject(head.attributes, {
-                ...ec.expectedAttrs, class: null,
-            });
+            const attrsCheck = failedKeys(matchObject(head.attributes, ec.expectedAttrs));
             if (attrsCheck.length > 0) {
                 diags.push({
                     diag: 'unexpected-attrs',
@@ -146,27 +134,6 @@ function elementParserImpl<TC, T = TC>(
 
         return yieldNext(result, makeStream(stream, input.env), diag);
     };
-}
-
-function checkClass(classToCheck: string | undefined, ctr: Constraint<string>): ParserDiagnostic {
-    const classes = classToCheck
-        ? classToCheck.split(' ')
-        : [undefined];
-    const fails: any[] = [];
-    for (const cls of classes) {
-        const check = checkValue(cls, ctr);
-        if (!check) {
-            fails.push(cls);
-        }
-    }
-
-    return fails.length === 0
-        ? undefined
-        : {
-            diag: 'unexpected-class',
-            expected: constraintToString(ctr),
-            classes: fails,
-        };
 }
 
 export function xmlChildren<T, E>(parser: TreeParser<T, E>): TreeParser<T, E> {

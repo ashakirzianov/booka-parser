@@ -29,3 +29,24 @@ function resolvePreprocessorHook(epub: EpubBook, resolvers: PreResolver[]): Inte
         diag: 'unexpected-epub',
     });
 }
+
+// function checkClass(classToCheck: string | undefined, ctr: Constraint<string>): ParserDiagnostic {
+//     const classes = classToCheck
+//         ? classToCheck.split(' ')
+//         : [undefined];
+//     const fails: any[] = [];
+//     for (const cls of classes) {
+//         const check = checkValue(cls, ctr);
+//         if (!check) {
+//             fails.push(cls);
+//         }
+//     }
+
+//     return fails.length === 0
+//         ? undefined
+//         : {
+//             diag: 'unexpected-class',
+//             expected: constraintToString(ctr),
+//             classes: fails,
+//         };
+// }

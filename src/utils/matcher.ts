@@ -26,7 +26,7 @@ function matchValueSimple<T, C extends T>(value: T | undefined, matcher: SimpleM
     }
 }
 
-export function checkValue<T, C extends T>(value: T | undefined, constraint: ValueMatcher<T, C>): boolean {
+export function matchValue<T, C extends T>(value: T | undefined, constraint: ValueMatcher<T, C>): boolean {
     if (Array.isArray(constraint)) {
         return constraint.some(c => matchValueSimple(value, c));
     } else {
@@ -57,7 +57,7 @@ export function matchObject<T>(obj: T, constraintMap: ObjectMatcher<T>): ObjectM
     for (const [key, c] of Object.entries(constraintMap)) {
         const constraint = c as ValueMatcher<T[keyof T]>;
         const value = obj[key as keyof T];
-        const valueResult = checkValue(value, constraint);
+        const valueResult = matchValue(value, constraint);
         if (!valueResult) {
             result[key] = {
                 value, reason: 'failed',
