@@ -84,16 +84,15 @@ function fromSpan(s: IntermSpan, env: Env): Span {
         case 'quote':
             return {
                 span: fromSpans(s.content, env),
-                semantic: { quote: {} },
+                semantics: [{ semantic: 'quote' }],
             };
         case 'ins':
             return {
                 span: fromSpans(s.content, env),
-                semantic: {
-                    correction: {
-                        note: s.attrs.title,
-                    },
-                },
+                semantics: [{
+                    semantic: 'correction',
+                    note: s.attrs.title,
+                }],
             };
         case 'a':
             return s.attrs.href
