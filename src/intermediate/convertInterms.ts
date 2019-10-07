@@ -70,7 +70,7 @@ function fromSpan(s: IntermSpan, env: Env): Span {
             return { [s.interm]: fromSpans(s.content, env) };
         case 'span':
             return fromSpans(s.content, env);
-        case 'img':
+        case 'image':
             return s.attrs.src
                 ? {
                     image: {
@@ -99,9 +99,6 @@ function fromSpan(s: IntermSpan, env: Env): Span {
             return s.attrs.href
                 ? { ref: fromSpans(s.content, env), refToId: s.attrs.ref }
                 : fromSpans(s.content, env);
-        case 'image':
-            // TODO: implement
-            return '';
         default:
             assertNever(s);
             return '';

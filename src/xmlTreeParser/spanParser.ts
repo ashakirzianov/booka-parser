@@ -50,9 +50,9 @@ const img: SpanParser = elemProj({
     },
     keepWhitespaces: 'both',
     project: el => ({
-        interm: 'img',
+        interm: 'image',
         attrs: el.attributes,
-        content: [] as IntermSpan[],
+        // content: [] as IntermSpan[],
     }),
 });
 const a: SpanParser = elemChProj({
