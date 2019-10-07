@@ -6,8 +6,9 @@ import { elemCh, elemChProj, elemProj, TreeParser, TreeStream } from './treePars
 import { spans, span } from './spanParser';
 import { tree2String } from '../xmlStringParser';
 import {
-    IntermListItem, IntermTableCell, IntermTableRow, IntermTop,
+    IntermListItem, IntermTableCell, IntermTableRow, IntermTop, IntermPph,
 } from '../intermediate';
+import { flatten } from 'booka-common';
 
 export const moreClasses = [
     // TODO: do not ignore ?
@@ -26,7 +27,7 @@ export const moreClasses = [
 export const node = declare<TreeStream, IntermTop>();
 const nodes = some(node);
 
-const wrappedPph: TreeParser<IntermTop> = elemChProj({
+const wrappedPph: TreeParser<IntermPph> = elemChProj({
     context: 'wrappedSpans',
     name: ['p', 'span', 'div'],
     children: spans,
@@ -37,7 +38,7 @@ const wrappedPph: TreeParser<IntermTop> = elemChProj({
         content,
     }),
 });
-const plainPph: TreeParser<IntermTop> = translate(
+const plainPph: TreeParser<IntermPph> = translate(
     oneOrMore(span),
     content => ({
         interm: 'pph',
@@ -46,6 +47,7 @@ const plainPph: TreeParser<IntermTop> = translate(
     }),
 );
 const pph = choice(wrappedPph, plainPph);
+const pphs = some(pph);
 
 const li: TreeParser<IntermListItem> = elemChProj({
     name: 'li',
@@ -72,12 +74,12 @@ const list: TreeParser<IntermTop> = elemChProj({
 const td: TreeParser<IntermTableCell> = elemChProj({
     context: 'table cell',
     name: ['td', 'th'],
-    children: spans,
+    children: pphs,
     project: (content, { attributes }) => {
         return {
             interm: 'cell',
             attrs: attributes,
-            content,
+            content: flatten(content.map(p => p.content)),
         };
     },
 });
@@ -112,10 +114,10 @@ const tableContent = choice(tbody, some(tr));
 const table: TreeParser<IntermTop> = elemChProj({
     name: 'table',
     children: tableContent,
-    project: (content, { attributes }) => {
+    project: (content, xml) => {
         return {
             interm: 'table',
-            attrs: attributes,
+            attrs: xml.attributes,
             content,
         };
     },
