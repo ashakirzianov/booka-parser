@@ -18,7 +18,8 @@ export type IntermTextSpan = Interm<'text'> & {
     content: string,
 };
 export const interSpanNames = [
-    'italic', 'bold', 'small', 'big', 'sub', 'sup', 'a', 'span', 'quote', 'ins',
+    'italic', 'bold', 'small', 'big', 'sub', 'sup',
+    'a', 'span', 'quote', 'ins',
 ] as const;
 export type IntermSpanName = typeof interSpanNames[number];
 export type IntermNamedSpan = Interm<'named'> & {
@@ -74,5 +75,6 @@ export type IntermContent = IntermNode['content'];
 
 export function isIntermSpan(node: IntermNode): node is IntermSpan {
     return node.interm === 'text'
-        || node.interm === 'named' || node.interm === 'image';
+        || node.interm === 'named'
+        || node.interm === 'image';
 }
