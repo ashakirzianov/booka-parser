@@ -228,7 +228,7 @@ function getClasses(cls: string | undefined): string[] {
         ? cls.split(' ')
         : [];
 }
-
+// TODO: remove ?
 function processContainedSpans<N extends IntermNode>(node: N, fn: (span: IntermSpan) => IntermSpan): N {
     const n = node as IntermNode;
     switch (n.interm) {
@@ -278,54 +278,26 @@ function processContainedSpans<N extends IntermNode>(node: N, fn: (span: IntermS
 }
 
 function processNodes<N extends IntermNode>(n: N, fn: <NN extends IntermNode>(n: NN) => NN): N {
-    n = fn(n);
     const node = n as IntermNode;
     switch (node.interm) {
-        case 'pph':
-        case 'header':
-            return {
-                ...n,
-                content: node.content.map(fn),
-            };
-        case 'list':
-            return {
-                ...n,
-                content: node.content.map(sub => processNodes(sub, fn)),
-            };
-        case 'item':
-            return {
-                ...n,
-                content: node.content.map(sub => processNodes(sub, fn)),
-            };
-        case 'table':
-            return {
-                ...n,
-                content: node.content.map(sub => processNodes(sub, fn)),
-            };
-        case 'row':
-            return {
-                ...n,
-                content: node.content.map(sub => processNodes(sub, fn)),
-            };
-        case 'cell':
-            return {
-                ...n,
-                content: node.content.map(sub => processNodes(sub, fn)),
-            };
-        case 'container':
-            return {
-                ...n,
-                content: node.content.map(sub => processNodes(sub, fn)),
-            };
+        case 'container': case 'pph': case 'header':
+        case 'list': case 'item':
+        case 'table': case 'row': case 'cell':
         case 'named':
-            return n;
+            const content = node.content as IntermNode[];
+            const result = {
+                ...node,
+                content: content.map(sub => processNodes(sub, fn)),
+            };
+            n = result as N;
         case 'text':
         case 'image':
         case 'separator':
         case 'ignore':
-            return n;
+            break;
         default:
             assertNever(node);
-            return n;
+            break;
     }
+    return fn(n);
 }

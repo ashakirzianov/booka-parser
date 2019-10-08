@@ -213,7 +213,7 @@ function checkAttrs() {
 
         return {
             diag: {
-                diag: 'unexpected-attr', node: node.interm,
+                diag: 'unexpected-attr', node: node.interm, name: (node as any).name,
                 attr, value,
             },
         };
