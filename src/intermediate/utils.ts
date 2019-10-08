@@ -59,6 +59,10 @@ export function flagClass(cls: string, semanticKey: FlagSemantic['semantic']): P
     return assignSemanticForClass(cls, { semantic: semanticKey });
 }
 
+export function markAsJunk(cls: string): ProcessorStep {
+    return flagClass(cls, 'junk');
+}
+
 export function diagnose(diagnoser: (interm: IntermNode) => ParserDiagnostic): ProcessorStep {
     return node => {
         const all = visitNodes(node, diagnoser);
@@ -104,7 +108,7 @@ export function expectAttrs(interm: IntermNode, expected: ObjectMatcher<IntermAt
 
     const result = compoundDiagnostic([clsDiagnostic, restDiagnostic]);
     return result
-        ? { context: interm, diagnostic: result }
+        ? { context: interm.interm, diagnostic: result }
         : undefined;
 }
 

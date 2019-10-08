@@ -1,7 +1,7 @@
 import {
     stepsProcessor, assignSemantic,
     flagClass, processSpan,
-    hasClass, expectAttrsMap, ExpectedAttrsMap, ExpectedAttrs, assignSemanticForClass,
+    hasClass, expectAttrsMap, ExpectedAttrsMap, ExpectedAttrs, assignSemanticForClass, markAsJunk,
 } from './utils';
 import { CompoundMatcher } from '../utils';
 import { IntermProcessor, ProcResolver } from './intermParser';
@@ -19,6 +19,10 @@ const steps = stepsProcessor([
             : undefined
     ),
     flagClass('extracts', 'extracts'),
+    flagClass('footer', 'footer'),
+    flagClass('poem1', 'poem'),
+    flagClass('Toc', 'table-of-contents'),
+    flagClass('titlepage', 'title-page'),
     assignSemanticForClass('mynote', {
         semantic: 'tech-note',
         source: 'project-gutenberg',
@@ -28,6 +32,12 @@ const steps = stepsProcessor([
             ? { semantic: 'formated' }
             : undefined,
     ),
+    assignSemantic(node =>
+        node.attrs.summary === 'Toc'
+            ? { semantic: 'table-of-contents' }
+            : undefined,
+    ),
+    markAsJunk('chapterhead'),
     expectAttrsMap(expectations()),
 ]);
 
@@ -63,7 +73,7 @@ function expectations(): ExpectedAttrsMap {
         c => c && c.match(/i\d*$/) ? true : false,
         c => c && c.match(/c\d*$/) ? true : false,
         c => c && c.match(/z\d*$/) ? true : false,
-        'smcap', 'indexpageno',
+        // 'smcap', 'indexpageno',
         // 'pgmonospaced', 'center', 'pgheader', 'fig', 'figleft',
         // 'indexpageno', 'imageref', 'image', 'chapterhead',
         // 'right', 'chaptername', 'illus', 'floatright',
@@ -84,16 +94,25 @@ function expectations(): ExpectedAttrsMap {
     };
     const forSpan: ExpectedAttrs = {
         class: [
+            'GutSmall', 'smcap', 'indexpageno',
             ...classes,
-            'GutSmall',
         ],
     };
     return {
         text: forSpan,
-        ins: forSpan, quote: forSpan, image: forSpan,
+        quote: forSpan,
         big: forSpan, small: forSpan, italic: forSpan, bold: forSpan,
         sub: forSpan, sup: forSpan,
         span: forSpan,
+        ins: {
+            class: [],
+            title: null,
+        },
+        image: {
+            class: [],
+            src: null, alt: null, title: null,
+            tag: null,
+        },
         a: {
             class: [
                 ...forSpan.class,
@@ -105,11 +124,15 @@ function expectations(): ExpectedAttrsMap {
         },
         pph: {
             class: [
-                ...classes,
-                'pgmonospaced', 'pgheader',
+                // Handling:
+                'footer', 'pgmonospaced', 'pgheader', 'poem1',
                 'gapshortline', // TODO: handle as separator ?
+                // TODO: handle ?
+                'letter1', 'letterdate',
+                'center', // as formating ?
                 // Ignore:
-                'gapspace',
+                'gapspace', 'chapterhead',
+                ...classes,
             ],
             'xml:space': 'preserve',
         },
@@ -117,21 +140,40 @@ function expectations(): ExpectedAttrsMap {
             class: [
                 ...classes,
                 // Handling:
-                'mynote', 'extracts',
+                'mynote', 'extracts', 'titlepage',
+                // TODO: handle ?
+                'contents', // as ToC ?
             ],
         },
         separator: {
-            class: ['short'],
+            class: ['tiny', 'short', 'main', 'break'],
         },
         header: base,
         table: {
-            class: [],
+            class: [
+                // Handling
+                'Toc',
+                // Ignore:
+                ...classes,
+            ],
             border: null, cellpadding: null,
-            summary: '',
+            summary: ['', 'Toc'],
         },
-        row: base, cell: base,
+        row: base,
+        cell: {
+            class: [
+                // TODO: handle ?
+                'right', 'center',
+                // Ignore:
+                'chaptername',
+                ...classes,
+            ],
+        },
         list: {
-            class: ['none', 'nonetn'],
+            class: [
+                'none', 'nonetn',
+                ...classes,
+            ],
         },
         item: base,
         ignore: base,
