@@ -11,8 +11,7 @@ const steps = stepsProcessor([
     processSpan(s =>
         hasClass(s, 'GutSmall')
             ? {
-                interm: 'named',
-                name: 'small',
+                interm: 'small',
                 attrs: {},
                 content: [s],
             }
@@ -201,41 +200,44 @@ function checkAttrs() {
                         return {};
                 }
                 break;
-            case 'named':
-                switch (node.name) {
-                    case 'a':
-                        switch (attr) {
-                            case 'class':
-                                switch (value) {
-                                    case 'pginternal': case 'x-ebookmaker-pageno':
-                                        return {};
-                                }
-                                break;
-                            case 'href': case 'title': case 'tag':
+            case 'a':
+                switch (attr) {
+                    case 'class':
+                        switch (value) {
+                            case 'pginternal': case 'x-ebookmaker-pageno':
                                 return {};
                         }
-                    case 'span':
-                        switch (attr) {
-                            case 'class':
-                                switch (value) {
-                                    // Ignore:
-                                    case 'smcap': case 'indexpageno':
-                                    case 'GutSmall':
-                                        return {};
-                                }
-                                break;
-                        }
                         break;
-
-                    case 'ins':
-                        switch (attr) {
-                            case 'title': return {};
+                    case 'href': case 'title': case 'tag':
+                        return {};
+                }
+            case 'span':
+                switch (attr) {
+                    case 'class':
+                        switch (value) {
+                            // Ignore:
+                            case 'smcap': case 'indexpageno':
+                            case 'GutSmall':
+                                return {};
                         }
                         break;
                 }
                 break;
+
+            case 'ins':
+                switch (attr) {
+                    case 'title': return {};
+                }
+                break;
+            case 'text':
+            case 'italic': case 'bold': case 'big': case 'small': case 'sup': case 'sub':
+            case 'quote':
+            case 'header': case 'row': case 'item':
+                break;
+            case 'ignore':
+                break;
             default:
-                assertNever(name);
+                assertNever(node);
                 break;
         }
 

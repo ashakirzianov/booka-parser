@@ -45,8 +45,7 @@ const a: SpanParser = elemChProj({
     keepWhitespaces: 'both',
     children: spans,
     project: (children, el) => ({
-        interm: 'named',
-        name: 'a',
+        interm: 'a',
         attrs: el.attributes,
         content: children,
     }),
@@ -57,8 +56,7 @@ const spanSpan: SpanParser = elemChProj({
     children: spans,
     onChildrenTail: 'break',
     project: (children, el) => ({
-        interm: 'named',
-        name: 'span',
+        interm: 'span',
         attrs: el.attributes,
         content: children,
     }),
@@ -84,8 +82,7 @@ function simple(name: IntermSpanName, tags?: string[]): SpanParser {
         keepWhitespaces: 'both',
         children: spans,
         project: (children, el): IntermSpan => ({
-            interm: 'named',
-            name: name,
+            interm: name,
             attrs: el.attributes,
             content: children,
         }),

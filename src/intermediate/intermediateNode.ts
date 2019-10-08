@@ -22,8 +22,7 @@ export const interSpanNames = [
     'a', 'span', 'quote', 'ins',
 ] as const;
 export type IntermSpanName = typeof interSpanNames[number];
-export type IntermNamedSpan = Interm<'named'> & {
-    name: IntermSpanName,
+export type IntermNamedSpan = Interm<IntermSpanName> & {
     content: IntermSpan[],
 };
 export type IntermSpan = IntermTextSpan | IntermNamedSpan | IntermImage;
@@ -72,9 +71,3 @@ export type IntermForKey<K extends IntermNodeKey> = Extract<IntermNode, { interm
 export type IntermContentForKey<K extends IntermNodeKey> =
     IntermForKey<K>['content'];
 export type IntermContent = IntermNode['content'];
-
-export function isIntermSpan(node: IntermNode): node is IntermSpan {
-    return node.interm === 'text'
-        || node.interm === 'named'
-        || node.interm === 'image';
-}

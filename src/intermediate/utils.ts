@@ -32,7 +32,8 @@ export function processSpan(fn: (span: IntermSpan) => IntermSpan | undefined): P
     return node => {
         node = processNodes(node, (n: IntermNode) => {
             switch (n.interm) {
-                case 'named':
+                case 'a': case 'span': case 'quote': case 'ins':
+                case 'italic': case 'bold': case 'small': case 'big': case 'sub': case 'sup':
                 case 'image':
                 case 'text':
                     return fn(n) as any || n;
@@ -185,7 +186,8 @@ function processNodes<N extends IntermNode>(n: N, fn: <NN extends IntermNode>(n:
         case 'container': case 'pph': case 'header':
         case 'list': case 'item':
         case 'table': case 'row': case 'cell':
-        case 'named':
+        case 'a': case 'span': case 'quote': case 'ins':
+        case 'italic': case 'bold': case 'small': case 'big': case 'sub': case 'sup':
             const content = node.content as IntermNode[];
             const result = {
                 ...node,
