@@ -200,7 +200,7 @@ const ignore: TreeParser<IntermTop> = elemProj({
     },
 });
 
-const skip: TreeParser<IntermTop> = headParser(xml => {
+const report: TreeParser<IntermTop> = headParser(xml => {
     const diag: ParserDiagnostic = {
         diag: 'unexpected-node',
         xml: tree2String(xml, 1),
@@ -216,5 +216,5 @@ const skip: TreeParser<IntermTop> = headParser(xml => {
 node.implementation = choice(
     pph, header, img, image, hr,
     list, table, container,
-    ignore, skip,
+    ignore, report,
 );
