@@ -108,10 +108,13 @@ function checkAttrs() {
                 switch (attr) {
                     case 'class':
                         switch (value) {
+                            case 'intro':
+                                return { flag: 'chapter-abstract' };
                             case 'footer':
                                 return { flag: 'footer' };
                             case 'poem': case 'poem1':
                             case 'verse': case 'poetry':
+                            case 'stanza':
                                 return { flag: 'poem' };
                             case 'letter': case 'letter1':
                                 return { flag: 'letter' };
@@ -127,9 +130,9 @@ function checkAttrs() {
                             case 'state':
                             case 'gapspace': case 'chapterhead':
                             case 'pgmonospaced': case 'pgheader':
-                            case 'fig': case 'figleft':
+                            case 'fig': case 'figleft': case 'figcenter':
                             case 'contents':
-                            case 'foot':
+                            case 'foot': case 'finis':
                             case 'right': case 'pfirst':
                                 return {};
                         }
@@ -152,12 +155,21 @@ function checkAttrs() {
                                         source: 'project-gutenberg',
                                     }],
                                 };
+                            case 'blockquot':
+                                return {
+                                    semantics: [{
+                                        semantic: 'quote',
+                                    }],
+                                };
                             case 'extracts':
                                 return { flag: 'extracts' };
                             case 'titlepage':
                                 return { flag: 'title-page' };
+                            case 'poem': case 'stanza':
+                                return { flag: 'poem' };
                             case 'contents': case 'book':
                             case 'title': case 'title2':
+                            case 'centered':
                                 return {};
                         }
                         break;

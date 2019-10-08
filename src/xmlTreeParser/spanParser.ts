@@ -22,11 +22,11 @@ const text: SpanParser = headParser(node => {
 const italic = simple('italic', ['em', 'i']);
 const bold = simple('bold', ['strong', 'b']);
 const quote = simple('quote', ['q', 'quote']);
-const small = simple('small');
-const big = simple('big');
-const sup = simple('sup');
-const sub = simple('sub');
-const ins = simple('edit');
+const small = simple('small', ['small']);
+const big = simple('big', ['big']);
+const sup = simple('sup', ['sup']);
+const sub = simple('sub', ['sub']);
+const ins = simple('edit', ['ins']);
 
 const img: SpanParser = elemProj({
     name: 'img',
@@ -76,7 +76,7 @@ span.implementation = choice(
     a, img, spanSpan, ins, quote, br,
 );
 
-function simple(name: IntermSpanName, tags?: string[]): SpanParser {
+function simple(name: IntermSpanName, tags: string[]): SpanParser {
     return elemChProj({
         name: tags || name,
         keepWhitespaces: 'both',

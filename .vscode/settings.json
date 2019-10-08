@@ -29,6 +29,7 @@
         "Unparsed",
         "Whitespaces",
         "backend",
+        "blockqout",
         "blockquot",
         "cellpadding",
         "cellspacing",
