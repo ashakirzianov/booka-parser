@@ -1,7 +1,7 @@
 import {
     stepsProcessor, assignSemantic,
     flagClass, processSpan,
-    hasClass, expectAttrsMap, ExpectedAttrsMap, ExpectedAttrs, assignSemanticForClass, markAsJunk,
+    hasClass, expectAttrsMap, ExpectedAttrsMap, ExpectedAttrs, assignSemanticForClass, markAsJunk, processAttrs,
 } from './utils';
 import { CompoundMatcher } from '../utils';
 import { IntermProcessor, ProcResolver } from './intermParser';
@@ -38,7 +38,8 @@ const steps = stepsProcessor([
             : undefined,
     ),
     markAsJunk('chapterhead'),
-    expectAttrsMap(expectations()),
+    checkAttrs(),
+    // expectAttrsMap(expectations()),
 ]);
 
 const gutenbergPrep: IntermProcessor = choice(
@@ -67,7 +68,153 @@ export const gutenberg: ProcResolver = ({ rawMetadata }) => {
         : undefined;
 };
 
-function expectations(): ExpectedAttrsMap {
+function checkAttrs() {
+    return processAttrs((node, attr, value) => {
+        switch (attr) {
+            case 'id': return {}; // Everyone can have an id
+            case 'class':
+                // Ignore standard: i11, c7, z1...
+                if (value.match(/[icz]\d*$/)) { return {}; }
+                break;
+        }
+
+        switch (node.interm) {
+            case 'a':
+                switch (attr) {
+                    case 'class':
+                        switch (value) {
+                            case 'pginternal': case 'x-ebookmaker-pageno':
+                                return {};
+                        }
+                        break;
+                    case 'href': case 'title': case 'tag':
+                        return {};
+                }
+            case 'span':
+                switch (attr) {
+                    case 'class':
+                        switch (value) {
+                            // Ignore:
+                            case 'smcap': case 'indexpageno':
+                                return {};
+                        }
+                        break;
+                }
+                break;
+            case 'pph':
+                switch (attr) {
+                    case 'class':
+                        switch (value) {
+                            case 'footer':
+                                return { flag: 'footer' };
+                            case 'poem1':
+                                return { flag: 'poem' };
+                            // TODO: handle ?
+                            case 'letter1': case 'letterdate':
+                            case 'center': // as formating ?
+                            case 'gapshortline': // as separator ?
+                            // Ignore
+                            case 'gapspace': case 'chapterhead':
+                            case 'pgmonospaced': case 'pgheader':
+                                return {};
+                        }
+                        break;
+                    case 'xml:space':
+                        switch (value) {
+                            case 'preserve': return {};
+                        }
+                        break;
+                }
+                break;
+            case 'container':
+                switch (attr) {
+                    case 'class':
+                        switch (value) {
+                            case 'mynote':
+                                return {
+                                    semantics: [{
+                                        semantic: 'tech-note',
+                                        source: 'project-gutenberg',
+                                    }],
+                                };
+                            case 'extracts':
+                                return { flag: 'extracts' };
+                            case 'titlepage':
+                                return { flag: 'title-page' };
+                            case 'contents':
+                                return {};
+                        }
+                        break;
+                }
+                break;
+            case 'separator':
+                switch (attr) {
+                    case 'class':
+                        switch (value) {
+                            case 'tiny': case 'short': case 'main': case 'break':
+                                return {};
+                        }
+                        break;
+                }
+                break;
+            case 'table':
+                switch (attr) {
+                    case 'summary':
+                        switch (value) {
+                            case 'Toc': return { flag: 'table-of-contents' };
+                            case '': return {};
+                        }
+                        break;
+                    case 'border': case 'cellpadding':
+                        return {};
+                }
+                break;
+            case 'cell':
+                switch (attr) {
+                    case 'class':
+                        switch (value) {
+                            // TODO: handle ?
+                            case 'right': case 'center':
+                            // Ignore:
+                            case 'chaptername':
+                                return {};
+                        }
+                        break;
+                }
+                break;
+            case 'list':
+                switch (attr) {
+                    case 'class':
+                        switch (value) {
+                            case 'none': case 'nonetn':
+                                return {};
+                        }
+                        break;
+                }
+                break;
+            case 'image':
+                switch (attr) {
+                    case 'alt': case 'title': case 'src':
+                        return {};
+                }
+                break;
+            case 'ins':
+                switch (attr) {
+                    case 'title': return {};
+                }
+                break;
+        }
+
+        return {
+            diag: {
+                diag: 'unexpected-attr', node: node.interm,
+                attr, value,
+            },
+        };
+    });
+}
+
+function expectations(): Partial<ExpectedAttrsMap> {
     const classes: CompoundMatcher<string> = [
         undefined,
         c => c && c.match(/i\d*$/) ? true : false,
@@ -112,15 +259,6 @@ function expectations(): ExpectedAttrsMap {
             class: [],
             src: null, alt: null, title: null,
             tag: null,
-        },
-        a: {
-            class: [
-                ...forSpan.class,
-                'pginternal', 'x-ebookmaker-pageno',
-            ],
-            tag: null, href: null,
-            // TODO: double check
-            title: null,
         },
         pph: {
             class: [

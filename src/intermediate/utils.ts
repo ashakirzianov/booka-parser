@@ -3,7 +3,7 @@ import {
 } from '../combinators';
 import { IntermTop, IntermAttrs, IntermNode, IntermContent, IntermNodeKey, IntermSpan } from './intermediateNode';
 import { ObjectMatcher, ValueMatcher, matchValue, matchObject, CompoundMatcher } from '../utils';
-import { flatten, Semantic, FlagSemantic, } from 'booka-common';
+import { flatten, Semantic, FlagSemantic, assertNever, } from 'booka-common';
 import { IntermProcessor } from './intermParser';
 
 export type ProcessorStepResult = {
@@ -39,6 +39,7 @@ export function processSpan(fn: (span: IntermSpan) => IntermSpan | undefined): P
 
 export type ProcAttrsResult = {
     semantics?: Semantic[],
+    flag?: FlagSemantic['semantic'],
     diag?: ParserDiagnostic,
 };
 export type ProcAttrsFn = (interm: IntermNode, name: string, value: string) => ProcAttrsResult;
@@ -46,27 +47,31 @@ export function processAttrs(fn: ProcAttrsFn): ProcessorStep {
     return node => {
         const diags: ParserDiagnostic[] = [];
         const processed = processNodes(node, n => {
+            const results: ProcAttrsResult[] = [];
             for (const [attr, value] of Object.entries(n.attrs)) {
                 if (value === undefined) {
                     continue;
                 }
                 if (attr !== 'class') {
-                    const result = fn(n, attr, value);
-                    diags.push(result.diag);
-                    if (result.semantics) {
-                        n = assignNodeSemantics(n, result.semantics);
-                    }
+                    results.push(fn(n, attr, value));
                 } else {
                     const classes = getClasses(value);
                     for (const cls of classes) {
-                        const result = fn(n, 'class', cls);
-                        diags.push(result.diag);
-                        if (result.semantics) {
-                            n = assignNodeSemantics(n, result.semantics);
-                        }
+                        results.push(fn(n, 'class', cls));
                     }
                 }
             }
+            const semantics: Semantic[] = [];
+            for (const result of results) {
+                diags.push(result.diag);
+                if (result.flag) {
+                    semantics.push({ semantic: result.flag });
+                }
+                if (result.semantics) {
+                    semantics.push(...result.semantics);
+                }
+            }
+            n = assignNodeSemantics(n, semantics);
 
             return n;
         });
@@ -207,13 +212,15 @@ export function hasClass(node: IntermNode, toCheck: string): boolean {
         .some(c => c === toCheck);
 }
 
-function assignNodeSemantics<N extends IntermNode>(node: N, semantics: Semantic[]): N {
-    return {
-        ...node,
-        semantics: node.semantics
-            ? [...node.semantics, ...semantics]
-            : semantics,
-    };
+function assignNodeSemantics<N extends IntermNode>(node: N, semantics: Semantic[] | undefined): N {
+    return semantics !== undefined && semantics.length > 0
+        ? {
+            ...node,
+            semantics: node.semantics
+                ? [...node.semantics, ...semantics]
+                : semantics,
+        }
+        : node;
 }
 
 function getClasses(cls: string | undefined): string[] {
@@ -315,6 +322,7 @@ function processNodes<N extends IntermNode>(n: N, fn: <NN extends IntermNode>(n:
         case 'ignore':
             return n;
         default:
+            assertNever(node);
             return n;
     }
 }
