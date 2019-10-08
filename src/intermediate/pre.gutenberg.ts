@@ -95,6 +95,7 @@ function footnote(): IntermProcessor {
 function checkAttrs() {
     return processAttrs((node, attr, value) => {
         switch (attr) {
+            case 'style': return {}; // Ignore custom styles
             case 'id': return {}; // Everyone can have an id
             case 'class':
                 // Ignore standard: i11, c7, z1...
@@ -109,15 +110,27 @@ function checkAttrs() {
                         switch (value) {
                             case 'footer':
                                 return { flag: 'footer' };
-                            case 'poem1':
+                            case 'poem': case 'poem1':
+                            case 'verse': case 'poetry':
                                 return { flag: 'poem' };
+                            case 'letter': case 'letter1':
+                                return { flag: 'letter' };
                             // TODO: handle ?
-                            case 'letter1': case 'letterdate':
+                            case 'letterdate':
+                            case 'preface1': case 'preface2':
                             case 'center': // as formating ?
                             case 'gapshortline': // as separator ?
+                            case 'gutindent': case 'gutsumm': // as list items ?
+                            case 'noindent':
+                            case 'footnote':
                             // Ignore
+                            case 'state':
                             case 'gapspace': case 'chapterhead':
                             case 'pgmonospaced': case 'pgheader':
+                            case 'fig': case 'figleft':
+                            case 'contents':
+                            case 'foot':
+                            case 'right': case 'pfirst':
                                 return {};
                         }
                         break;
@@ -143,7 +156,8 @@ function checkAttrs() {
                                 return { flag: 'extracts' };
                             case 'titlepage':
                                 return { flag: 'title-page' };
-                            case 'contents':
+                            case 'contents': case 'book':
+                            case 'title': case 'title2':
                                 return {};
                         }
                         break;
@@ -153,7 +167,8 @@ function checkAttrs() {
                 switch (attr) {
                     case 'class':
                         switch (value) {
-                            case 'tiny': case 'short': case 'main': case 'break':
+                            case 'tiny': case 'short': case 'main':
+                            case 'break': case 'full':
                                 return {};
                         }
                         break;
@@ -161,18 +176,36 @@ function checkAttrs() {
                 break;
             case 'table':
                 switch (attr) {
-                    case 'summary':
+                    case 'class':
                         switch (value) {
-                            case 'Toc': return { flag: 'table-of-contents' };
-                            case '': return {};
+                            case 'center':
+                                return {};
+                            case 'illus':
+                                return { flag: 'illustrations' };
                         }
                         break;
-                    case 'border': case 'cellpadding':
+                    case 'summary':
+                        switch (value) {
+                            case 'carol':
+                                return { flag: 'poem' };
+                            case 'Illustrations':
+                                return { flag: 'illustrations' };
+                            case 'Toc':
+                                return { flag: 'table-of-contents' };
+                            case '':
+                                return {};
+                        }
+                        break;
+                    case 'border': case 'width':
+                    case 'cellpadding': case 'cellspacing':
                         return {};
                 }
                 break;
             case 'cell':
                 switch (attr) {
+                    case 'colspan': // TODO: handle ?
+                    case 'align': case 'valign':
+                        return {};
                     case 'class':
                         switch (value) {
                             // TODO: handle ?
@@ -197,13 +230,21 @@ function checkAttrs() {
             case 'image':
                 switch (attr) {
                     case 'alt': case 'title': case 'src': case 'tag':
+                    case 'width':
                         return {};
+                    case 'class':
+                        switch (value) {
+                            case 'floatright':
+                                return {};
+                        }
+                        break;
                 }
                 break;
             case 'a':
                 switch (attr) {
                     case 'class':
                         switch (value) {
+                            case 'citation': case 'footnote':
                             case 'pginternal': case 'x-ebookmaker-pageno':
                                 return {};
                         }
@@ -211,28 +252,38 @@ function checkAttrs() {
                     case 'href': case 'title': case 'tag':
                         return {};
                 }
+            case 'ins':
+                switch (attr) {
+                    case 'title': return {};
+                }
+                break;
+            case 'header':
+                switch (attr) {
+                    case 'class':
+                        switch (value) {
+                            case 'title':
+                                return {};
+                        }
+                        break;
+                }
+                break;
+            case 'text':
+            case 'quote':
+            case 'italic': case 'bold': case 'big': case 'small': case 'sup': case 'sub':
             case 'span':
                 switch (attr) {
                     case 'class':
                         switch (value) {
                             // Ignore:
                             case 'smcap': case 'indexpageno':
-                            case 'GutSmall':
+                            case 'GutSmall': case 'caps': case 'dropcap':
+                            case 'imageref':
                                 return {};
                         }
                         break;
                 }
                 break;
-
-            case 'ins':
-                switch (attr) {
-                    case 'title': return {};
-                }
-                break;
-            case 'text':
-            case 'italic': case 'bold': case 'big': case 'small': case 'sup': case 'sub':
-            case 'quote':
-            case 'header': case 'row': case 'item':
+            case 'row': case 'item':
                 break;
             case 'ignore':
                 break;
@@ -243,7 +294,7 @@ function checkAttrs() {
 
         return {
             diag: {
-                diag: 'unexpected-attr', node: node.interm, name: (node as any).name,
+                diag: 'unexpected-attr', node: node.interm,
                 attr, value,
             },
         };
