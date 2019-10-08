@@ -112,7 +112,14 @@ function expectations(): ExpectedAttrsMap {
             ],
         },
         separator: base, header: base,
-        table: base, row: base, cell: base,
+        table: {
+            class: [
+
+            ],
+            border: null, cellpadding: null,
+            summary: '',
+        },
+        row: base, cell: base,
         list: base, item: base,
         ignore: base,
     };
