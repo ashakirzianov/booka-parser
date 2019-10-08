@@ -1,7 +1,7 @@
 import {
     stepsProcessor, assignSemantic,
     flagClass, processSpan,
-    hasClass, expectAttrsMap, ExpectedAttrsMap, ExpectedAttrs,
+    hasClass, expectAttrsMap, ExpectedAttrsMap, ExpectedAttrs, assignSemanticForClass,
 } from './utils';
 import { CompoundMatcher } from '../utils';
 import { IntermProcessor, ProcResolver } from './intermParser';
@@ -18,8 +18,11 @@ const steps = stepsProcessor([
             }
             : undefined
     ),
-    flagClass('mynote', 'editor-note'),
     flagClass('extracts', 'extracts'),
+    assignSemanticForClass('mynote', {
+        semantic: 'tech-note',
+        source: 'project-gutenberg',
+    }),
     assignSemantic(node =>
         node.attrs['xml:space'] === 'preserve'
             ? { semantic: 'formated' }
@@ -117,16 +120,20 @@ function expectations(): ExpectedAttrsMap {
                 'mynote', 'extracts',
             ],
         },
-        separator: base, header: base,
+        separator: {
+            class: ['short'],
+        },
+        header: base,
         table: {
-            class: [
-
-            ],
+            class: [],
             border: null, cellpadding: null,
             summary: '',
         },
         row: base, cell: base,
-        list: base, item: base,
+        list: {
+            class: ['none', 'nonetn'],
+        },
+        item: base,
         ignore: base,
     };
 }
@@ -140,9 +147,7 @@ function footnote(): IntermProcessor {
             return reject();
         }
         const ch = first.content[0];
-        const id = ch !== undefined
-            && ch.attrs.id !== undefined
-            && ch.attrs.id.startsWith('linknote-')
+        const id = ch !== undefined && ch.attrs.id !== undefined
             ? ch.attrs.id
             : undefined;
 

@@ -46,7 +46,7 @@ export function assignSemantic(fn: (node: IntermNode) => Semantic | undefined): 
     };
 }
 
-export function semanticForClass(cls: string, semantic: Semantic): ProcessorStep {
+export function assignSemanticForClass(cls: string, semantic: Semantic): ProcessorStep {
     return assignSemantic(
         node =>
             hasClass(node, cls)
@@ -56,7 +56,7 @@ export function semanticForClass(cls: string, semantic: Semantic): ProcessorStep
 }
 
 export function flagClass(cls: string, semanticKey: FlagSemantic['semantic']): ProcessorStep {
-    return semanticForClass(cls, { semantic: semanticKey });
+    return assignSemanticForClass(cls, { semantic: semanticKey });
 }
 
 export function diagnose(diagnoser: (interm: IntermNode) => ParserDiagnostic): ProcessorStep {
@@ -104,7 +104,7 @@ export function expectAttrs(interm: IntermNode, expected: ObjectMatcher<IntermAt
 
     const result = compoundDiagnostic([clsDiagnostic, restDiagnostic]);
     return result
-        ? { context: interm.interm, diagnostic: result }
+        ? { context: interm, diagnostic: result }
         : undefined;
 }
 
