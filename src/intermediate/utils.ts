@@ -1,14 +1,10 @@
 import {
-    StreamParser, ParserDiagnostic, compoundDiagnostic, headParser, yieldLast,
+    ParserDiagnostic, compoundDiagnostic, headParser, yieldLast,
 } from '../combinators';
 import { IntermTop, IntermAttrs, IntermNode, IntermContent, IntermNodeKey, IntermSpan } from './intermediateNode';
-import { EpubBook } from '../epub';
 import { ObjectMatcher, ValueMatcher, matchValue, matchObject, CompoundMatcher } from '../utils';
-import { flatten, Semantic, FlagSemantic, assertNever } from 'booka-common';
-
-type Env = { filePath: string };
-export type IntermPreprocessor = StreamParser<IntermTop, IntermTop[], Env>;
-export type PreResolver = (epub: EpubBook) => IntermPreprocessor | undefined;
+import { flatten, Semantic, FlagSemantic, } from 'booka-common';
+import { IntermProcessor } from './intermParser';
 
 export type ProcessorStepResult = {
     node?: IntermTop,
@@ -16,9 +12,8 @@ export type ProcessorStepResult = {
 };
 export type ProcessorStep = (interm: IntermTop) => ProcessorStepResult;
 
-export function stepsProcessor(steps: ProcessorStep[]): IntermPreprocessor {
+export function stepsProcessor(steps: ProcessorStep[]): IntermProcessor {
     return headParser(node => {
-        // return yieldLast([node]);
         const diags: ParserDiagnostic[] = [];
         let input = node;
         for (const step of steps) {
@@ -72,6 +67,14 @@ export function diagnose(diagnoser: (interm: IntermNode) => ParserDiagnostic): P
         };
     };
 }
+
+export type ExpectedAttrs = {
+    [k: string]: ValueMatcher<string>,
+    class: CompoundMatcher<string>,
+};
+export type ExpectedAttrsMap = {
+    [k in IntermNodeKey]: ExpectedAttrs;
+};
 
 export function expectAttrsMap(expectedAttrsMap: ExpectedAttrsMap) {
     return diagnose(node => {
@@ -225,28 +228,3 @@ function processContainedSpans<N extends IntermNode>(node: N, fn: (span: IntermS
             return fn(n) as N;
     }
 }
-
-// export type IntermParser<T extends IntermContent> = StreamParser<T, T, Env>;
-// type PrepNodeParserArgs<K extends IntermNodeKey> = {
-//     name: K,
-//     expectedAttrs?: ObjectMatcher<IntermAttrs>,
-//     children?: IntermParser<IntermContentForKey<K>>,
-//     project: (node: IntermForKey<K>, content: Array<IntermContentForKey<K>>) => IntermForKey<K>,
-// };
-// export function intermParser<K extends IntermNodeKey>(args: PrepNodeParserArgs<K>): IntermParser<IntermForKey<K>> {
-//     return headParser(node => {
-//         if (node.interm !== args.name) {
-//             return reject();
-//         }
-
-//         return yieldLast(node);
-//     });
-// }
-
-export type ExpectedAttrs = {
-    [k: string]: ValueMatcher<string>,
-    class: CompoundMatcher<string>,
-};
-export type ExpectedAttrsMap = {
-    [k in IntermNodeKey]: ExpectedAttrs;
-};

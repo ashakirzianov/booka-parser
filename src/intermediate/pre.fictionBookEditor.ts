@@ -1,8 +1,8 @@
-import { PreResolver } from './common';
+import { ProcResolver } from './intermParser';
 import { reject } from '../combinators';
 
 const fictionBookEditorPrep = () => reject();
-export const fictionBookEditor: PreResolver = epub => {
+export const fictionBookEditor: ProcResolver = epub => {
     const marker = epub.metadata['FB2.document-info.program-used'];
     const isMarked = marker !== undefined
         && typeof marker === 'string'

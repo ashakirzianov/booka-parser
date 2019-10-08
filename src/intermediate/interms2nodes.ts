@@ -2,7 +2,7 @@ import { BookContentNode } from 'booka-common';
 import {
     StreamParser, pipe,
 } from '../combinators';
-import { IntermTop, } from './intermediateNode';
+import { IntermTop } from './intermediateNode';
 import { EpubBook } from '../epub';
 import { convertInterms } from './convertInterms';
 import { buildPreprocessor } from './preprocessor';

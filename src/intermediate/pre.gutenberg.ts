@@ -1,9 +1,12 @@
 import {
-    PreResolver, IntermPreprocessor, stepsProcessor, assignSemantic,
+    stepsProcessor, assignSemantic,
     flagClass, processSpan,
     hasClass, expectAttrsMap, ExpectedAttrsMap, ExpectedAttrs,
-} from './common';
+} from './utils';
 import { CompoundMatcher } from '../utils';
+import { IntermProcessor, ProcResolver } from './intermParser';
+import { reject, yieldNext, makeStream, choice } from '../combinators';
+import { IntermContainer } from './intermediateNode';
 
 const steps = stepsProcessor([
     processSpan(s =>
@@ -25,8 +28,11 @@ const steps = stepsProcessor([
     expectAttrsMap(expectations()),
 ]);
 
-const gutenbergPrep: IntermPreprocessor = steps;
-export const gutenberg: PreResolver = ({ rawMetadata }) => {
+const gutenbergPrep: IntermProcessor = choice(
+    footnote(),
+    steps,
+);
+export const gutenberg: ProcResolver = ({ rawMetadata }) => {
     if (!rawMetadata) {
         return undefined;
     }
@@ -122,5 +128,50 @@ function expectations(): ExpectedAttrsMap {
         row: base, cell: base,
         list: base, item: base,
         ignore: base,
+    };
+}
+
+// Special parsers:
+
+function footnote(): IntermProcessor {
+    return ({ stream, env }) => {
+        const [first, second] = stream;
+        if (second === undefined || first.interm !== 'pph' || second.interm !== 'pph' || second.attrs.class !== 'foot') {
+            return reject();
+        }
+        const ch = first.content[0];
+        const id = ch !== undefined
+            && ch.attrs.id !== undefined
+            && ch.attrs.id.startsWith('linknote-')
+            ? ch.attrs.id
+            : undefined;
+
+        if (id === undefined) {
+            return reject();
+        } else {
+            // NOTE: ugly mutation
+            ch.attrs.id = undefined;
+
+            const secondCh = second.content[0];
+            let title: string[] = [];
+            if (secondCh !== undefined && secondCh.interm === 'text' && secondCh.content.endsWith(' (')) {
+                title = [secondCh.content.substr(0, secondCh.content.length - 2)];
+                // NOTE: ugly mutation
+                secondCh.content = '(';
+            }
+            const container: IntermContainer = {
+                interm: 'container',
+                content: [first, second],
+                attrs: { id },
+                semantics: [{
+                    semantic: 'footnote',
+                    title,
+                }],
+            };
+            return yieldNext([container], makeStream(
+                stream.slice(2),
+                env,
+            ));
+        }
     };
 }

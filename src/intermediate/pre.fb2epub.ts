@@ -1,9 +1,9 @@
-import { PreResolver, IntermPreprocessor } from './common';
+import { ProcResolver, IntermProcessor } from './intermParser';
 import { reject } from '../combinators';
 
-const fb2EpubPrep: IntermPreprocessor = () => reject();
+const fb2EpubPrep: IntermProcessor = () => reject();
 
-export const fb2epub: PreResolver = ({ rawMetadata }) => {
+export const fb2epub: ProcResolver = ({ rawMetadata }) => {
     if (!rawMetadata) {
         return undefined;
     }
