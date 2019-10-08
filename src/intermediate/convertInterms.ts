@@ -68,7 +68,7 @@ function fromSpan(s: IntermSpan, env: Env): Span {
                 span: fromSpans(s.content, env),
                 semantics: [{ semantic: 'quote' }],
             };
-        case 'ins':
+        case 'edit':
             return {
                 span: fromSpans(s.content, env),
                 semantics: [{
@@ -76,7 +76,7 @@ function fromSpan(s: IntermSpan, env: Env): Span {
                     note: s.attrs.title,
                 }],
             };
-        case 'a':
+        case 'link':
             return s.attrs.href
                 ? { ref: fromSpans(s.content, env), refToId: s.attrs.ref }
                 : fromSpans(s.content, env);

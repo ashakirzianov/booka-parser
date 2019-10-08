@@ -19,7 +19,7 @@ export type IntermTextSpan = Interm<'text'> & {
 };
 export const interSpanNames = [
     'italic', 'bold', 'small', 'big', 'sub', 'sup',
-    'a', 'span', 'quote', 'ins',
+    'link', 'span', 'quote', 'edit',
 ] as const;
 export type IntermSpanName = typeof interSpanNames[number];
 export type IntermNamedSpan = Interm<IntermSpanName> & {

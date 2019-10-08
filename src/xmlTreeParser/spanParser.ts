@@ -26,7 +26,7 @@ const small = simple('small');
 const big = simple('big');
 const sup = simple('sup');
 const sub = simple('sub');
-const ins = simple('ins');
+const ins = simple('edit');
 
 const img: SpanParser = elemProj({
     name: 'img',
@@ -45,7 +45,7 @@ const a: SpanParser = elemChProj({
     keepWhitespaces: 'both',
     children: spans,
     project: (children, el) => ({
-        interm: 'a',
+        interm: 'link',
         attrs: el.attributes,
         content: children,
     }),

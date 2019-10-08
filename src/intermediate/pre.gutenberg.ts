@@ -240,7 +240,7 @@ function checkAttrs() {
                         break;
                 }
                 break;
-            case 'a':
+            case 'link':
                 switch (attr) {
                     case 'class':
                         switch (value) {
@@ -252,7 +252,7 @@ function checkAttrs() {
                     case 'href': case 'title': case 'tag':
                         return {};
                 }
-            case 'ins':
+            case 'edit':
                 switch (attr) {
                     case 'title': return {};
                 }
