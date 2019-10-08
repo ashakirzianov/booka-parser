@@ -12,7 +12,8 @@ const steps = stepsProcessor([
     processSpan(s =>
         hasClass(s, 'GutSmall')
             ? {
-                interm: 'small',
+                interm: 'named',
+                name: 'small',
                 attrs: {},
                 content: [s],
             }
@@ -79,28 +80,6 @@ function checkAttrs() {
         }
 
         switch (node.interm) {
-            case 'a':
-                switch (attr) {
-                    case 'class':
-                        switch (value) {
-                            case 'pginternal': case 'x-ebookmaker-pageno':
-                                return {};
-                        }
-                        break;
-                    case 'href': case 'title': case 'tag':
-                        return {};
-                }
-            case 'span':
-                switch (attr) {
-                    case 'class':
-                        switch (value) {
-                            // Ignore:
-                            case 'smcap': case 'indexpageno':
-                                return {};
-                        }
-                        break;
-                }
-                break;
             case 'pph':
                 switch (attr) {
                     case 'class':
@@ -198,9 +177,36 @@ function checkAttrs() {
                         return {};
                 }
                 break;
-            case 'ins':
-                switch (attr) {
-                    case 'title': return {};
+            case 'named':
+                switch (node.name) {
+                    case 'a':
+                        switch (attr) {
+                            case 'class':
+                                switch (value) {
+                                    case 'pginternal': case 'x-ebookmaker-pageno':
+                                        return {};
+                                }
+                                break;
+                            case 'href': case 'title': case 'tag':
+                                return {};
+                        }
+                    case 'span':
+                        switch (attr) {
+                            case 'class':
+                                switch (value) {
+                                    // Ignore:
+                                    case 'smcap': case 'indexpageno':
+                                        return {};
+                                }
+                                break;
+                        }
+                        break;
+
+                    case 'ins':
+                        switch (attr) {
+                            case 'title': return {};
+                        }
+                        break;
                 }
                 break;
         }
@@ -247,19 +253,19 @@ function expectations(): Partial<ExpectedAttrsMap> {
     };
     return {
         text: forSpan,
-        quote: forSpan,
-        big: forSpan, small: forSpan, italic: forSpan, bold: forSpan,
-        sub: forSpan, sup: forSpan,
-        span: forSpan,
-        ins: {
-            class: [],
-            title: null,
-        },
-        image: {
-            class: [],
-            src: null, alt: null, title: null,
-            tag: null,
-        },
+        // quote: forSpan,
+        // big: forSpan, small: forSpan, italic: forSpan, bold: forSpan,
+        // sub: forSpan, sup: forSpan,
+        // span: forSpan,
+        // ins: {
+        //     class: [],
+        //     title: null,
+        // },
+        // image: {
+        //     class: [],
+        //     src: null, alt: null, title: null,
+        //     tag: null,
+        // },
         pph: {
             class: [
                 // Handling:

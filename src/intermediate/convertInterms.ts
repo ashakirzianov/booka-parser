@@ -59,12 +59,35 @@ function fromSpan(s: IntermSpan, env: Env): Span {
     switch (s.interm) {
         case 'text':
             return s.content;
-        case 'italic': case 'bold':
-        case 'big': case 'small':
-        case 'sub': case 'sup':
-            return { [s.interm]: fromSpans(s.content, env) };
-        case 'span':
-            return fromSpans(s.content, env);
+        case 'named':
+            switch (s.name) {
+                case 'italic': case 'bold':
+                case 'big': case 'small':
+                case 'sub': case 'sup':
+                    return { [s.name]: fromSpans(s.content, env) };
+                case 'quote':
+                    return {
+                        span: fromSpans(s.content, env),
+                        semantics: [{ semantic: 'quote' }],
+                    };
+                case 'ins':
+                    return {
+                        span: fromSpans(s.content, env),
+                        semantics: [{
+                            semantic: 'correction',
+                            note: s.attrs.title,
+                        }],
+                    };
+                case 'a':
+                    return s.attrs.href
+                        ? { ref: fromSpans(s.content, env), refToId: s.attrs.ref }
+                        : fromSpans(s.content, env);
+                case 'span':
+                    return fromSpans(s.content, env);
+                default:
+                    assertNever(s.name);
+                    return '';
+            }
         case 'image':
             return s.attrs.src
                 ? {
@@ -76,23 +99,6 @@ function fromSpan(s: IntermSpan, env: Env): Span {
                     },
                 }
                 : '';
-        case 'quote':
-            return {
-                span: fromSpans(s.content, env),
-                semantics: [{ semantic: 'quote' }],
-            };
-        case 'ins':
-            return {
-                span: fromSpans(s.content, env),
-                semantics: [{
-                    semantic: 'correction',
-                    note: s.attrs.title,
-                }],
-            };
-        case 'a':
-            return s.attrs.href
-                ? { ref: fromSpans(s.content, env), refToId: s.attrs.ref }
-                : fromSpans(s.content, env);
         default:
             assertNever(s);
             return '';

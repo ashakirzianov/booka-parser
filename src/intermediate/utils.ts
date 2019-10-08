@@ -317,6 +317,9 @@ function processNodes<N extends IntermNode>(n: N, fn: <NN extends IntermNode>(n:
                 ...n,
                 content: node.content.map(sub => processNodes(sub, fn)),
             };
+        case 'named':
+            return n;
+        case 'text':
         case 'image':
         case 'separator':
         case 'ignore':
