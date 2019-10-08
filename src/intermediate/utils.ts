@@ -37,11 +37,48 @@ export function processSpan(fn: (span: IntermSpan) => IntermSpan | undefined): P
     };
 }
 
+export type ProcAttrsResult = {
+    semantics?: Semantic[],
+    diag?: ParserDiagnostic,
+};
+export type ProcAttrsFn = (interm: IntermNode, name: string, value: string) => ProcAttrsResult;
+export function processAttrs(fn: ProcAttrsFn): ProcessorStep {
+    return node => {
+        const diags: ParserDiagnostic[] = [];
+        const processed = processNodes(node, n => {
+            for (const [attr, value] of Object.entries(n.attrs)) {
+                if (value === undefined) {
+                    continue;
+                }
+                if (attr !== 'class') {
+                    const result = fn(n, attr, value);
+                    diags.push(result.diag);
+                    if (result.semantics) {
+                        n = assignNodeSemantics(n, result.semantics);
+                    }
+                } else {
+                    const classes = getClasses(value);
+                    for (const cls of classes) {
+                        const result = fn(n, 'class', cls);
+                        diags.push(result.diag);
+                        if (result.semantics) {
+                            n = assignNodeSemantics(n, result.semantics);
+                        }
+                    }
+                }
+            }
+
+            return n;
+        });
+        return { node: processed, diag: compoundDiagnostic(diags) };
+    };
+}
+
 export function assignSemantic(fn: (node: IntermNode) => Semantic | undefined): ProcessorStep {
     return node => {
         const semantic = fn(node);
         return semantic !== undefined
-            ? { node: assignNodeSemantic(node, semantic) }
+            ? { node: assignNodeSemantics(node, [semantic]) }
             : {};
     };
 }
@@ -170,12 +207,12 @@ export function hasClass(node: IntermNode, toCheck: string): boolean {
         .some(c => c === toCheck);
 }
 
-function assignNodeSemantic<N extends IntermNode>(node: N, semantic: Semantic): N {
+function assignNodeSemantics<N extends IntermNode>(node: N, semantics: Semantic[]): N {
     return {
         ...node,
         semantics: node.semantics
-            ? [...node.semantics, semantic]
-            : [semantic],
+            ? [...node.semantics, ...semantics]
+            : semantics,
     };
 }
 
@@ -230,5 +267,54 @@ function processContainedSpans<N extends IntermNode>(node: N, fn: (span: IntermS
             return node;
         default:
             return fn(n) as N;
+    }
+}
+
+function processNodes<N extends IntermNode>(n: N, fn: <NN extends IntermNode>(n: NN) => NN): N {
+    n = fn(n);
+    const node = n as IntermNode;
+    switch (node.interm) {
+        case 'pph':
+        case 'header':
+            return {
+                ...n,
+                content: node.content.map(fn),
+            };
+        case 'list':
+            return {
+                ...n,
+                content: node.content.map(sub => processNodes(sub, fn)),
+            };
+        case 'item':
+            return {
+                ...n,
+                content: node.content.map(sub => processNodes(sub, fn)),
+            };
+        case 'table':
+            return {
+                ...n,
+                content: node.content.map(sub => processNodes(sub, fn)),
+            };
+        case 'row':
+            return {
+                ...n,
+                content: node.content.map(sub => processNodes(sub, fn)),
+            };
+        case 'cell':
+            return {
+                ...n,
+                content: node.content.map(sub => processNodes(sub, fn)),
+            };
+        case 'container':
+            return {
+                ...n,
+                content: node.content.map(sub => processNodes(sub, fn)),
+            };
+        case 'image':
+        case 'separator':
+        case 'ignore':
+            return n;
+        default:
+            return n;
     }
 }
