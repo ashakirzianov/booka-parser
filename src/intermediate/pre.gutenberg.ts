@@ -108,6 +108,8 @@ function checkAttrs() {
                 switch (attr) {
                     case 'class':
                         switch (value) {
+                            case 'rsidenote': case 'lsidenote':
+                                return { flag: 'side-note' };
                             case 'intro':
                                 return { flag: 'chapter-abstract' };
                             case 'footer':
@@ -116,7 +118,7 @@ function checkAttrs() {
                             case 'verse': case 'poetry':
                             case 'stanza':
                                 return { flag: 'poem' };
-                            case 'letter': case 'letter1':
+                            case 'letter': case 'letter1': case 'letter2':
                                 return { flag: 'letter' };
                             // TODO: handle ?
                             case 'letterdate':
@@ -126,6 +128,7 @@ function checkAttrs() {
                             case 'gutindent': case 'gutsumm': // as list items ?
                             case 'noindent':
                             case 'footnote':
+                            case 'scene':
                             // Ignore
                             case 'state':
                             case 'gapspace': case 'chapterhead':
@@ -170,6 +173,7 @@ function checkAttrs() {
                             case 'contents': case 'book':
                             case 'title': case 'title2':
                             case 'centered':
+                            case 'chapter': case 'intro': case 'foots':
                                 return {};
                         }
                         break;
@@ -286,6 +290,8 @@ function checkAttrs() {
                 switch (attr) {
                     case 'class':
                         switch (value) {
+                            case 'charname':
+                                return { flag: 'character-name' };
                             // Ignore:
                             case 'smcap': case 'indexpageno':
                             case 'GutSmall': case 'caps': case 'dropcap':

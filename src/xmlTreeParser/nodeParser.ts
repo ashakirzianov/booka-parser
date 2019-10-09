@@ -136,6 +136,7 @@ const hr: TreeParser<IntermTop> = elemProj({
 
 const container: TreeParser<IntermTop> = elemChProj({
     context: 'container',
+    // TODO: handle 'blockquote' as span ?
     name: ['p', 'div', 'span', 'blockquote', 'a'],
     children: nodes,
     project: (content, { attributes }) => {

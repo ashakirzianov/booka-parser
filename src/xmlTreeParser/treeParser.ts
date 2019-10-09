@@ -108,7 +108,7 @@ function elementParserImpl<TC, T = TC>(
         const diag: ParserDiagnostic = diags.length > 0
             ? {
                 context: ec.context || ec.name || 'unspecified',
-                xml: tree2String(head, 1),
+                xml: tree2String(head),
                 diagnostic: compoundDiagnostic(diags),
             }
             : undefined;
