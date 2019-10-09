@@ -1,0 +1,1 @@
+export { documentParser } from './node';

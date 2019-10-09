@@ -28,7 +28,7 @@ async function exec() {
     console.log(epubs);
     logTimeAsync('parsing', async () => {
         for (const epubPath of epubs) {
-            await processEpubFile(epubPath, reportMeta ? 1 : 0);
+            await processEpubFile(epubPath, reportMeta ? 2 : 1);
         }
     });
 }
@@ -43,17 +43,19 @@ async function processEpubFile(filePath: string, verbosity: number = 0) {
         return;
     }
     const book = result.value.book;
-    // console.log(`---- ${filePath}:`);
+    if (verbosity > -1) {
+        console.log(`---- ${filePath}:`);
+    }
     const pathToSave = join(dirname(filePath), `${basename(filePath, '.epub')}.booka`);
     await saveBook(pathToSave, book);
-    if (verbosity > 0) {
+    if (verbosity > 1) {
         console.log('Tags:');
         console.log(book.tags);
     }
     const bookText = extractNodeText(book.volume);
     const allXmlText = await parseEpubText(filePath);
     const ratio = Math.floor(bookText.length / allXmlText.length * 100);
-    if (verbosity > -1) {
+    if (verbosity > 0) {
         console.log(`Book length: ${bookText.length} symbols, ratio: ${ratio}`);
     }
     if (ratio < 97) {

@@ -37,6 +37,12 @@ export function yieldNext<TIn, TOut>(value: TOut, next: TIn, diagnostic?: Parser
     };
 }
 
+export function compoundResult<T>(results: Array<SuccessLast<T>>): SuccessLast<T[]> {
+    const value = results.map(r => r.value);
+    const diag = compoundDiagnostic(results.map(r => r.diagnostic));
+    return yieldLast(value, diag);
+}
+
 export function and<TI, T1, T2>(p1: Parser<TI, T1>, p2: Parser<TI, T2>): Parser<TI, [T1, T2]>;
 export function and<TI, T1, T2, T3>(p1: Parser<TI, T1>, p2: Parser<TI, T2>, p3: Parser<TI, T3>): Parser<TI, [T1, T2, T3]>;
 export function and<TI, T1, T2, T3, T4>(p1: Parser<TI, T1>, p2: Parser<TI, T2>, p3: Parser<TI, T3>, p4: Parser<TI, T4>): Parser<TI, [T1, T2, T3, T4]>;
@@ -159,7 +165,15 @@ export function maybe<TIn, TOut>(parser: Parser<TIn, TOut>): SuccessParser<TIn, 
 }
 
 export function oneOrMore<TI, T>(parser: Parser<TI, T>): Parser<TI, T[]> {
-    return guard(some(parser), nodes => nodes.length > 0);
+    const someParser = some(parser);
+    return input => {
+        const result = someParser(input);
+        if (result.value.length > 0) {
+            return result;
+        } else {
+            return reject();
+        }
+    };
 }
 
 export function guard<TI, TO>(parser: Parser<TI, TO>, f: (x: TO) => boolean): Parser<TI, TO> {

@@ -34,27 +34,26 @@ export type XmlAttributes = {
 export type XmlTreeBase<T extends string> = {
     type: T,
     parent: XmlTree,
-    name?: string,
 };
+type NoName = { name?: undefined };
 export type XmlTreeWithParent<T extends string> = XmlTreeBase<T> & {
     parent: XmlTreeWithChildren,
 };
 
 export type XmlTree = XmlTreeDocument | XmlTreeElement | XmlTreeText | XmlTreeCData | XmlTreeComment;
 export type XmlTreeDocument = {
-    name?: string,
     type: 'document',
     children: XmlTree[],
     parent: undefined,
-};
+} & NoName;
 export type XmlTreeElement = XmlTreeBase<'element'> & {
     name: string,
     attributes: XmlAttributes,
     children: XmlTree[],
 };
-export type XmlTreeText = XmlTreeBase<'text'> & { text: string };
-export type XmlTreeCData = XmlTreeBase<'cdata'> & { text: string };
-export type XmlTreeComment = XmlTreeBase<'comment'> & { content: string };
+export type XmlTreeText = XmlTreeBase<'text'> & { text: string } & NoName;
+export type XmlTreeCData = XmlTreeBase<'cdata'> & { text: string } & NoName;
+export type XmlTreeComment = XmlTreeBase<'comment'> & { content: string } & NoName;
 
 export type XmlTreeType = XmlTree['type'];
 
@@ -131,7 +130,7 @@ export function attributesToString(attr: XmlAttributes): string {
     return result;
 }
 
-export function tree2String(n: XmlTree, depth: number = 0): string {
+export function tree2String(n: XmlTree, depth: number = 1): string {
     switch (n.type) {
         case 'element':
         case 'document':

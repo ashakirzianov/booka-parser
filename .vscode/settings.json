@@ -89,6 +89,7 @@
         "xlink",
         "xlinkhref",
         "xmlns",
+        "xmls",
         "zipfile"
     ],
     "typescript.preferences.importModuleSpecifier": "relative",
