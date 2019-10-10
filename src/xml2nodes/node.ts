@@ -110,14 +110,7 @@ function singleElementNode(node: XmlTree, env: Env): ResultLast<BookContentNode>
                 return yieldLast(separator, expectEmptyContent(node.children));
             }
         case 'table':
-            {
-                const rows = tableContent(node.children, env);
-                const table: BookContentNode = {
-                    node: 'table',
-                    rows: rows.value,
-                };
-                return yieldLast(table, rows.diagnostic);
-            }
+            return tableNode(node, env);
         case 'ul':
         case 'ol':
             {
@@ -168,6 +161,45 @@ function listItem(node: XmlTreeElement, env: Env): ResultLast<ListItem> {
                     { spans: span.value },
                     span.diagnostic,
                 );
+            }
+        default:
+            return reject();
+    }
+}
+
+function tableNode(node: XmlTreeElement, env: Env): SuccessLast<BookContentNode> {
+    const asGroup = tableAsGroup(node, env);
+    if (asGroup.success) {
+        return asGroup;
+    } else {
+        const rows = tableContent(node.children, env);
+        const table: BookContentNode = {
+            node: 'table',
+            rows: rows.value,
+        };
+        return yieldLast(table, rows.diagnostic);
+    }
+}
+
+function tableAsGroup(node: XmlTreeElement, env: Env): ResultLast<BookContentNode> {
+    const [pre, bodyNode, post, ...rest] = node.children;
+    if (rest.length !== 0 || bodyNode.type !== 'element') {
+        return reject();
+    }
+
+    switch (bodyNode.name) {
+        case 'tbody':
+        case 'tr':
+            return tableAsGroup(bodyNode, env);
+        case 'td':
+            {
+                const inside = topLevelNodes(bodyNode.children, env);
+
+                const group: BookContentNode = {
+                    node: 'group',
+                    nodes: inside.value,
+                };
+                return yieldLast(group, inside.diagnostic);
             }
         default:
             return reject();
@@ -236,6 +268,9 @@ function itemContent(nodes: XmlTree[], env: Env): SuccessLast<Span[]> {
                     diags.push(inside.diagnostic);
                     results.push(...inside.value);
                 }
+                break;
+            case 'br':
+                results.push('\n');
                 break;
             default:
                 diags.push(unexpectedNode(node, 'item content'));
