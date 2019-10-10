@@ -85,6 +85,7 @@ function singleElementNode(node: XmlTree, env: Env): ResultLast<BookContentNode>
     }
 
     switch (node.name) {
+        case 'blockquote': // TODO: assign quote semantic
         case 'p':
         case 'div':
         case 'span':

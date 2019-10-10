@@ -1,6 +1,6 @@
 import {
     ParserDiagnostic, reject, yieldLast, SuccessLast,
-    ResultLast, compoundResult,
+    ResultLast, compoundResult, projectResult, compoundDiagnostic,
 } from '../combinators';
 import { XmlTree, tree2String } from '../xmlStringParser';
 import { Span, compoundSpan } from 'booka-common';
@@ -55,12 +55,14 @@ export function singleSpan(node: XmlTree, env: Env): ResultLast<Span> {
         case 'sub':
             return yieldLast({ sub: insideSpan }, insideDiag);
         case 'q': case 'quote': case 'blockquote':
-            return yieldLast({
-                span: insideSpan,
-                semantics: [{
-                    semantic: 'quote',
-                }],
-            }, insideDiag);
+            return insideDiag === undefined
+                ? yieldLast({
+                    span: insideSpan,
+                    semantics: [{
+                        semantic: 'quote',
+                    }],
+                }, insideDiag)
+                : reject();
         case 'ins':
             return yieldLast({
                 span: insideSpan,
@@ -70,22 +72,28 @@ export function singleSpan(node: XmlTree, env: Env): ResultLast<Span> {
                 }],
             }, insideDiag);
         case 'br':
-            return yieldLast('\n', shouldBeEmpty(node.children));
+            return yieldLast(
+                '\n',
+                compoundDiagnostic([shouldBeEmpty(node.children), insideDiag]),
+            );
         case 'img':
             if (node.attributes.src !== undefined) {
-                return yieldLast({
-                    image: {
-                        kind: 'ref',
-                        ref: node.attributes.src,
-                        imageId: node.attributes.src,
-                        title: node.attributes.title || node.attributes.alt,
+                return yieldLast(
+                    {
+                        image: {
+                            kind: 'ref',
+                            ref: node.attributes.src,
+                            imageId: node.attributes.src,
+                            title: node.attributes.title || node.attributes.alt,
+                        },
                     },
-                }, shouldBeEmpty(node.children));
+                    compoundDiagnostic([shouldBeEmpty(node.children), insideDiag]),
+                );
             } else {
-                return yieldLast('', {
+                return yieldLast('', compoundDiagnostic([{
                     diag: 'img: src not set',
                     xml: tree2String(node),
-                });
+                }, insideDiag]));
             }
             break;
         case 'a':
@@ -93,7 +101,7 @@ export function singleSpan(node: XmlTree, env: Env): ResultLast<Span> {
                 return yieldLast({
                     ref: insideSpan,
                     refToId: node.attributes.href,
-                });
+                }, insideDiag);
             } else {
                 return insideDiag === undefined
                     ? yieldLast(insideSpan)

@@ -43,6 +43,15 @@ export function compoundResult<T>(results: Array<SuccessLast<T>>): SuccessLast<T
     return yieldLast(value, diag);
 }
 
+export function projectResult<Out, P>(result: SuccessLast<Out>, fn: (x: Out) => P): SuccessLast<P>;
+export function projectResult<In, Out, P>(result: SuccessNext<In, Out>, fn: (x: Out) => P): SuccessNext<In, P>;
+export function projectResult<In, Out, P>(result: Result<In, Out>, fn: (x: Out) => P): Result<In, P>;
+export function projectResult<In, Out, P>(result: Result<In, Out>, fn: (x: Out) => P): Result<In, P> {
+    return result.success
+        ? { ...result, value: fn(result.value) }
+        : result;
+}
+
 export function and<TI, T1, T2>(p1: Parser<TI, T1>, p2: Parser<TI, T2>): Parser<TI, [T1, T2]>;
 export function and<TI, T1, T2, T3>(p1: Parser<TI, T1>, p2: Parser<TI, T2>, p3: Parser<TI, T3>): Parser<TI, [T1, T2, T3]>;
 export function and<TI, T1, T2, T3, T4>(p1: Parser<TI, T1>, p2: Parser<TI, T2>, p3: Parser<TI, T3>, p4: Parser<TI, T4>): Parser<TI, [T1, T2, T3, T4]>;
