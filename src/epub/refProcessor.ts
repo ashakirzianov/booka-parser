@@ -1,4 +1,4 @@
-import { BookContentNode, iterateNodeIds, Span, mapSpan, flatten, justNodeGenerator } from 'booka-common';
+import { BookContentNode, Span, mapSpan, flatten, justNodeGenerator } from 'booka-common';
 import { SuccessLast, yieldLast, ParserDiagnostic } from '../combinators';
 
 export function checkReferences(nodes: BookContentNode[]): SuccessLast<BookContentNode[]> {

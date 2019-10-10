@@ -1,10 +1,11 @@
-import { Book, KnownTag, processNodeImagesAsync, BookContentNode, VolumeMeta } from 'booka-common';
+import { Book, KnownTag, BookContentNode, VolumeMeta } from 'booka-common';
 import {
-    yieldLast, andAsync, AsyncFullParser, pipeAsync, ParserDiagnostic, compoundDiagnostic, StreamParser,
+    yieldLast, andAsync, AsyncFullParser, pipeAsync, StreamParser,
 } from '../combinators';
 import { EpubBook } from './epubFileParser';
 import { metadataParser } from './metaParser';
 import { epub2nodes } from './sectionParser';
+import { processImages } from './processImages';
 
 export type MetadataRecordParser = StreamParser<[string, any], KnownTag[]>;
 
@@ -22,29 +23,8 @@ export const epubBookParser: AsyncFullParser<EpubBook, Book> = pipeAsync(
     },
     // Resolve image references
     async ({ book, epub }) => {
-        const diags: ParserDiagnostic[] = [];
-        const resolved = await processNodeImagesAsync(book.volume, async image => {
-            if (image.kind === 'ref') {
-                const buffer = await epub.imageResolver(image.ref);
-                if (buffer) {
-                    return {
-                        ...image,
-                        kind: 'buffer',
-                        imageId: image.imageId,
-                        buffer: buffer,
-                    };
-                } else {
-                    diags.push({
-                        diag: 'couldnt-resolve-image',
-                        id: image.imageId,
-                    });
-                    return image;
-                }
-            } else {
-                return image;
-            }
-        });
-        return yieldLast({ ...book, volume: resolved }, compoundDiagnostic(diags));
+        const result = await processImages(epub, book);
+        return result;
     }
 );
 
