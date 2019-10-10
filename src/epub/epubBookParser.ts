@@ -1,32 +1,49 @@
 import { Book, KnownTag, BookContentNode, VolumeMeta } from 'booka-common';
 import {
-    yieldLast, andAsync, AsyncFullParser, pipeAsync, StreamParser,
+    yieldLast, StreamParser, ParserDiagnostic, ResultLast, compoundDiagnostic,
 } from '../combinators';
-import { EpubBook } from './epubFileParser';
+import { epubFileParser } from './epubFileParser';
 import { metadataParser } from './metaParser';
 import { epub2nodes } from './sectionParser';
 import { processImages } from './processImages';
+import { checkReferences } from './refProcessor';
+
+export type EpubParserInput = {
+    filePath: string,
+};
+export type EpubParserOutput = {
+    book: Book,
+};
+export async function parseEpub({ filePath }: EpubParserInput): Promise<ResultLast<EpubParserOutput>> {
+    const diags: ParserDiagnostic[] = [];
+    const epubResult = await epubFileParser({ filePath });
+    if (!epubResult.success) {
+        return epubResult;
+    }
+    const epub = epubResult.value;
+    const nodesResult = await epub2nodes(epub);
+    diags.push(nodesResult.diagnostic);
+    if (!nodesResult.success) {
+        return nodesResult;
+    }
+    const nodes = nodesResult.value;
+    const meta = await metadataParser(epub);
+    diags.push(meta.diagnostic);
+    const tags = meta.success
+        ? meta.value
+        : [];
+    const { value: processedImages, diagnostic: imagesDiag } = await processImages(epub, buildBook(nodes, tags));
+    diags.push(imagesDiag);
+    const { value: processedRefs, diagnostic: refsDiag } = checkReferences(processedImages);
+    diags.push(refsDiag);
+
+    const result = {
+        book: processedRefs,
+    };
+    return yieldLast(result, compoundDiagnostic(diags));
+}
 
 export type MetadataRecordParser = StreamParser<[string, any], KnownTag[]>;
-
-const ident: AsyncFullParser<EpubBook, EpubBook> = async epub =>
-    yieldLast(epub);
-
-export const epubBookParser: AsyncFullParser<EpubBook, Book> = pipeAsync(
-    // Diagnose book kind, parse metadata and sections
-    andAsync(ident, metadataParser, epub2nodes),
-    // Parse book elements
-    async ([epub, tags, nodes]) => {
-        const book: Book = buildBook(nodes, tags);
-
-        return yieldLast({ book, epub });
-    },
-    // Resolve image references
-    async ({ book, epub }) => {
-        const result = await processImages(epub, book);
-        return result;
-    }
-);
 
 function buildBook(nodes: BookContentNode[], tags: KnownTag[]): Book {
     const meta = buildMeta(tags);

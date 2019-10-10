@@ -4,9 +4,7 @@ import * as fs from 'fs';
 import { extname, join, dirname, basename } from 'path';
 import { parseEpub } from '.';
 import { promisify, inspect } from 'util';
-import { extractNodeText, tagValue, Book } from 'booka-common';
-import { topDiagnostic } from './combinators';
-import { parseEpubText } from './epub';
+import { tagValue, Book } from 'booka-common';
 
 exec();
 
@@ -51,19 +49,6 @@ async function processEpubFile(filePath: string, verbosity: number = 0) {
     if (verbosity > 1) {
         console.log('Tags:');
         console.log(book.tags);
-    }
-    const bookText = extractNodeText(book.volume);
-    const allXmlText = await parseEpubText(filePath);
-    const ratio = Math.floor(bookText.length / allXmlText.length * 100);
-    if (verbosity > 0) {
-        console.log(`Book length: ${bookText.length} symbols, ratio: ${ratio}`);
-    }
-    if (ratio < 97) {
-        if (verbosity > -1) {
-            logRed('Low ratio');
-        }
-        await saveString(`${filePath}.original`, allXmlText);
-        await saveString(`${filePath}.parsed`, bookText);
     }
     const skipTag = tagValue(result.value.book.tags, 'pg-skip');
     if (skipTag !== null && verbosity > -1) {
