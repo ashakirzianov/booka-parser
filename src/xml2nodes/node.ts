@@ -30,38 +30,46 @@ export function documentParser(document: XmlTreeDocument, env: Env): SuccessLast
         });
     }
 
-    return expectNodes(body.children, env);
+    return topLevelNodes(body.children, env);
 }
 
-function expectNodes(nodes: XmlTree[], env: Env): SuccessLast<BookContentNode[]> {
+function topLevelNodes(nodes: XmlTree[], env: Env): SuccessLast<BookContentNode[]> {
     const results: BookContentNode[] = [];
     const diags: ParserDiagnostic[] = [];
-    let spans: Span[] = [];
     for (let idx = 0; idx < nodes.length; idx++) {
-        const node = nodes[idx];
-        // Ignore if not in context of span
-        if (spans.length === 0 && shouldIgnore(node)) {
+        let node = nodes[idx];
+        // Ignore some nodes
+        if (shouldIgnore(node)) {
             continue;
         }
-        const span = singleSpan(node, env);
-        if (span.success) {
+        // Try parse top-level node
+        const nodeResult = singleElementNode(node, env);
+        if (nodeResult.success) {
+            results.push(nodeResult.value);
+            diags.push(nodeResult.diagnostic);
+            continue;
+        }
+
+        // Try parse span
+        const spans: Span[] = [];
+        let span = singleSpan(node, env);
+        while (span.success) {
             spans.push(span.value);
             diags.push(span.diagnostic);
+            idx++;
+            if (idx >= nodes.length) {
+                break;
+            }
+            node = nodes[idx];
+            span = singleSpan(node, env);
+        }
+
+        if (spans.length > 0) {
+            const pph: BookContentNode = makePph(compoundSpan(spans));
+            results.push(pph);
         } else {
-            if (spans.length > 0) {
-                const pph = makePph(compoundSpan(spans));
-                results.push(pph);
-                spans = [];
-            }
-            const nodeResult = singleElementNode(node, env);
-            if (nodeResult.success) {
-                results.push(nodeResult.value);
-                diags.push(nodeResult.diagnostic);
-            } else if (shouldIgnore(node)) {
-                continue;
-            } else {
-                diags.push(unexpectedNode(node));
-            }
+            // Report unexpected
+            diags.push(unexpectedNode(node));
         }
     }
 
@@ -93,17 +101,10 @@ function singleElementNode(node: XmlTree, env: Env): ResultLast<BookContentNode>
     }
 
     switch (node.name) {
-        //  case 'span':
         case 'p':
-            {
-                const span = spanContent(node.children, env);
-                if (span.success) {
-                    const pph: BookContentNode = makePph(span.value);
-                    return yieldLast(pph, span.diagnostic);
-                } else {
-                    return groupContent(node.children, env);
-                }
-            }
+        case 'div':
+        case 'span':
+            return paragraphNode(node, env);
         case 'h1': case 'h2': case 'h3': case 'h4': case 'h5': case 'h6':
             {
                 const level = 4 - parseInt(node.name[1], 10);
@@ -123,9 +124,6 @@ function singleElementNode(node: XmlTree, env: Env): ResultLast<BookContentNode>
                 };
                 return yieldLast(separator, expectEmptyContent(node.children));
             }
-        case 'span':
-        case 'div':
-            return groupContent(node.children, env);
         case 'table':
             {
                 const rows = tableContent(node.children, env);
@@ -153,8 +151,18 @@ function singleElementNode(node: XmlTree, env: Env): ResultLast<BookContentNode>
     }
 }
 
-function groupContent(nodes: XmlTree[], env: Env): SuccessLast<GroupNode> {
-    const content = expectNodes(nodes, env);
+function paragraphNode(node: XmlTreeElement, env: Env) {
+    const span = spanContent(node.children, env);
+    if (span.success) {
+        const pph: BookContentNode = makePph(span.value);
+        return yieldLast(pph, span.diagnostic);
+    } else {
+        return groupNode(node, env);
+    }
+}
+
+function groupNode(node: XmlTreeElement, env: Env): SuccessLast<GroupNode> {
+    const content = topLevelNodes(node.children, env);
     const group: BookContentNode = {
         node: 'group',
         nodes: content.value,
@@ -240,45 +248,3 @@ function reportUnexpected<T>(nodes: XmlTree[], env: Env, fn: (node: XmlTreeEleme
 
     return yieldLast(results, compoundDiagnostic(diags));
 }
-
-// Parsers:
-
-// const skipNewLineElement: SingleNodeParser = headParser(node => {
-//     if (node.type === 'text' && node.text.startsWith('\n') && isWhitespaces(node.text)) {
-//         return yieldLast({ node: 'ignore' });
-//     } else {
-//         return reject();
-//     }
-// });
-// const element: SingleNodeParser = headParser(singleElementNode);
-// const plainSpans = oneOrMore(headParser(singleSpan));
-// const plainParagraph: SingleNodeParser = stream => {
-//     const result = plainSpans(stream);
-//     if (result.success) {
-//         const span = compoundSpan(result.value);
-//         return yieldLast(makePph(span), result.diagnostic);
-//     } else {
-//         return result;
-//     }
-// };
-// const report: SingleNodeParser = headParser(node =>
-//     yieldLast({ node: 'ignore' }, unexpectedNode(node)),
-// );
-// const singleTopLevel = choice(
-//     skipNewLineElement,
-//     plainParagraph,
-//     element,
-//     report,
-// );
-// const topLevel = some(singleTopLevel);
-
-// function expectNodes(nodes: XmlTree[], env: Env): SuccessLast<BookContentNode[]> {
-//     const stream = makeStream(nodes, env);
-//     const result = topLevel(stream);
-//     const content = result.value.filter(isContent);
-//     const tail = result.next
-//         ? result.next.stream
-//         : [];
-//     const diag = expectEmptyContent(tail);
-//     return yieldLast(content, diag);
-// }
