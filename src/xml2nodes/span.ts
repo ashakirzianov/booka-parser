@@ -1,12 +1,12 @@
+import { Span, compoundSpan } from 'booka-common';
 import {
-    ParserDiagnostic, reject, yieldLast, SuccessLast,
+    reject, yieldLast, SuccessLast,
     ResultLast, compoundResult, compoundDiagnostic,
 } from '../combinators';
 import { XmlTree, tree2String } from '../xmlStringParser';
-import { Span, compoundSpan } from 'booka-common';
-import { Env, unexpectedNode, expectEmptyContent } from './base';
+import { Xml2NodesEnv, unexpectedNode, expectEmptyContent } from './common';
 
-export function expectSpanContent(nodes: XmlTree[], env: Env): SuccessLast<Span[]> {
+export function expectSpanContent(nodes: XmlTree[], env: Xml2NodesEnv): SuccessLast<Span[]> {
     const results = nodes.map(n => {
         const s = singleSpan(n, env);
         return !s.success
@@ -16,14 +16,14 @@ export function expectSpanContent(nodes: XmlTree[], env: Env): SuccessLast<Span[
     return compoundResult(results);
 }
 
-export function spanContent(nodes: XmlTree[], env: Env): ResultLast<Span[]> {
+export function spanContent(nodes: XmlTree[], env: Xml2NodesEnv): ResultLast<Span[]> {
     const spans = expectSpanContent(nodes, env);
     return spans.diagnostic === undefined
         ? spans
         : reject();
 }
 
-export function singleSpan(node: XmlTree, env: Env): ResultLast<Span> {
+export function singleSpan(node: XmlTree, env: Xml2NodesEnv): ResultLast<Span> {
     if (node.type === 'text') {
         return yieldLast(node.text);
     } else if (node.type !== 'element') {

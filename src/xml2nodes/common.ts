@@ -1,11 +1,14 @@
-import { Stream, StreamParser, ParserDiagnostic, ResultLast, SuccessLast, yieldLast, compoundDiagnostic } from '../combinators';
-import { XmlTree, tree2String, XmlTreeElement } from '../xmlStringParser';
+import {
+    Stream, StreamParser, ParserDiagnostic, SuccessLast, yieldLast,
+    compoundDiagnostic,
+} from '../combinators';
+import { XmlTree, tree2String } from '../xmlStringParser';
 import { BookContentNode } from 'booka-common';
 import { isWhitespaces } from '../utils';
 
-export type Env = {};
-export type Input = Stream<XmlTree, Env>;
-export type NodeParser = StreamParser<XmlTree, BookContentNode[], Env>;
+export type Xml2NodesEnv = {};
+export type Input = Stream<XmlTree, Xml2NodesEnv>;
+export type NodeParser = StreamParser<XmlTree, BookContentNode[], Xml2NodesEnv>;
 
 export function expectEmptyContent(children: XmlTree[]): ParserDiagnostic {
     return children.length > 0
@@ -44,8 +47,8 @@ type ProcessNodeResult<T> = {
     values?: T[],
     diag?: ParserDiagnostic,
 };
-type NodeProcessor<T> = (node: XmlTree, env: Env) => ProcessNodeResult<T>;
-export function processNodes<T>(nodes: XmlTree[], env: Env, proc: NodeProcessor<T>): SuccessLast<T[]> {
+type NodeProcessor<T> = (node: XmlTree, env: Xml2NodesEnv) => ProcessNodeResult<T>;
+export function processNodes<T>(nodes: XmlTree[], env: Xml2NodesEnv, proc: NodeProcessor<T>): SuccessLast<T[]> {
     const diags: ParserDiagnostic[] = [];
     const results: T[] = [];
     for (const node of nodes) {

@@ -10,15 +10,15 @@ import {
     reject, yieldLast, compoundDiagnostic,
 } from '../combinators';
 import {
-    Env, unexpectedNode, expectEmptyContent, shouldIgnore,
-} from './base';
+    Xml2NodesEnv, unexpectedNode, expectEmptyContent, shouldIgnore,
+} from './common';
 import { expectSpanContent, singleSpan, spanContent } from './span';
 import { tableNode } from './table';
 import { listNode } from './list';
 
 // Functions:
 
-export function documentParser(document: XmlTreeDocument, env: Env): SuccessLast<BookContentNode[]> {
+export function documentParser(document: XmlTreeDocument, env: Xml2NodesEnv): SuccessLast<BookContentNode[]> {
     const html = document.children
         .find(n => n.name === 'html');
     if (html === undefined || html.type !== 'element') {
@@ -39,7 +39,7 @@ export function documentParser(document: XmlTreeDocument, env: Env): SuccessLast
     return topLevelNodes(body.children, env);
 }
 
-export function topLevelNodes(nodes: XmlTree[], env: Env): SuccessLast<BookContentNode[]> {
+export function topLevelNodes(nodes: XmlTree[], env: Xml2NodesEnv): SuccessLast<BookContentNode[]> {
     const results: BookContentNode[] = [];
     const diags: ParserDiagnostic[] = [];
     for (let idx = 0; idx < nodes.length; idx++) {
@@ -49,7 +49,7 @@ export function topLevelNodes(nodes: XmlTree[], env: Env): SuccessLast<BookConte
             continue;
         }
         // Try parse top-level node
-        const nodeResult = singleElementNode(node, env);
+        const nodeResult = singleNode(node, env);
         if (nodeResult.success) {
             results.push(nodeResult.value);
             diags.push(nodeResult.diagnostic);
@@ -85,7 +85,7 @@ export function topLevelNodes(nodes: XmlTree[], env: Env): SuccessLast<BookConte
 // TODO: assign ids
 // TODO: assign semantics
 // TODO: report attrs ?
-function singleElementNode(node: XmlTree, env: Env): ResultLast<BookContentNode> {
+function singleNode(node: XmlTree, env: Xml2NodesEnv): ResultLast<BookContentNode> {
     switch (node.name) {
         case 'blockquote': // TODO: assign quote semantic
         case 'p':
@@ -121,7 +121,7 @@ function singleElementNode(node: XmlTree, env: Env): ResultLast<BookContentNode>
     }
 }
 
-function paragraphNode(node: XmlTreeElement, env: Env) {
+function paragraphNode(node: XmlTreeElement, env: Xml2NodesEnv) {
     const span = spanContent(node.children, env);
     if (span.success) {
         const pph: BookContentNode = makePph(span.value);
@@ -131,7 +131,7 @@ function paragraphNode(node: XmlTreeElement, env: Env) {
     }
 }
 
-function groupNode(node: XmlTreeElement, env: Env): SuccessLast<GroupNode> {
+function groupNode(node: XmlTreeElement, env: Xml2NodesEnv): SuccessLast<GroupNode> {
     const content = topLevelNodes(node.children, env);
     const group: BookContentNode = {
         node: 'group',

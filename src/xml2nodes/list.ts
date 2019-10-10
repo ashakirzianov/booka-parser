@@ -5,10 +5,10 @@ import { XmlTreeElement, XmlTree } from '../xmlStringParser';
 import {
     yieldLast, SuccessLast,
 } from '../combinators';
-import { Env, unexpectedNode, processNodes } from './base';
+import { Xml2NodesEnv, unexpectedNode, processNodes } from './common';
 import { topLevelNodes } from './node';
 
-export function listNode(node: XmlTreeElement, env: Env): SuccessLast<BookContentNode> {
+export function listNode(node: XmlTreeElement, env: Xml2NodesEnv): SuccessLast<BookContentNode> {
     const listData = listItems(node.children, env);
     const items: ListItem[] = listData.value.map(i => ({
         spans: i,
@@ -24,7 +24,7 @@ export function listNode(node: XmlTreeElement, env: Env): SuccessLast<BookConten
 }
 
 type ListItemData = Span[];
-function listItems(nodes: XmlTree[], env: Env): SuccessLast<ListItemData[]> {
+function listItems(nodes: XmlTree[], env: Xml2NodesEnv): SuccessLast<ListItemData[]> {
     return processNodes(nodes, env, node => {
         switch (node.name) {
             case 'li':
