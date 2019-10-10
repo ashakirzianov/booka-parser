@@ -30,5 +30,7 @@ function sectionParser(section: EpubSection): SuccessLast<BookContentNode[]> {
         });
     }
 
-    return documentParser(xmlDocument.value, {});
+    return documentParser(xmlDocument.value, {
+        filePath: section.filePath,
+    });
 }

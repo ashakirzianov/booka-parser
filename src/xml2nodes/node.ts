@@ -59,10 +59,29 @@ export function topLevelNodes(nodes: XmlTree[], env: Xml2NodesEnv): SuccessLast<
     return yieldLast(results, compoundDiagnostic(diags));
 }
 
-// TODO: assign ids
 // TODO: assign semantics
 // TODO: report attrs ?
 function singleNode(node: XmlTree, env: Xml2NodesEnv): ResultLast<BookContentNode> {
+    const result = singleNodeImpl(node, env);
+    if (result.success) {
+        let bookNode = result.value;
+        if (node.type === 'element' && node.attributes.id !== undefined) {
+            const refId = buildRefId(env.filePath, node.attributes.id);
+            bookNode = bookNode.node === undefined
+                ? {
+                    node: 'pph',
+                    span: bookNode,
+                    refId,
+                }
+                : { ...bookNode, refId };
+        }
+        return yieldLast(bookNode, result.diagnostic);
+    } else {
+        return result;
+    }
+}
+
+function singleNodeImpl(node: XmlTree, env: Xml2NodesEnv): ResultLast<BookContentNode> {
     switch (node.name) {
         case 'blockquote': // TODO: assign quote semantic
         case 'p':
@@ -115,4 +134,10 @@ function groupNode(node: XmlTreeElement, env: Xml2NodesEnv): SuccessLast<GroupNo
         nodes: content.value,
     };
     return yieldLast(group, content.diagnostic);
+}
+
+function buildRefId(filePath: string, id: string | undefined) {
+    return id !== undefined
+        ? `${filePath}#${id}`
+        : undefined;
 }
