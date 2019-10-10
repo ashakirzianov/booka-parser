@@ -76,22 +76,6 @@ function topLevelNodes(nodes: XmlTree[], env: Env): SuccessLast<BookContentNode[
     return yieldLast(results, compoundDiagnostic(diags));
 }
 
-function shouldIgnore(node: XmlTree): boolean {
-    switch (node.type) {
-        case 'text':
-            return node.text.startsWith('\n') && isWhitespaces(node.text);
-        case 'element':
-            switch (node.name) {
-                case 'svg':
-                    return true;
-                default:
-                    return false;
-            }
-        default:
-            return false;
-    }
-}
-
 // TODO: assign ids
 // TODO: assign semantics
 // TODO: report attrs ?
@@ -109,7 +93,7 @@ function singleElementNode(node: XmlTree, env: Env): ResultLast<BookContentNode>
             {
                 const level = 4 - parseInt(node.name[1], 10);
                 const spans = expectSpanContent(node.children, env);
-                const text = extractSpanText(spans.value);
+                const text = spans.value.map(extractSpanText).join('');
                 const title: BookContentNode = {
                     node: 'title',
                     level,
@@ -178,9 +162,9 @@ function listItem(node: XmlTreeElement, env: Env): ResultLast<ListItem> {
     switch (node.name) {
         case 'li':
             {
-                const span = expectSpanContent(node.children, env);
+                const span = itemContent(node.children, env);
                 return yieldLast(
-                    { item: span },
+                    { spans: span.value },
                     span.diagnostic,
                 );
             }
@@ -219,12 +203,47 @@ function tableCell(node: XmlTreeElement, env: Env): ResultLast<TableCell> {
         case 'th':
         case 'td':
             {
-                const span = expectSpanContent(node.children, env);
-                return span;
+                const spans = itemContent(node.children, env);
+                return yieldLast(
+                    { spans: spans.value },
+                    spans.diagnostic,
+                );
             }
         default:
             return reject();
     }
+}
+
+function itemContent(nodes: XmlTree[], env: Env): SuccessLast<Span[]> {
+    const spans = spanContent(nodes, env);
+    if (spans.success) {
+        return spans;
+    }
+
+    const diags: ParserDiagnostic[] = [];
+    const results: Span[] = [];
+    for (const node of nodes) {
+        if (shouldIgnore(node)) {
+            continue;
+        }
+
+        switch (node.name) {
+            case 'p':
+            case 'div':
+                {
+                    const inside = itemContent(node.children, env);
+                    diags.push(inside.diagnostic);
+                    results.push(...inside.value);
+                }
+                break;
+            default:
+                diags.push(unexpectedNode(node, 'item content'));
+                break;
+
+        }
+    }
+
+    return yieldLast(results, compoundDiagnostic(diags));
 }
 
 function reportUnexpected<T>(nodes: XmlTree[], env: Env, fn: (node: XmlTreeElement, env: Env) => ResultLast<T>): SuccessLast<T[]> {
@@ -247,4 +266,20 @@ function reportUnexpected<T>(nodes: XmlTree[], env: Env, fn: (node: XmlTreeEleme
     }
 
     return yieldLast(results, compoundDiagnostic(diags));
+}
+
+function shouldIgnore(node: XmlTree): boolean {
+    switch (node.type) {
+        case 'text':
+            return node.text.startsWith('\n') && isWhitespaces(node.text);
+        case 'element':
+            switch (node.name) {
+                case 'svg':
+                    return true;
+                default:
+                    return false;
+            }
+        default:
+            return false;
+    }
 }

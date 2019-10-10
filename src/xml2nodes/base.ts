@@ -16,10 +16,11 @@ export function expectEmptyContent(children: XmlTree[]): ParserDiagnostic {
         : undefined;
 }
 
-export function unexpectedNode(node: XmlTree): ParserDiagnostic {
+export function unexpectedNode(node: XmlTree, context?: any): ParserDiagnostic {
     return {
         diag: 'unexpected node',
         xml: tree2String(node),
+        ...(context !== undefined && { context }),
     };
 }
 

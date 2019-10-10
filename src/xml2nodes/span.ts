@@ -6,7 +6,7 @@ import { XmlTree, tree2String } from '../xmlStringParser';
 import { Span, compoundSpan } from 'booka-common';
 import { Env } from './base';
 
-export function expectSpanContent(nodes: XmlTree[], env: Env): SuccessLast<Span> {
+export function expectSpanContent(nodes: XmlTree[], env: Env): SuccessLast<Span[]> {
     const results = nodes.map(n => {
         const s = singleSpan(n, env);
         return !s.success
@@ -16,15 +16,13 @@ export function expectSpanContent(nodes: XmlTree[], env: Env): SuccessLast<Span>
             })
             : s;
     });
-    const r = compoundResult(results);
-    const span = compoundSpan(r.value);
-    return yieldLast(span, r.diagnostic);
+    return compoundResult(results);
 }
 
-export function spanContent(nodes: XmlTree[], env: Env): ResultLast<Span> {
-    const span = expectSpanContent(nodes, env);
-    return span.diagnostic === undefined
-        ? span
+export function spanContent(nodes: XmlTree[], env: Env): ResultLast<Span[]> {
+    const spans = expectSpanContent(nodes, env);
+    return spans.diagnostic === undefined
+        ? spans
         : reject();
 }
 
@@ -36,7 +34,7 @@ export function singleSpan(node: XmlTree, env: Env): ResultLast<Span> {
     }
 
     const inside = expectSpanContent(node.children, env);
-    const insideSpan = inside.value;
+    const insideSpan = compoundSpan(inside.value);
     const insideDiag = inside.diagnostic;
 
     switch (node.name) {
