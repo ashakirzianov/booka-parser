@@ -13,8 +13,6 @@ export async function epub2nodes(epub: EpubBook): Promise<ResultLast<BookContent
         const result = sectionParser(section);
         diags.push(result.diagnostic);
         content.push(...result.value);
-        const text = result.value.map(extractNodeText).join('\n');
-        // console.log(text);
     }
 
     return yieldLast(content, compoundDiagnostic(diags));
