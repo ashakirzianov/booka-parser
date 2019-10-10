@@ -92,7 +92,7 @@ function singleNodeImpl(node: Xml, env: Xml2NodesEnv): ResultLast<BookContentNod
         case 'blockquote':
             {
                 const pph = paragraphNode(node, env);
-                const result = appendSemantics(pph, [{ semantic: 'quote' }]);
+                const result = appendSemantics(pph.value, [{ semantic: 'quote' }]);
                 return yieldLast(result, pph.diagnostic);
             }
         case 'p':
