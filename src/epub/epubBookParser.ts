@@ -4,14 +4,9 @@ import {
 } from '../combinators';
 import { EpubBook } from './epubFileParser';
 import { metadataParser } from './metaParser';
-import { Tree2ElementsParser } from '../xmlTreeParser';
 import { epub2nodes } from './sectionParser';
 
 export type MetadataRecordParser = StreamParser<[string, any], KnownTag[]>;
-export type EpubBookParserHooks = {
-    nodeHooks: Tree2ElementsParser[],
-    metadataHooks: MetadataRecordParser[],
-};
 
 const ident: AsyncFullParser<EpubBook, EpubBook> = async epub =>
     yieldLast(epub);
