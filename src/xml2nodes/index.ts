@@ -1,1 +1,1 @@
-export { documentParser } from './node';
+export { documentParser } from './document';
