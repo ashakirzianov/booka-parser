@@ -1,197 +1,125 @@
-// import {
-//     ParagraphNode, makePph, KnownTag, flatten, compoundSpan,
-// } from 'booka-common';
-// import { EpubBookParserHooks, MetadataRecordParser } from './epubBookParser';
-// import {
-//     textNode,
-//     whitespaces, buildRef, Tree2ElementsParser, ignoreClass, elemProj, elem, elemChProj, elemCh,
-// } from '../xmlTreeParser';
-// import {
-//     translate, seq, maybe, envParser, headParser, reject, yieldLast, some,
-// } from '../combinators';
+import { HooksProvider } from './hooks';
+import { Hooks, AttributesHookResult } from '../xml2nodes';
 
-// export const gutenbergHooks: EpubBookParserHooks = {
-//     nodeHooks: [
-//         footnote(),
-//         // skipTocP(),
-//         // skipTocTable(),
-//         // ignoreClass('chapterhead'),
-//         // poem(),
-//         referenceBookMarker(),
-//         oldFashionTitle(),
-//     ],
-//     metadataHooks: [metaHook()],
-// };
+export const gutenberg: HooksProvider = ({ rawMetadata }) => {
+    if (!rawMetadata) {
+        return undefined;
+    }
 
-// function metaHook(): MetadataRecordParser {
-//     return headParser(([key, value]) => {
-//         switch (key) {
-//             case 'subject':
-//                 const subs = value as string[];
-//                 const subjects = flatten(subs.map(sub => sub.split(' -- ')));
-//                 const tags: KnownTag[] = subjects.map(sub => ({
-//                     tag: 'subject' as const,
-//                     value: sub,
-//                 }));
-//                 return yieldLast(tags);
-//             case 'dc:identifier':
-//                 const id = value['#'];
-//                 if (id && typeof id === 'string') {
-//                     const matches = id.match(/http:\/\/www.gutenberg\.org\/ebooks\/([0-9]*)/);
-//                     if (matches && matches[1]) {
-//                         const index = parseInt(matches[1], 10);
-//                         if (index) {
-//                             return yieldLast([{ tag: 'pg-index', value: index }]);
-//                         }
-//                     }
-//                 }
+    const gutenbergUrl = 'http://www.gutenberg.org';
+    const source = rawMetadata['dc:source'];
+    const isGutenbergSource = typeof source === 'string'
+        && source.startsWith(gutenbergUrl);
+    if (isGutenbergSource) {
+        return gutenbergHooks;
+    }
+    const id = rawMetadata['dc:identifier'];
+    const marker = id && id['#'];
+    const isMarked = typeof marker === 'string'
+        && marker.startsWith(gutenbergUrl);
 
-//                 return yieldLast([], { diag: 'bad-meta', meta: { key, value } });
-//             default:
-//                 return reject();
-//         }
-//     });
-// }
+    return isMarked
+        ? gutenbergHooks
+        : undefined;
+};
 
-// function oldFashionTitle(): Tree2ElementsParser {
-//     const titleRegex = /\*\*\*\*\*The Project Gutenberg Etext "([^"\*]*)\**"/;
-//     return elemChProj({
-//         name: 'p',
-//         attrs: {
-//             style: 'margin-top: 2em',
-//         },
-//         children: textNode(text => {
-//             const match = text.match(titleRegex);
-//             return match ? match[1] : null;
-//         }),
-//         project: (title: string) => {
-//             return [{
-//                 element: 'tag',
-//                 tag: {
-//                     tag: 'title',
-//                     value: title,
-//                 },
-//             }];
-//         },
-//     });
-// }
+const gutenbergHooks: Hooks = {
+    attributesHook,
+};
 
-// function referenceBookMarker(): Tree2ElementsParser {
-//     const markerText = `THIS EBOOK WAS ONE OF PROJECT GUTENBERG'S EARLY FILES`;
-//     return elemChProj({
-//         name: 'p',
-//         children: textNode(text =>
-//             text.startsWith(markerText)
-//                 ? true
-//                 : null),
-//         project: () => {
-//             return [{
-//                 element: 'tag',
-//                 tag: {
-//                     tag: 'pg-skip',
-//                 },
-//             }];
-//         },
-//     });
-// }
-
-// function skipTocP(): Tree2ElementsParser {
-//     return elemProj({
-//         name: 'p',
-//         classes: 'toc',
-//         project: () => [],
-//     });
-// }
-
-// function skipTocTable(): Tree2ElementsParser {
-//     return elemProj({
-//         name: 'table',
-//         attrs: { summary: 'Toc' },
-//         project: () => [],
-//     });
-// }
-
-// function footnote(): Tree2ElementsParser {
-//     return envParser(env => {
-//         const footnoteId = elemProj({
-//             name: 'a',
-//             attrs: {
-//                 id: i => i
-//                     ? i.startsWith('link')
-//                     : false,
-//             },
-//             project: el => el.attributes.id,
-//         });
-//         const footnoteMarker = elemCh({
-//             name: 'p',
-//             children: footnoteId,
-//         });
-
-//         const footnoteTitle = textNode(t => {
-//             if (t.endsWith('(')) {
-//                 t = t.substr(0, t.length - 1);
-//             }
-
-//             return t.trim();
-//         });
-
-//         const footnoteTitleLine = translate(
-//             seq(
-//                 footnoteTitle,
-//                 elem({ name: 'a' }),
-//                 textNode(),
-//                 elem({ name: 'br' }),
-//             ),
-//             ([title]) => title,
-//         );
-
-//         const pph = translate(
-//             some(env.spanParser),
-//             (spans): ParagraphNode => makePph(compoundSpan(spans)),
-//         );
-//         const footnoteContent = seq(maybe(footnoteTitleLine), pph);
-//         const footnoteContainer = elemChProj({
-//             name: 'p',
-//             classes: 'foot',
-//             children: footnoteContent,
-//             project: ([title, content]) => ({ title, content }),
-//         });
-
-//         const fullFootnote: Tree2ElementsParser = translate(
-//             seq(footnoteMarker, whitespaces, footnoteContainer),
-//             ([id, _, { content, title }]) => [{
-//                 element: 'content',
-//                 content: {
-//                     node: 'group',
-//                     refId: buildRef(env.filePath, id),
-//                     nodes: [content],
-//                     semantic: {
-//                         footnote: {
-//                             title: title ? [title] : [],
-//                         },
-//                     },
-//                 },
-//             }],
-//         );
-
-//         return fullFootnote;
-//     });
-// }
-
-// // function poem(): Tree2ElementsParser {
-// //     return elemChProj({
-// //         name: 'p',
-// //         classes: 'verse',
-// //         children: paragraphNode,
-// //         project: p => {
-// //             return [{
-// //                 element: 'content',
-// //                 content: {
-// //                     node: 'pph',
-// //                     span: p,
-// //                     semantic: { poem: {} },
-// //                 },
-// //             }];
-// //         },
-// //     });
-// // }
+function attributesHook(element: string, attr: string, value: string): AttributesHookResult {
+    switch (attr) {
+        case 'class':
+            // Ignore standard: i11, c7, z1...
+            if (value.match(/[icz]\d*$/)) { return {}; }
+            switch (value) {
+                case 'charname':
+                    return { flag: 'character-name' };
+                case 'rsidenote': case 'lsidenote':
+                    return { flag: 'side-note' };
+                case 'intro':
+                    return { flag: 'chapter-abstract' };
+                case 'footer':
+                    return { flag: 'footer' };
+                case 'poem': case 'poem1':
+                case 'verse': case 'poetry':
+                case 'stanza':
+                    return { flag: 'poem' };
+                case 'letter': case 'letter1': case 'letter2':
+                    return { flag: 'letter' };
+                case 'mynote':
+                    return {
+                        semantics: [{
+                            semantic: 'tech-note',
+                            source: 'project-gutenberg',
+                        }],
+                    };
+                case 'blockquot':
+                    return {
+                        semantics: [{
+                            semantic: 'quote',
+                        }],
+                    };
+                case 'extracts':
+                    return { flag: 'extracts' };
+                case 'titlepage':
+                    return { flag: 'title-page' };
+                case 'illus':
+                    return { flag: 'illustrations' };
+                // TODO: handle ?
+                case 'letterdate':
+                case 'preface1': case 'preface2':
+                case 'center': // as formating ?
+                case 'gapshortline': // as separator ?
+                case 'gutindent': case 'gutsumm': // as list items ?
+                case 'noindent':
+                case 'footnote':
+                case 'scene':
+                case 'ctr': case 'ind':
+                // Ignore
+                case 'state':
+                case 'gapspace': case 'chapterhead':
+                case 'pgmonospaced': case 'pgheader':
+                case 'fig': case 'figleft': case 'figcenter':
+                case 'foot': case 'finis':
+                case 'right': case 'pfirst':
+                case 'contents': case 'book':
+                case 'title': case 'title2':
+                case 'centered':
+                case 'chapter': case 'foots':
+                case 'tiny': case 'short': case 'main':
+                case 'break': case 'full':
+                case 'none': case 'nonetn':
+                    return {};
+                default:
+                    return {
+                        diag: {
+                            diag: 'unexpected pg class',
+                            class: value,
+                        },
+                    };
+            }
+            break;
+        case 'summary':
+            switch (value) {
+                case 'carol':
+                    return { flag: 'poem' };
+                case 'Illustrations':
+                    return { flag: 'illustrations' };
+                case 'Toc':
+                    return { flag: 'table-of-contents' };
+                case '':
+                    return {};
+                default:
+                    return {
+                        diag: {
+                            diag: 'unexpected pg summary',
+                            summary: value,
+                        },
+                    };
+            }
+            break;
+        default:
+            return {};
+    }
+}

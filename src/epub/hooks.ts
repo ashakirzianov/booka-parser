@@ -1,17 +1,14 @@
-// import { fictionBookEditorHooks } from './hooks.fictionBookEditor';
-// import { fb2epubHooks } from './hooks.fb2epub';
-// import { gutenbergHooks } from './hooks.gutenberg';
-// import { EpubBookParserHooks } from './epubBookParser';
+import { Hooks } from '../xml2nodes';
+import { EpubBook } from './epubFileParser';
 
-// export type AllHooks = {
-//     [key in string]: EpubBookParserHooks;
-// };
-// export const epubParserHooks: AllHooks = {
-//     fb2epub: fb2epubHooks,
-//     fictionBookEditor: fictionBookEditorHooks,
-//     gutenberg: gutenbergHooks,
-//     unknown: {
-//         nodeHooks: [],
-//         metadataHooks: [],
-//     },
-// };
+export type HooksProvider = (epub: EpubBook) => Hooks | undefined;
+
+export function resolveHooks(epub: EpubBook, providers: HooksProvider[]): Hooks | undefined {
+    for (const p of providers) {
+        const hooks = p(epub);
+        if (hooks !== undefined) {
+            return hooks;
+        }
+    }
+    return undefined;
+}

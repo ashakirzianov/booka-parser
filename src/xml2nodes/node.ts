@@ -1,5 +1,5 @@
 import {
-    Span, GroupNode, BookContentNode,
+    Span, GroupNode, BookContentNode, appendSemantics,
     makePph, extractSpanText, compoundSpan,
 } from 'booka-common';
 import {
@@ -64,9 +64,11 @@ export function topLevelNodes(nodes: XmlTree[], env: Xml2NodesEnv): SuccessLast<
 // TODO: report attrs ?
 function singleNode(node: XmlTree, env: Xml2NodesEnv): ResultLast<BookContentNode> {
     const result = singleNodeImpl(node, env);
-    const attrs = processNodeAttributes(node, env);
-    const diag = compoundDiagnostic([result.diagnostic, attrs.diag]);
     if (result.success) {
+        // const attrs = { diag: undefined };
+        const attrs = processNodeAttributes(node, env);
+        const diag = compoundDiagnostic([result.diagnostic, attrs.diag]);
+
         let bookNode = result.value;
         if (node.type === 'element' && node.attributes.id !== undefined) {
             const refId = buildRefId(env.filePath, node.attributes.id);
@@ -77,6 +79,9 @@ function singleNode(node: XmlTree, env: Xml2NodesEnv): ResultLast<BookContentNod
                     refId,
                 }
                 : { ...bookNode, refId };
+        }
+        if (attrs.semantics && attrs.semantics.length > 0) {
+            bookNode = appendSemantics(bookNode, attrs.semantics);
         }
         return yieldLast(bookNode, diag);
     } else {

@@ -3,10 +3,20 @@ import {
     compoundDiagnostic,
 } from '../combinators';
 import { XmlTree, tree2String } from '../xmlStringParser';
-import { BookContentNode } from 'booka-common';
+import { BookContentNode, Semantic, FlagSemanticKey } from 'booka-common';
 import { isWhitespaces } from '../utils';
 
+export type AttributesHookResult = {
+    flag?: FlagSemanticKey,
+    semantics?: Semantic[],
+    diag?: ParserDiagnostic,
+};
+export type AttributesHook = (element: string, attr: string, value: string) => AttributesHookResult;
+export type Hooks = {
+    attributesHook?: AttributesHook,
+};
 export type Xml2NodesEnv = {
+    hooks?: Hooks,
     filePath: string,
 };
 export type Input = Stream<XmlTree, Xml2NodesEnv>;
