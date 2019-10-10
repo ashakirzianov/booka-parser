@@ -4,7 +4,7 @@ import {
 } from '../combinators';
 import { XmlTree, tree2String } from '../xmlStringParser';
 import { Span, compoundSpan } from 'booka-common';
-import { Env, unexpectedNode } from './base';
+import { Env, unexpectedNode, expectEmptyContent } from './base';
 
 export function expectSpanContent(nodes: XmlTree[], env: Env): SuccessLast<Span[]> {
     const results = nodes.map(n => {
@@ -71,7 +71,7 @@ export function singleSpan(node: XmlTree, env: Env): ResultLast<Span> {
         case 'br':
             return yieldLast(
                 '\n',
-                compoundDiagnostic([shouldBeEmpty(node.children), insideDiag]),
+                compoundDiagnostic([expectEmptyContent(node.children), insideDiag]),
             );
         case 'img':
             if (node.attributes.src !== undefined) {
@@ -84,7 +84,7 @@ export function singleSpan(node: XmlTree, env: Env): ResultLast<Span> {
                             title: node.attributes.title || node.attributes.alt,
                         },
                     },
-                    compoundDiagnostic([shouldBeEmpty(node.children), insideDiag]),
+                    compoundDiagnostic([expectEmptyContent(node.children), insideDiag]),
                 );
             } else {
                 return yieldLast('', compoundDiagnostic([{
@@ -107,13 +107,4 @@ export function singleSpan(node: XmlTree, env: Env): ResultLast<Span> {
         default:
             return reject();
     }
-}
-
-function shouldBeEmpty(children: XmlTree[]): ParserDiagnostic {
-    return children.length !== 0
-        ? {
-            diag: 'unexpected span content',
-            inside: children.map(tree2String),
-        }
-        : undefined;
 }
