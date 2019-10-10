@@ -3,7 +3,7 @@ import {
     makePph, extractSpanText, compoundSpan,
 } from 'booka-common';
 import {
-    XmlTree, XmlTreeElement, XmlTreeDocument, tree2String,
+    XmlTree, XmlTreeElement,
 } from '../xmlStringParser';
 import {
     ParserDiagnostic, ResultLast, SuccessLast,
@@ -15,6 +15,7 @@ import {
 import { expectSpanContent, singleSpan, spanContent } from './span';
 import { tableNode } from './table';
 import { listNode } from './list';
+import { processNodeAttributes } from './attributes';
 
 export function topLevelNodes(nodes: XmlTree[], env: Xml2NodesEnv): SuccessLast<BookContentNode[]> {
     const results: BookContentNode[] = [];
@@ -63,6 +64,8 @@ export function topLevelNodes(nodes: XmlTree[], env: Xml2NodesEnv): SuccessLast<
 // TODO: report attrs ?
 function singleNode(node: XmlTree, env: Xml2NodesEnv): ResultLast<BookContentNode> {
     const result = singleNodeImpl(node, env);
+    const attrs = processNodeAttributes(node, env);
+    const diag = compoundDiagnostic([result.diagnostic, attrs.diag]);
     if (result.success) {
         let bookNode = result.value;
         if (node.type === 'element' && node.attributes.id !== undefined) {
@@ -75,7 +78,7 @@ function singleNode(node: XmlTree, env: Xml2NodesEnv): ResultLast<BookContentNod
                 }
                 : { ...bookNode, refId };
         }
-        return yieldLast(bookNode, result.diagnostic);
+        return yieldLast(bookNode, diag);
     } else {
         return result;
     }
