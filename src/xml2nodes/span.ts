@@ -3,10 +3,10 @@ import {
     reject, yieldLast, SuccessLast,
     ResultLast, compoundResult, compoundDiagnostic,
 } from '../combinators';
-import { XmlTree, tree2String } from '../xmlStringParser';
+import { Xml, xml2string } from '../xml';
 import { Xml2NodesEnv, unexpectedNode, expectEmptyContent } from './common';
 
-export function expectSpanContent(nodes: XmlTree[], env: Xml2NodesEnv): SuccessLast<Span[]> {
+export function expectSpanContent(nodes: Xml[], env: Xml2NodesEnv): SuccessLast<Span[]> {
     const results = nodes.map(n => {
         const s = singleSpan(n, env);
         return !s.success
@@ -16,14 +16,14 @@ export function expectSpanContent(nodes: XmlTree[], env: Xml2NodesEnv): SuccessL
     return compoundResult(results);
 }
 
-export function spanContent(nodes: XmlTree[], env: Xml2NodesEnv): ResultLast<Span[]> {
+export function spanContent(nodes: Xml[], env: Xml2NodesEnv): ResultLast<Span[]> {
     const spans = expectSpanContent(nodes, env);
     return spans.diagnostic === undefined
         ? spans
         : reject();
 }
 
-export function singleSpan(node: XmlTree, env: Xml2NodesEnv): ResultLast<Span> {
+export function singleSpan(node: Xml, env: Xml2NodesEnv): ResultLast<Span> {
     if (node.type === 'text') {
         return yieldLast(node.text);
     } else if (node.type !== 'element') {
@@ -89,7 +89,7 @@ export function singleSpan(node: XmlTree, env: Xml2NodesEnv): ResultLast<Span> {
             } else {
                 return yieldLast('', compoundDiagnostic([{
                     diag: 'img: src not set',
-                    xml: tree2String(node),
+                    xml: xml2string(node),
                 }, insideDiag]));
             }
             break;

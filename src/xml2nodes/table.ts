@@ -1,14 +1,14 @@
 import {
     BookContentNode, TableRow, flatten, Span, extractSpans,
 } from 'booka-common';
-import { XmlTreeElement, XmlTree } from '../xmlStringParser';
+import { XmlElement, Xml } from '../xml';
 import {
     yieldLast, SuccessLast,
 } from '../combinators';
 import { Xml2NodesEnv, unexpectedNode, processNodes } from './common';
 import { topLevelNodes } from './node';
 
-export function tableNode(node: XmlTreeElement, env: Xml2NodesEnv): SuccessLast<BookContentNode> {
+export function tableNode(node: XmlElement, env: Xml2NodesEnv): SuccessLast<BookContentNode> {
     const tableData = tableRows(node.children, env);
     const rowsData = tableData.value;
     // If every row is single column we should treat table as a group
@@ -36,7 +36,7 @@ export function tableNode(node: XmlTreeElement, env: Xml2NodesEnv): SuccessLast<
 }
 
 type TableRowData = TableCellData[];
-function tableRows(nodes: XmlTree[], env: Xml2NodesEnv): SuccessLast<TableRowData[]> {
+function tableRows(nodes: Xml[], env: Xml2NodesEnv): SuccessLast<TableRowData[]> {
     return processNodes(nodes, env, node => {
         switch (node.name) {
             case 'tr':
@@ -56,7 +56,7 @@ function tableRows(nodes: XmlTree[], env: Xml2NodesEnv): SuccessLast<TableRowDat
 }
 
 type TableCellData = BookContentNode[];
-function tableCells(nodes: XmlTree[], env: Xml2NodesEnv): SuccessLast<TableCellData[]> {
+function tableCells(nodes: Xml[], env: Xml2NodesEnv): SuccessLast<TableCellData[]> {
     return processNodes(nodes, env, node => {
         switch (node.name) {
             case 'th':

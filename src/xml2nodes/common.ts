@@ -2,7 +2,7 @@ import {
     Stream, StreamParser, ParserDiagnostic, SuccessLast, yieldLast,
     compoundDiagnostic,
 } from '../combinators';
-import { XmlTree, tree2String } from '../xmlStringParser';
+import { Xml, xml2string } from '../xml';
 import { BookContentNode, Semantic, FlagSemanticKey } from 'booka-common';
 import { isWhitespaces } from '../utils';
 
@@ -19,27 +19,27 @@ export type Xml2NodesEnv = {
     hooks?: Hooks,
     filePath: string,
 };
-export type Input = Stream<XmlTree, Xml2NodesEnv>;
-export type NodeParser = StreamParser<XmlTree, BookContentNode[], Xml2NodesEnv>;
+export type Input = Stream<Xml, Xml2NodesEnv>;
+export type NodeParser = StreamParser<Xml, BookContentNode[], Xml2NodesEnv>;
 
-export function expectEmptyContent(children: XmlTree[]): ParserDiagnostic {
+export function expectEmptyContent(children: Xml[]): ParserDiagnostic {
     return children.length > 0
         ? {
             diag: 'unexpected children',
-            xmls: children.map(tree2String),
+            xmls: children.map(xml2string),
         }
         : undefined;
 }
 
-export function unexpectedNode(node: XmlTree, context?: any): ParserDiagnostic {
+export function unexpectedNode(node: Xml, context?: any): ParserDiagnostic {
     return {
         diag: 'unexpected node',
-        xml: tree2String(node),
+        xml: xml2string(node),
         ...(context !== undefined && { context }),
     };
 }
 
-export function shouldIgnore(node: XmlTree): boolean {
+export function shouldIgnore(node: Xml): boolean {
     switch (node.type) {
         case 'text':
             return node.text.startsWith('\n') && isWhitespaces(node.text);
@@ -59,8 +59,8 @@ type ProcessNodeResult<T> = {
     values?: T[],
     diag?: ParserDiagnostic,
 };
-type NodeProcessor<T> = (node: XmlTree, env: Xml2NodesEnv) => ProcessNodeResult<T>;
-export function processNodes<T>(nodes: XmlTree[], env: Xml2NodesEnv, proc: NodeProcessor<T>): SuccessLast<T[]> {
+type NodeProcessor<T> = (node: Xml, env: Xml2NodesEnv) => ProcessNodeResult<T>;
+export function processNodes<T>(nodes: Xml[], env: Xml2NodesEnv, proc: NodeProcessor<T>): SuccessLast<T[]> {
     const diags: ParserDiagnostic[] = [];
     const results: T[] = [];
     for (const node of nodes) {

@@ -8,7 +8,7 @@ export type XmlStringParserInput = {
     preserveComments?: boolean,
     removeTrailingWhitespaces?: boolean,
 };
-export type XmlStringParser = FullParser<XmlStringParserInput, XmlTreeDocument>;
+export type XmlStringParser = FullParser<XmlStringParserInput, XmlDocument>;
 
 export const xmlStringParser: XmlStringParser = input => {
     try {
@@ -31,54 +31,54 @@ export const xmlStringParser: XmlStringParser = input => {
 export type XmlAttributes = {
     [key: string]: string | undefined,
 };
-export type XmlTreeBase<T extends string> = {
+export type XmlBase<T extends string> = {
     type: T,
-    parent: XmlTree,
+    parent: Xml,
 };
 type NoName = { name?: undefined };
-export type XmlTreeWithParent<T extends string> = XmlTreeBase<T> & {
-    parent: XmlTreeWithChildren,
+export type XmlWithParent<T extends string> = XmlBase<T> & {
+    parent: XmlWithChildren,
 };
 
-export type XmlTree = XmlTreeDocument | XmlTreeElement | XmlTreeText | XmlTreeCData | XmlTreeComment;
-export type XmlTreeDocument = {
+export type Xml = XmlDocument | XmlElement | XmlText | XmlCData | XmlComment;
+export type XmlDocument = {
     type: 'document',
-    children: XmlTree[],
+    children: Xml[],
     parent: undefined,
 } & NoName;
-export type XmlTreeElement = XmlTreeBase<'element'> & {
+export type XmlElement = XmlBase<'element'> & {
     name: string,
     attributes: XmlAttributes,
-    children: XmlTree[],
+    children: Xml[],
 };
-export type XmlTreeText = XmlTreeBase<'text'> & { text: string } & NoName;
-export type XmlTreeCData = XmlTreeBase<'cdata'> & { text: string } & NoName;
-export type XmlTreeComment = XmlTreeBase<'comment'> & { content: string } & NoName;
+export type XmlText = XmlBase<'text'> & { text: string } & NoName;
+export type XmlCData = XmlBase<'cdata'> & { text: string } & NoName;
+export type XmlComment = XmlBase<'comment'> & { content: string } & NoName;
 
-export type XmlTreeType = XmlTree['type'];
+export type XmlType = Xml['type'];
 
-export type XmlTreeWithChildren = XmlTreeDocument | XmlTreeElement;
-export function hasChildren(tree: XmlTree): tree is XmlTreeWithChildren {
+export type XmlWithChildren = XmlDocument | XmlElement;
+export function hasChildren(tree: Xml): tree is XmlWithChildren {
     return (tree.type === 'document' || tree.type === 'element') && tree.children !== undefined;
 }
 
-export function isTextTree(tree: XmlTree): tree is XmlTreeText {
-    return tree.type === 'text';
+export function isXmlText(xml: Xml): xml is XmlText {
+    return xml.type === 'text';
 }
 
-export function isElementTree(tree: XmlTree): tree is XmlTreeElement {
-    return tree.type === 'element';
+export function isXmlElement(xml: Xml): xml is XmlElement {
+    return xml.type === 'element';
 }
 
-export function isCommentTree(tree: XmlTree): tree is XmlTreeComment {
-    return tree.type === 'comment';
+export function isXmlComment(xml: Xml): xml is XmlComment {
+    return xml.type === 'comment';
 }
 
-export function isDocumentTree(tree: XmlTree): tree is XmlTreeDocument {
-    return tree.type === 'document';
+export function isXmlDocument(xml: Xml): xml is XmlDocument {
+    return xml.type === 'document';
 }
 
-export function xmlText(text: string, parent?: XmlTreeWithChildren): XmlTreeText {
+export function makeXmlText(text: string, parent?: XmlWithChildren): XmlText {
     return {
         type: 'text',
         text,
@@ -88,10 +88,10 @@ export function xmlText(text: string, parent?: XmlTreeWithChildren): XmlTreeText
 
 export function makeXmlElement(
     name: string,
-    children?: XmlTree[],
+    children?: Xml[],
     attrs?: XmlAttributes,
-    parent?: XmlTreeWithChildren,
-): XmlTreeElement {
+    parent?: XmlWithChildren,
+): XmlElement {
     return {
         type: 'element',
         name: name,
@@ -101,17 +101,17 @@ export function makeXmlElement(
     };
 }
 
-export function childForPath(tree: XmlTree, ...path: string[]): XmlTree | undefined {
+export function childForPath(xml: Xml, ...path: string[]): Xml | undefined {
     if (path.length === 0) {
-        return tree;
+        return xml;
     }
 
-    if (!hasChildren(tree)) {
+    if (!hasChildren(xml)) {
         return undefined;
     }
 
     const head = path[0];
-    const child = tree.children.find(ch => isElementTree(ch) && sameName(ch.name, head));
+    const child = xml.children.find(ch => isXmlElement(ch) && sameName(ch.name, head));
 
     return child
         ? childForPath(child, ...path.slice(1))
@@ -130,18 +130,18 @@ export function attributesToString(attr: XmlAttributes): string {
     return result;
 }
 
-export function tree2String(n: XmlTree, depth: number = 1): string {
-    switch (n.type) {
+export function xml2string(xml: Xml, depth: number = 1): string {
+    switch (xml.type) {
         case 'element':
         case 'document':
-            const name = n.name || 'document';
-            const attrs = n.type === 'element'
-                ? attributesToString(n.attributes)
+            const name = xml.name || 'document';
+            const attrs = xml.type === 'element'
+                ? attributesToString(xml.attributes)
                 : '';
             const attrsStr = attrs.length > 0 ? ' ' + attrs : '';
             const chs = depth !== 0
-                ? n.children
-                    .map(ch => tree2String(ch, depth - 1))
+                ? xml.children
+                    .map(ch => xml2string(ch, depth - 1))
                     .join('')
                 : '';
             return chs.length > 0
@@ -151,29 +151,29 @@ export function tree2String(n: XmlTree, depth: number = 1): string {
             // return isWhitespaces(n.text)
             //     ? '*' + n.text
             //     : n.text;
-            return n.text;
+            return xml.text;
         case 'comment':
-            return `<!--${n.content}-->`;
+            return `<!--${xml.content}-->`;
         case 'cdata':
             return '<![CDATA[ ... ]]>';
         default:
-            assertNever(n);
+            assertNever(xml);
             return '<!>';
     }
 }
 
-export function removeTrailingWhitespaces(trees: XmlTree[]): XmlTree[] {
-    const head = trees[0];
+export function removeTrailingWhitespaces(xmls: Xml[]): Xml[] {
+    const head = xmls[0];
     if (!head) {
-        return trees;
+        return xmls;
     }
 
     if (head.type === 'text' && isWhitespaces(head.text)) {
-        return removeTrailingWhitespaces(trees.slice(1));
+        return removeTrailingWhitespaces(xmls.slice(1));
     }
 
-    const result: XmlTree[] = [];
-    for (const tree of trees) {
+    const result: Xml[] = [];
+    for (const tree of xmls) {
         if (tree.type === 'element' || tree.type === 'document') {
             result.push({
                 ...tree,
@@ -187,20 +187,20 @@ export function removeTrailingWhitespaces(trees: XmlTree[]): XmlTree[] {
     return result;
 }
 
-export function extractAllText(tree: XmlTree): string {
-    switch (tree.type) {
+export function extractAllText(xml: Xml): string {
+    switch (xml.type) {
         case 'text':
-            return tree.text.trim();
+            return xml.text.trim();
         case 'document':
         case 'element':
-            return tree.children
+            return xml.children
                 .map(extractAllText)
                 .join('\n');
         case 'comment':
         case 'cdata':
             return '';
         default:
-            assertNever(tree);
+            assertNever(xml);
             return '';
     }
 }

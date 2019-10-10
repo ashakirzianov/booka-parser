@@ -3,8 +3,8 @@ import {
     makePph, extractSpanText, compoundSpan,
 } from 'booka-common';
 import {
-    XmlTree, XmlTreeElement,
-} from '../xmlStringParser';
+    Xml, XmlElement,
+} from '../xml';
 import {
     ParserDiagnostic, ResultLast, SuccessLast,
     reject, yieldLast, compoundDiagnostic,
@@ -17,7 +17,7 @@ import { tableNode } from './table';
 import { listNode } from './list';
 import { processNodeAttributes } from './attributes';
 
-export function topLevelNodes(nodes: XmlTree[], env: Xml2NodesEnv): SuccessLast<BookContentNode[]> {
+export function topLevelNodes(nodes: Xml[], env: Xml2NodesEnv): SuccessLast<BookContentNode[]> {
     const results: BookContentNode[] = [];
     const diags: ParserDiagnostic[] = [];
     for (let idx = 0; idx < nodes.length; idx++) {
@@ -62,7 +62,7 @@ export function topLevelNodes(nodes: XmlTree[], env: Xml2NodesEnv): SuccessLast<
 
 // TODO: assign semantics
 // TODO: report attrs ?
-function singleNode(node: XmlTree, env: Xml2NodesEnv): ResultLast<BookContentNode> {
+function singleNode(node: Xml, env: Xml2NodesEnv): ResultLast<BookContentNode> {
     const result = singleNodeImpl(node, env);
     if (result.success) {
         // const attrs = { diag: undefined };
@@ -89,7 +89,7 @@ function singleNode(node: XmlTree, env: Xml2NodesEnv): ResultLast<BookContentNod
     }
 }
 
-function singleNodeImpl(node: XmlTree, env: Xml2NodesEnv): ResultLast<BookContentNode> {
+function singleNodeImpl(node: Xml, env: Xml2NodesEnv): ResultLast<BookContentNode> {
     switch (node.name) {
         case 'blockquote': // TODO: assign quote semantic
         case 'p':
@@ -125,7 +125,7 @@ function singleNodeImpl(node: XmlTree, env: Xml2NodesEnv): ResultLast<BookConten
     }
 }
 
-function paragraphNode(node: XmlTreeElement, env: Xml2NodesEnv) {
+function paragraphNode(node: XmlElement, env: Xml2NodesEnv) {
     const span = spanContent(node.children, env);
     if (span.success) {
         const pph: BookContentNode = makePph(span.value);
@@ -135,7 +135,7 @@ function paragraphNode(node: XmlTreeElement, env: Xml2NodesEnv) {
     }
 }
 
-function groupNode(node: XmlTreeElement, env: Xml2NodesEnv): SuccessLast<GroupNode> {
+function groupNode(node: XmlElement, env: Xml2NodesEnv): SuccessLast<GroupNode> {
     const content = topLevelNodes(node.children, env);
     const group: BookContentNode = {
         node: 'group',

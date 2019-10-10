@@ -1,13 +1,13 @@
 import { ParserDiagnostic, compoundDiagnostic } from '../combinators';
 import { Semantic, flagSemantic } from 'booka-common';
 import { Xml2NodesEnv } from './common';
-import { XmlTree } from '../xmlStringParser';
+import { Xml } from '../xml';
 
 type ProcessAttributesResult = {
     diag?: ParserDiagnostic,
     semantics?: Semantic[],
 };
-export function processNodeAttributes(node: XmlTree, env: Xml2NodesEnv): ProcessAttributesResult {
+export function processNodeAttributes(node: Xml, env: Xml2NodesEnv): ProcessAttributesResult {
     if (node.type !== 'element') {
         return {};
     }

@@ -3,7 +3,7 @@ import {
     ResultLast, SuccessLast, compoundDiagnostic, yieldLast, ParserDiagnostic,
 } from '../combinators';
 import { EpubSection, EpubBook } from './epubFileParser';
-import { xmlStringParser } from '../xmlStringParser';
+import { xmlStringParser } from '../xml';
 import { documentParser, Hooks } from '../xml2nodes';
 import { resolveHooks, HooksProvider } from './hooks';
 import { gutenberg } from './hooks.gutenberg';
