@@ -24,34 +24,6 @@ export function unexpectedNode(node: XmlTree, context?: any): ParserDiagnostic {
     };
 }
 
-export function isWhitespaceNode(node: XmlTree): boolean {
-    return node.type === 'text' && isWhitespaces(node.text);
-}
-
-// TODO: remove ?
-export function reportUnexpected<T>(nodes: XmlTree[], env: Env, fn: (node: XmlTreeElement, env: Env) => ResultLast<T>): SuccessLast<T[]> {
-    const diags: ParserDiagnostic[] = [];
-    const results: T[] = [];
-    for (const node of nodes) {
-        if (shouldIgnore(node)) {
-            continue;
-        } else if (node.type !== 'element') {
-            diags.push(unexpectedNode(node));
-        } else {
-            const result = fn(node, env);
-            if (result.success) {
-                diags.push(result.diagnostic);
-                results.push(result.value);
-            } else {
-                diags.push(unexpectedNode(node));
-            }
-        }
-    }
-
-    return yieldLast(results, compoundDiagnostic(diags));
-}
-
-// TODO: do not export ?
 export function shouldIgnore(node: XmlTree): boolean {
     switch (node.type) {
         case 'text':

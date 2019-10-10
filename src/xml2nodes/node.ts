@@ -1,15 +1,20 @@
 import {
-    makePph, extractSpanText, BookContentNode, TableRow, TableCell, flatten, ListItem, compoundSpan, Span, GroupNode,
+    Span, GroupNode, BookContentNode,
+    makePph, extractSpanText, compoundSpan,
 } from 'booka-common';
-import { XmlTree, XmlTreeElement, XmlTreeDocument, tree2String } from '../xmlStringParser';
+import {
+    XmlTree, XmlTreeElement, XmlTreeDocument, tree2String,
+} from '../xmlStringParser';
 import {
     ParserDiagnostic, ResultLast, SuccessLast,
     reject, yieldLast, compoundDiagnostic,
 } from '../combinators';
-import { Env, unexpectedNode, expectEmptyContent, isWhitespaceNode, reportUnexpected, shouldIgnore } from './base';
+import {
+    Env, unexpectedNode, expectEmptyContent, shouldIgnore,
+} from './base';
 import { expectSpanContent, singleSpan, spanContent } from './span';
-import { isWhitespaces } from '../utils';
 import { tableNode } from './table';
+import { listNode } from './list';
 
 // Functions:
 
@@ -81,10 +86,6 @@ export function topLevelNodes(nodes: XmlTree[], env: Env): SuccessLast<BookConte
 // TODO: assign semantics
 // TODO: report attrs ?
 function singleElementNode(node: XmlTree, env: Env): ResultLast<BookContentNode> {
-    if (node.type !== 'element') {
-        return reject();
-    }
-
     switch (node.name) {
         case 'blockquote': // TODO: assign quote semantic
         case 'p':
@@ -114,17 +115,7 @@ function singleElementNode(node: XmlTree, env: Env): ResultLast<BookContentNode>
             return tableNode(node, env);
         case 'ul':
         case 'ol':
-            {
-                const items = listContent(node.children, env);
-                const list: BookContentNode = {
-                    node: 'list',
-                    kind: node.name === 'ol'
-                        ? 'ordered'
-                        : 'basic',
-                    items: items.value,
-                };
-                return yieldLast(list, items.diagnostic);
-            }
+            return listNode(node, env);
         default:
             return reject();
     }
@@ -147,58 +138,4 @@ function groupNode(node: XmlTreeElement, env: Env): SuccessLast<GroupNode> {
         nodes: content.value,
     };
     return yieldLast(group, content.diagnostic);
-}
-
-function listContent(nodes: XmlTree[], env: Env): SuccessLast<ListItem[]> {
-    return reportUnexpected(nodes, env, listItem);
-}
-
-function listItem(node: XmlTreeElement, env: Env): ResultLast<ListItem> {
-    switch (node.name) {
-        case 'li':
-            {
-                const span = itemContent(node.children, env);
-                return yieldLast(
-                    { spans: span.value },
-                    span.diagnostic,
-                );
-            }
-        default:
-            return reject();
-    }
-}
-
-function itemContent(nodes: XmlTree[], env: Env): SuccessLast<Span[]> {
-    const spans = spanContent(nodes, env);
-    if (spans.success) {
-        return spans;
-    }
-
-    const diags: ParserDiagnostic[] = [];
-    const results: Span[] = [];
-    for (const node of nodes) {
-        if (shouldIgnore(node)) {
-            continue;
-        }
-
-        switch (node.name) {
-            case 'p':
-            case 'div':
-                {
-                    const inside = itemContent(node.children, env);
-                    diags.push(inside.diagnostic);
-                    results.push(...inside.value);
-                }
-                break;
-            case 'br':
-                results.push('\n');
-                break;
-            default:
-                diags.push(unexpectedNode(node, 'item content'));
-                break;
-
-        }
-    }
-
-    return yieldLast(results, compoundDiagnostic(diags));
 }
