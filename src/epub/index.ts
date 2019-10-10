@@ -4,9 +4,6 @@ import { epubBookParser } from './epubBookParser';
 import { pipeAsync, AsyncFullParser } from '../combinators';
 import { xmlStringParser, extractAllText } from '../xml';
 
-// TODO: do not export
-export { EpubBook } from './epubFileParser';
-
 export type EpubParserInput = {
     filePath: string,
 };

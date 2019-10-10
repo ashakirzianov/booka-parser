@@ -60,8 +60,6 @@ export function topLevelNodes(nodes: Xml[], env: Xml2NodesEnv): SuccessLast<Book
     return yieldLast(results, compoundDiagnostic(diags));
 }
 
-// TODO: assign semantics
-// TODO: report attrs ?
 function singleNode(node: Xml, env: Xml2NodesEnv): ResultLast<BookContentNode> {
     const result = singleNodeImpl(node, env);
     if (result.success) {
@@ -91,7 +89,12 @@ function singleNode(node: Xml, env: Xml2NodesEnv): ResultLast<BookContentNode> {
 
 function singleNodeImpl(node: Xml, env: Xml2NodesEnv): ResultLast<BookContentNode> {
     switch (node.name) {
-        case 'blockquote': // TODO: assign quote semantic
+        case 'blockquote':
+            {
+                const pph = paragraphNode(node, env);
+                const result = appendSemantics(pph, [{ semantic: 'quote' }]);
+                return yieldLast(result, pph.diagnostic);
+            }
         case 'p':
         case 'div':
         case 'span':
