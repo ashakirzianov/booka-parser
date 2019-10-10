@@ -6,9 +6,10 @@ import {
     ParserDiagnostic, ResultLast, SuccessLast,
     reject, yieldLast, compoundDiagnostic,
 } from '../combinators';
-import { Env, unexpectedNode, expectEmptyContent, isWhitespaceNode } from './base';
+import { Env, unexpectedNode, expectEmptyContent, isWhitespaceNode, reportUnexpected, shouldIgnore } from './base';
 import { expectSpanContent, singleSpan, spanContent } from './span';
 import { isWhitespaces } from '../utils';
+import { tableNode } from './table';
 
 // Functions:
 
@@ -33,7 +34,7 @@ export function documentParser(document: XmlTreeDocument, env: Env): SuccessLast
     return topLevelNodes(body.children, env);
 }
 
-function topLevelNodes(nodes: XmlTree[], env: Env): SuccessLast<BookContentNode[]> {
+export function topLevelNodes(nodes: XmlTree[], env: Env): SuccessLast<BookContentNode[]> {
     const results: BookContentNode[] = [];
     const diags: ParserDiagnostic[] = [];
     for (let idx = 0; idx < nodes.length; idx++) {
@@ -167,86 +168,6 @@ function listItem(node: XmlTreeElement, env: Env): ResultLast<ListItem> {
     }
 }
 
-function tableNode(node: XmlTreeElement, env: Env): SuccessLast<BookContentNode> {
-    const asGroup = tableAsGroup(node, env);
-    if (asGroup.success) {
-        return asGroup;
-    } else {
-        const rows = tableContent(node.children, env);
-        const table: BookContentNode = {
-            node: 'table',
-            rows: rows.value,
-        };
-        return yieldLast(table, rows.diagnostic);
-    }
-}
-
-function tableAsGroup(node: XmlTreeElement, env: Env): ResultLast<BookContentNode> {
-    const [pre, bodyNode, post, ...rest] = node.children;
-    if (rest.length !== 0 || bodyNode.type !== 'element') {
-        return reject();
-    }
-
-    switch (bodyNode.name) {
-        case 'tbody':
-        case 'tr':
-            return tableAsGroup(bodyNode, env);
-        case 'td':
-            {
-                const inside = topLevelNodes(bodyNode.children, env);
-
-                const group: BookContentNode = {
-                    node: 'group',
-                    nodes: inside.value,
-                };
-                return yieldLast(group, inside.diagnostic);
-            }
-        default:
-            return reject();
-    }
-}
-
-function tableContent(nodes: XmlTree[], env: Env): SuccessLast<TableRow[]> {
-    const rss = reportUnexpected(nodes, env, tableRowOrBody);
-    const rows = flatten(rss.value);
-    return yieldLast(rows, rss.diagnostic);
-}
-
-function tableRowOrBody(node: XmlTreeElement, env: Env): ResultLast<TableRow[]> {
-    switch (node.name) {
-        case 'tr':
-            {
-                const cells = reportUnexpected(node.children, env, tableCell);
-                return yieldLast(
-                    [{ cells: cells.value }],
-                    cells.diagnostic,
-                );
-            }
-        case 'tbody':
-            {
-                return tableContent(node.children, env);
-            }
-        default:
-            return reject();
-    }
-}
-
-function tableCell(node: XmlTreeElement, env: Env): ResultLast<TableCell> {
-    switch (node.name) {
-        case 'th':
-        case 'td':
-            {
-                const spans = itemContent(node.children, env);
-                return yieldLast(
-                    { spans: spans.value },
-                    spans.diagnostic,
-                );
-            }
-        default:
-            return reject();
-    }
-}
-
 function itemContent(nodes: XmlTree[], env: Env): SuccessLast<Span[]> {
     const spans = spanContent(nodes, env);
     if (spans.success) {
@@ -280,42 +201,4 @@ function itemContent(nodes: XmlTree[], env: Env): SuccessLast<Span[]> {
     }
 
     return yieldLast(results, compoundDiagnostic(diags));
-}
-
-function reportUnexpected<T>(nodes: XmlTree[], env: Env, fn: (node: XmlTreeElement, env: Env) => ResultLast<T>): SuccessLast<T[]> {
-    const diags: ParserDiagnostic[] = [];
-    const results: T[] = [];
-    for (const node of nodes) {
-        if (isWhitespaceNode(node)) {
-            continue;
-        } else if (node.type !== 'element') {
-            diags.push(unexpectedNode(node));
-        } else {
-            const result = fn(node, env);
-            if (result.success) {
-                diags.push(result.diagnostic);
-                results.push(result.value);
-            } else {
-                diags.push(unexpectedNode(node));
-            }
-        }
-    }
-
-    return yieldLast(results, compoundDiagnostic(diags));
-}
-
-function shouldIgnore(node: XmlTree): boolean {
-    switch (node.type) {
-        case 'text':
-            return node.text.startsWith('\n') && isWhitespaces(node.text);
-        case 'element':
-            switch (node.name) {
-                case 'svg':
-                    return true;
-                default:
-                    return false;
-            }
-        default:
-            return false;
-    }
 }

@@ -1,19 +1,16 @@
 import {
     ParserDiagnostic, reject, yieldLast, SuccessLast,
-    ResultLast, compoundResult, projectResult, compoundDiagnostic,
+    ResultLast, compoundResult, compoundDiagnostic,
 } from '../combinators';
 import { XmlTree, tree2String } from '../xmlStringParser';
 import { Span, compoundSpan } from 'booka-common';
-import { Env } from './base';
+import { Env, unexpectedNode } from './base';
 
 export function expectSpanContent(nodes: XmlTree[], env: Env): SuccessLast<Span[]> {
     const results = nodes.map(n => {
         const s = singleSpan(n, env);
         return !s.success
-            ? yieldLast('', {
-                diag: 'unexpected node in span',
-                xml: tree2String(n),
-            })
+            ? yieldLast('', unexpectedNode(n, 'span'))
             : s;
     });
     return compoundResult(results);
