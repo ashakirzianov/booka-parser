@@ -7,6 +7,7 @@ import { metadataParser } from './metaParser';
 import { epub2nodes } from './sectionParser';
 import { processImages } from './processImages';
 import { checkReferences } from './refProcessor';
+import { diagnoseText } from './diagnoseText';
 
 export type EpubParserInput = {
     filePath: string,
@@ -37,6 +38,7 @@ export async function parseEpub({ filePath }: EpubParserInput): Promise<ResultLa
     const { value: processedRefs, diagnostic: refsDiag } = checkReferences(processedImages);
     diags.push(refsDiag);
 
+    diags.push(await diagnoseText(epub, processedRefs));
     const result = {
         book: processedRefs,
     };
