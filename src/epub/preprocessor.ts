@@ -15,7 +15,10 @@ type PreprocessorArgs = { book: Book, epub: EpubBook };
 type BookPreprocessor = (args: PreprocessorArgs) => Promise<SuccessLast<PreprocessorArgs>>;
 
 const preprocessors: BookPreprocessor[] = [
-    images, references, consistency, normalize,
+    images,
+    references,
+    consistency,
+    normalize,
 ];
 export async function preprocessor(args: PreprocessorArgs): Promise<SuccessLast<Book>> {
     const diags: ParserDiagnostic[] = [];
@@ -125,14 +128,8 @@ function extractRefsFromSpan(span: Span): string[] {
 // Consistency:
 
 async function consistency({ book, epub }: PreprocessorArgs) {
-    const epubText = removeWhitespaces(
-        await extractEpubText(epub),
-    );
-    const bookText = removeWhitespaces(
-        book.volume.nodes
-            .map(extractNodeText)
-            .join(''),
-    );
+    const epubText = await extractEpubText(epub);
+    const bookText = extractBookText(book);
     const ratio = bookText.length / epubText.length;
     const diag: ParserDiagnostic = ratio < 0.95
         ? {
@@ -158,11 +155,6 @@ function extractXmlText(xmlString: string): string {
     return xml.success
         ? extractAllText(xml.value)
         : '';
-}
-
-function removeWhitespaces(str: string): string {
-    // TODO: implement
-    return str;
 }
 
 // Normalization:
