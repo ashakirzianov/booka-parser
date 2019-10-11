@@ -8,6 +8,7 @@ import {
 } from '../combinators';
 import { xmlStringParser, extractAllText } from '../xml';
 import { EpubBook } from './epubFileParser';
+import { collectMetrics, metricsDiff } from './bookMetrics';
 
 type PreprocessorArgs = { book: Book, epub: EpubBook };
 type BookPreprocessor = (args: PreprocessorArgs) => Promise<SuccessLast<PreprocessorArgs>>;
@@ -20,10 +21,20 @@ const preprocessors: BookPreprocessor[] = [
 ];
 export async function preprocessor(args: PreprocessorArgs): Promise<SuccessLast<Book>> {
     const diags: ParserDiagnostic[] = [];
+    const before = collectMetrics(args.book);
     for (const proc of preprocessors) {
         const result = await proc(args);
         diags.push(result.diagnostic);
         args = result.value;
+    }
+    const book = args.book;
+    const after = collectMetrics(book);
+    const diff = metricsDiff(before, after);
+    if (diff !== undefined) {
+        diags.push({
+            diag: 'metrics changed',
+            diff,
+        });
     }
 
     return yieldLast(args.book, compoundDiagnostic(diags));
@@ -155,29 +166,7 @@ function extractXmlText(xmlString: string): string {
 // Normalization:
 
 async function normalize({ book, epub }: PreprocessorArgs) {
-    const before = extractBookText(book);
     const normalized = normalizeBook(book);
-    const after = extractBookText(normalized);
-    const diff = stringDiff(before, after);
-    const diag: ParserDiagnostic = diff === undefined
-        ? undefined
-        : {
-            diag: 'normalized text changed',
-            diff,
-        };
 
-    return yieldLast({ book: normalized, epub }, diag);
-}
-
-function stringDiff(left: string, right: string) {
-    for (let idx = 0; idx < left.length; idx++) {
-        if (left[idx] !== right[idx]) {
-            return {
-                left: left.substr(idx, 100),
-                right: right.substr(idx, 100),
-            };
-        }
-    }
-
-    return undefined;
+    return yieldLast({ book: normalized, epub });
 }
