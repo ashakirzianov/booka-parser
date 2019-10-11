@@ -1,4 +1,4 @@
-import { BookContentNode } from 'booka-common';
+import { BookNode } from 'booka-common';
 import {
     ResultLast, SuccessLast, compoundDiagnostic, yieldLast, ParserDiagnostic,
 } from '../combinators';
@@ -10,9 +10,9 @@ import { gutenberg } from './hooks.gutenberg';
 import { fb2epub } from './hooks.fb2epub';
 import { fictionBookEditor } from './hooks.fictionBookEditor';
 
-export async function epub2nodes(epub: EpubBook): Promise<ResultLast<BookContentNode[]>> {
+export async function epub2nodes(epub: EpubBook): Promise<ResultLast<BookNode[]>> {
     const diags: ParserDiagnostic[] = [];
-    const content: BookContentNode[] = [];
+    const content: BookNode[] = [];
 
     const hooksProviders: HooksProvider[] = [
         gutenberg, fb2epub, fictionBookEditor,
@@ -34,7 +34,7 @@ export async function epub2nodes(epub: EpubBook): Promise<ResultLast<BookContent
     return yieldLast(content, compoundDiagnostic(diags));
 }
 
-function sectionParser(section: EpubSection, hooks: Hooks | undefined): SuccessLast<BookContentNode[]> {
+function sectionParser(section: EpubSection, hooks: Hooks | undefined): SuccessLast<BookNode[]> {
     const xmlDocument = xmlStringParser({
         xmlString: section.content,
         removeTrailingWhitespaces: false,

@@ -3,7 +3,7 @@ import {
     compoundDiagnostic,
 } from '../combinators';
 import { Xml, xml2string } from '../xml';
-import { BookContentNode, Semantic, FlagSemanticKey } from 'booka-common';
+import { BookNode, Semantic, FlagSemanticKey } from 'booka-common';
 import { isWhitespaces } from '../utils';
 
 export type AttributesHookResult = {
@@ -20,7 +20,7 @@ export type Xml2NodesEnv = {
     filePath: string,
 };
 export type Input = Stream<Xml, Xml2NodesEnv>;
-export type NodeParser = StreamParser<Xml, BookContentNode[], Xml2NodesEnv>;
+export type NodeParser = StreamParser<Xml, BookNode[], Xml2NodesEnv>;
 
 export function expectEmptyContent(children: Xml[]): ParserDiagnostic {
     return children.length > 0

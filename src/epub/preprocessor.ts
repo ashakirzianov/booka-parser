@@ -1,5 +1,5 @@
 import {
-    Book, BookContentNode,
+    Book, BookNode,
     processBookImages, justNodeGenerator, normalizeBook,
     mapSpan, Span, extractBookText, flatten,
 } from 'booka-common';
@@ -72,7 +72,7 @@ async function references({ book, epub }: PreprocessorArgs) {
     return yieldLast({ book: resultBook, epub }, diagnostic);
 }
 
-function checkNodesReferences(nodes: BookContentNode[]): SuccessLast<BookContentNode[]> {
+function checkNodesReferences(nodes: BookNode[]): SuccessLast<BookNode[]> {
     const diags: ParserDiagnostic[] = [];
     const nodeIds: string[] = [];
     const refs = extractRefsFromNodes(nodes);
@@ -99,7 +99,7 @@ function checkNodesReferences(nodes: BookContentNode[]): SuccessLast<BookContent
     return yieldLast(nodes);
 }
 
-function extractRefsFromNodes(nodes: BookContentNode[]): string[] {
+function extractRefsFromNodes(nodes: BookNode[]): string[] {
     const refs: string[] = [];
     for (const node of justNodeGenerator(nodes)) {
         switch (node.node) {

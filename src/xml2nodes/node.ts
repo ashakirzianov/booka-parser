@@ -1,5 +1,5 @@
 import {
-    Span, GroupNode, BookContentNode, appendSemantics,
+    Span, GroupNode, BookNode, appendSemantics,
     makePph, extractSpanText, compoundSpan,
 } from 'booka-common';
 import {
@@ -17,8 +17,8 @@ import { tableNode } from './table';
 import { listNode } from './list';
 import { processNodeAttributes } from './attributes';
 
-export function topLevelNodes(nodes: Xml[], env: Xml2NodesEnv): SuccessLast<BookContentNode[]> {
-    const results: BookContentNode[] = [];
+export function topLevelNodes(nodes: Xml[], env: Xml2NodesEnv): SuccessLast<BookNode[]> {
+    const results: BookNode[] = [];
     const diags: ParserDiagnostic[] = [];
     for (let idx = 0; idx < nodes.length; idx++) {
         let node = nodes[idx];
@@ -49,7 +49,7 @@ export function topLevelNodes(nodes: Xml[], env: Xml2NodesEnv): SuccessLast<Book
         }
 
         if (spans.length > 0) {
-            const pph: BookContentNode = makePph(compoundSpan(spans));
+            const pph: BookNode = makePph(compoundSpan(spans));
             results.push(pph);
         } else {
             // Report unexpected
@@ -60,7 +60,7 @@ export function topLevelNodes(nodes: Xml[], env: Xml2NodesEnv): SuccessLast<Book
     return yieldLast(results, compoundDiagnostic(diags));
 }
 
-function singleNode(node: Xml, env: Xml2NodesEnv): ResultLast<BookContentNode> {
+function singleNode(node: Xml, env: Xml2NodesEnv): ResultLast<BookNode> {
     const result = singleNodeImpl(node, env);
     if (result.success) {
         // const attrs = { diag: undefined };
@@ -87,7 +87,7 @@ function singleNode(node: Xml, env: Xml2NodesEnv): ResultLast<BookContentNode> {
     }
 }
 
-function singleNodeImpl(node: Xml, env: Xml2NodesEnv): ResultLast<BookContentNode> {
+function singleNodeImpl(node: Xml, env: Xml2NodesEnv): ResultLast<BookNode> {
     switch (node.name) {
         case 'blockquote':
             {
@@ -104,7 +104,7 @@ function singleNodeImpl(node: Xml, env: Xml2NodesEnv): ResultLast<BookContentNod
                 const level = 4 - parseInt(node.name[1], 10);
                 const spans = expectSpanContent(node.children, env);
                 const text = spans.value.map(extractSpanText).join('');
-                const title: BookContentNode = {
+                const title: BookNode = {
                     node: 'title',
                     level,
                     lines: [text],
@@ -113,7 +113,7 @@ function singleNodeImpl(node: Xml, env: Xml2NodesEnv): ResultLast<BookContentNod
             }
         case 'hr':
             {
-                const separator: BookContentNode = {
+                const separator: BookNode = {
                     node: 'separator',
                 };
                 return yieldLast(separator, expectEmptyContent(node.children));
@@ -131,7 +131,7 @@ function singleNodeImpl(node: Xml, env: Xml2NodesEnv): ResultLast<BookContentNod
 function paragraphNode(node: XmlElement, env: Xml2NodesEnv) {
     const span = spanContent(node.children, env);
     if (span.success) {
-        const pph: BookContentNode = makePph(span.value);
+        const pph: BookNode = makePph(span.value);
         return yieldLast(pph, span.diagnostic);
     } else {
         return groupNode(node, env);
@@ -140,7 +140,7 @@ function paragraphNode(node: XmlElement, env: Xml2NodesEnv) {
 
 function groupNode(node: XmlElement, env: Xml2NodesEnv): SuccessLast<GroupNode> {
     const content = topLevelNodes(node.children, env);
-    const group: BookContentNode = {
+    const group: BookNode = {
         node: 'group',
         nodes: content.value,
     };

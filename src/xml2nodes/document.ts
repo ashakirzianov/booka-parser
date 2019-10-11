@@ -1,10 +1,10 @@
-import { BookContentNode } from 'booka-common';
+import { BookNode } from 'booka-common';
 import { XmlDocument, xml2string } from '../xml';
 import { yieldLast, SuccessLast } from '../combinators';
 import { Xml2NodesEnv } from './common';
 import { topLevelNodes } from './node';
 
-export function documentParser(document: XmlDocument, env: Xml2NodesEnv): SuccessLast<BookContentNode[]> {
+export function documentParser(document: XmlDocument, env: Xml2NodesEnv): SuccessLast<BookNode[]> {
     const html = document.children
         .find(n => n.name === 'html');
     if (html === undefined || html.type !== 'element') {

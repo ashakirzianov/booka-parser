@@ -1,5 +1,5 @@
 import {
-    BookContentNode, flatten, Span, extractSpans, ListItem,
+    BookNode, flatten, Span, extractSpans, ListItem,
 } from 'booka-common';
 import { XmlElement, Xml } from '../xml';
 import {
@@ -8,12 +8,12 @@ import {
 import { Xml2NodesEnv, unexpectedNode, processNodes } from './common';
 import { topLevelNodes } from './node';
 
-export function listNode(node: XmlElement, env: Xml2NodesEnv): SuccessLast<BookContentNode> {
+export function listNode(node: XmlElement, env: Xml2NodesEnv): SuccessLast<BookNode> {
     const listData = listItems(node.children, env);
     const items: ListItem[] = listData.value.map(i => ({
         spans: i,
     }));
-    const list: BookContentNode = {
+    const list: BookNode = {
         node: 'list',
         kind: node.name === 'ol'
             ? 'ordered'

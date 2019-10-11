@@ -1,4 +1,4 @@
-import { Book, KnownTag, BookContentNode, BookMeta } from 'booka-common';
+import { Book, KnownTag, BookNode, BookMeta } from 'booka-common';
 import {
     yieldLast, StreamParser, ParserDiagnostic, ResultLast, compoundDiagnostic,
 } from '../combinators';
@@ -42,7 +42,7 @@ export async function parseEpub({ filePath }: EpubParserInput): Promise<ResultLa
 
 export type MetadataRecordParser = StreamParser<[string, any], KnownTag[]>;
 
-function buildBook(nodes: BookContentNode[], tags: KnownTag[]): Book {
+function buildBook(nodes: BookNode[], tags: KnownTag[]): Book {
     const meta = buildMeta(tags);
     return {
         meta,
