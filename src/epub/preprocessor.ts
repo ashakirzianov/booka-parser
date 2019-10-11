@@ -171,11 +171,26 @@ async function normalize({ book, epub }: PreprocessorArgs) {
     const before = extractBookText(book);
     const normalized = normalizeBook(book);
     const after = extractBookText(normalized);
-    const diag: ParserDiagnostic = before === after
+    const diff = stringDiff(before, after);
+    const diag: ParserDiagnostic = diff === undefined
         ? undefined
         : {
             diag: 'normalized text changed',
+            diff,
         };
 
     return yieldLast({ book: normalized, epub }, diag);
+}
+
+function stringDiff(left: string, right: string) {
+    for (let idx = 0; idx < left.length; idx++) {
+        if (left[idx] !== right[idx]) {
+            return {
+                left: left.substr(idx, 100),
+                right: right.substr(idx, 100),
+            };
+        }
+    }
+
+    return undefined;
 }
