@@ -1,5 +1,5 @@
 import { HooksProvider } from './hooks';
-import { Hooks } from '../xml2nodes';
+import { Hooks } from '../../xml2nodes';
 
 export const fictionBookEditor: HooksProvider = epub => {
     const marker = epub.metadata['FB2.document-info.program-used'];

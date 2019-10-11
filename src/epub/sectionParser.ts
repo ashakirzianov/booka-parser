@@ -5,25 +5,10 @@ import {
 import { EpubSection, EpubBook } from './epubFileParser';
 import { xmlStringParser } from '../xml';
 import { documentParser, Hooks } from '../xml2nodes';
-import { resolveHooks, HooksProvider } from './hooks';
-import { gutenberg } from './hooks.gutenberg';
-import { fb2epub } from './hooks.fb2epub';
-import { fictionBookEditor } from './hooks.fictionBookEditor';
 
-export async function epub2nodes(epub: EpubBook): Promise<ResultLast<BookNode[]>> {
+export async function epub2nodes(epub: EpubBook, hooks: Hooks | undefined): Promise<ResultLast<BookNode[]>> {
     const diags: ParserDiagnostic[] = [];
     const content: BookNode[] = [];
-
-    const hooksProviders: HooksProvider[] = [
-        gutenberg, fb2epub, fictionBookEditor,
-    ];
-    const hooks = resolveHooks(epub, hooksProviders);
-    if (hooks === undefined) {
-        diags.push({
-            diag: 'unknown book kind',
-            meta: epub.rawMetadata,
-        });
-    }
 
     for await (const section of epub.sections()) {
         const result = sectionParser(section, hooks);

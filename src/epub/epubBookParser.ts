@@ -6,6 +6,7 @@ import { epubFileParser } from './epubFileParser';
 import { metadataParser } from './metaParser';
 import { epub2nodes } from './sectionParser';
 import { preprocessor } from './preprocessor';
+import { resolveHooks } from './hooks';
 
 export type EpubParserInput = {
     filePath: string,
@@ -20,7 +21,15 @@ export async function parseEpub({ filePath }: EpubParserInput): Promise<ResultLa
         return epubResult;
     }
     const epub = epubResult.value;
-    const nodesResult = await epub2nodes(epub);
+
+    const hooks = resolveHooks(epub);
+    if (hooks === undefined) {
+        diags.push({
+            diag: 'unknown book kind',
+            meta: epub.rawMetadata,
+        });
+    }
+    const nodesResult = await epub2nodes(epub, hooks);
     diags.push(nodesResult.diagnostic);
     if (!nodesResult.success) {
         return nodesResult;
