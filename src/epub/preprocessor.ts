@@ -1,9 +1,7 @@
 import {
     Book, BookContentNode,
-    processVolumeImages, justNodeGenerator, normalizeBook,
-    mapSpan, Span,
-    extractNodeText, extractBookText,
-    flatten,
+    processBookImages, justNodeGenerator, normalizeBook,
+    mapSpan, Span, extractBookText, flatten,
 } from 'booka-common';
 import {
     SuccessLast, yieldLast, ParserDiagnostic, compoundDiagnostic,
@@ -35,7 +33,7 @@ export async function preprocessor(args: PreprocessorArgs): Promise<SuccessLast<
 
 async function images({ book, epub }: PreprocessorArgs) {
     const diags: ParserDiagnostic[] = [];
-    const resolvedVolume = await processVolumeImages(book.volume, async image => {
+    const resolvedVolume = await processBookImages(book, async image => {
         if (image.kind === 'ref') {
             const buffer = await epub.imageResolver(image.ref);
             if (buffer) {
@@ -66,13 +64,10 @@ async function images({ book, epub }: PreprocessorArgs) {
 // Refs:
 
 async function references({ book, epub }: PreprocessorArgs) {
-    const { value: nodes, diagnostic } = checkNodesReferences(book.volume.nodes);
+    const { value: nodes, diagnostic } = checkNodesReferences(book.nodes);
     const resultBook = {
         ...book,
-        volume: {
-            ...book.volume,
-            nodes: nodes,
-        },
+        nodes: nodes,
     };
     return yieldLast({ book: resultBook, epub }, diagnostic);
 }

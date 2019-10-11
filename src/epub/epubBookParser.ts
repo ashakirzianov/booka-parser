@@ -1,4 +1,4 @@
-import { Book, KnownTag, BookContentNode, VolumeMeta } from 'booka-common';
+import { Book, KnownTag, BookContentNode, BookMeta } from 'booka-common';
 import {
     yieldLast, StreamParser, ParserDiagnostic, ResultLast, compoundDiagnostic,
 } from '../combinators';
@@ -45,17 +45,14 @@ export type MetadataRecordParser = StreamParser<[string, any], KnownTag[]>;
 function buildBook(nodes: BookContentNode[], tags: KnownTag[]): Book {
     const meta = buildMeta(tags);
     return {
-        volume: {
-            node: 'volume',
-            nodes,
-            meta,
-        },
+        meta,
+        nodes,
         tags,
     };
 }
 
 function buildMeta(tags: KnownTag[]) {
-    const meta: VolumeMeta = {};
+    const meta: BookMeta = {};
     for (const tag of tags) {
         switch (tag.tag) {
             case 'title':
