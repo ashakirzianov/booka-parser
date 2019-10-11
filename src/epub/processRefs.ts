@@ -1,7 +1,7 @@
 import { BookContentNode, Span, mapSpan, flatten, justNodeGenerator, Book } from 'booka-common';
 import { SuccessLast, yieldLast, ParserDiagnostic } from '../combinators';
 
-export function checkReferences(book: Book): SuccessLast<Book> {
+export function processRefs(book: Book): SuccessLast<Book> {
     const { value: nodes, diagnostic } = checkNodesReferences(book.volume.nodes);
     const resultBook = {
         ...book,

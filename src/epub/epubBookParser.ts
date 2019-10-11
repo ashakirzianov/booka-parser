@@ -6,8 +6,8 @@ import { epubFileParser, EpubBook } from './epubFileParser';
 import { metadataParser } from './metaParser';
 import { epub2nodes } from './sectionParser';
 import { processImages } from './processImages';
-import { checkReferences } from './refProcessor';
-import { diagnoseText } from './diagnoseText';
+import { processRefs } from './processRefs';
+import { processConsistency } from './processConsistency';
 import { normalize } from './normalizeBook';
 
 export type EpubParserInput = {
@@ -45,14 +45,17 @@ export async function parseEpub({ filePath }: EpubParserInput): Promise<ResultLa
 
 async function preprocessBook(book: Book, epub: EpubBook): Promise<SuccessLast<Book>> {
     const diags: ParserDiagnostic[] = [];
-    const images = await processImages(epub, book);
+
+    const images = await processImages(book, epub);
     diags.push(images.diagnostic);
-    const references = checkReferences(images.value);
+
+    const references = processRefs(images.value);
     diags.push(references.diagnostic);
 
-    diags.push(await diagnoseText(epub, references.value));
+    const consistency = await processConsistency(references.value, epub);
+    diags.push(consistency.diagnostic);
 
-    const normalized = normalize(references.value);
+    const normalized = normalize(consistency.value);
     diags.push(normalized.diagnostic);
 
     return yieldLast(normalized.value, compoundDiagnostic(diags));

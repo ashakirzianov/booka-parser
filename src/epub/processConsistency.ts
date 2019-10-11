@@ -1,9 +1,9 @@
 import { EpubBook } from './epubFileParser';
 import { Book, extractNodeText } from 'booka-common';
 import { xmlStringParser, extractAllText } from '../xml';
-import { ParserDiagnostic } from '../combinators';
+import { ParserDiagnostic, SuccessLast, yieldLast } from '../combinators';
 
-export async function diagnoseText(epub: EpubBook, book: Book): Promise<ParserDiagnostic> {
+export async function processConsistency(book: Book, epub: EpubBook): Promise<SuccessLast<Book>> {
     const epubText = removeWhitespaces(
         await extractEpubText(epub),
     );
@@ -13,14 +13,13 @@ export async function diagnoseText(epub: EpubBook, book: Book): Promise<ParserDi
             .join(''),
     );
     const ratio = bookText.length / epubText.length;
-    if (ratio < 0.95) {
-        return {
+    const diag: ParserDiagnostic = ratio < 0.95
+        ? {
             diag: 'low text ratio',
             ratio: Math.floor(ratio * 100),
-        };
-    } else {
-        return undefined;
-    }
+        }
+        : undefined;
+    return yieldLast(book, diag);
 }
 
 async function extractEpubText(epub: EpubBook): Promise<string> {

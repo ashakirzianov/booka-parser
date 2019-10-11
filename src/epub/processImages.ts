@@ -2,7 +2,7 @@ import { Book, processVolumeImages } from 'booka-common';
 import { SuccessLast, yieldLast, ParserDiagnostic, compoundDiagnostic } from '../combinators';
 import { EpubBook } from './epubFileParser';
 
-export async function processImages(epub: EpubBook, book: Book): Promise<SuccessLast<Book>> {
+export async function processImages(book: Book, epub: EpubBook): Promise<SuccessLast<Book>> {
     const diags: ParserDiagnostic[] = [];
     const resolvedVolume = await processVolumeImages(book.volume, async image => {
         if (image.kind === 'ref') {
