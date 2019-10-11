@@ -1,14 +1,11 @@
 import { Book, KnownTag, BookContentNode, VolumeMeta } from 'booka-common';
 import {
-    yieldLast, StreamParser, ParserDiagnostic, ResultLast, compoundDiagnostic, SuccessLast,
+    yieldLast, StreamParser, ParserDiagnostic, ResultLast, compoundDiagnostic,
 } from '../combinators';
-import { epubFileParser, EpubBook } from './epubFileParser';
+import { epubFileParser } from './epubFileParser';
 import { metadataParser } from './metaParser';
 import { epub2nodes } from './sectionParser';
-import { processImages } from './processImages';
-import { processRefs } from './processRefs';
-import { processConsistency } from './processConsistency';
-import { normalize } from './normalizeBook';
+import { preprocessor } from './preprocessor';
 
 export type EpubParserInput = {
     filePath: string,
@@ -35,30 +32,12 @@ export async function parseEpub({ filePath }: EpubParserInput): Promise<ResultLa
         ? meta.value
         : [];
     const book = buildBook(nodes, tags);
-    const processed = await preprocessBook(book, epub);
+    const processed = await preprocessor({ book, epub });
     diags.push(processed.diagnostic);
     const result = {
         book: processed.value,
     };
     return yieldLast(result, compoundDiagnostic(diags));
-}
-
-async function preprocessBook(book: Book, epub: EpubBook): Promise<SuccessLast<Book>> {
-    const diags: ParserDiagnostic[] = [];
-
-    const images = await processImages(book, epub);
-    diags.push(images.diagnostic);
-
-    const references = processRefs(images.value);
-    diags.push(references.diagnostic);
-
-    const consistency = await processConsistency(references.value, epub);
-    diags.push(consistency.diagnostic);
-
-    const normalized = normalize(consistency.value);
-    diags.push(normalized.diagnostic);
-
-    return yieldLast(normalized.value, compoundDiagnostic(diags));
 }
 
 export type MetadataRecordParser = StreamParser<[string, any], KnownTag[]>;

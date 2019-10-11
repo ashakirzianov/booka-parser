@@ -57,6 +57,7 @@ export function pipeAsync<T1, T2, T3, TR>(
     p2: AsyncFullParser<T2, T3>,
     p3: AsyncFullParser<T3, TR>
 ): AsyncFullParser<T1, TR>;
+export function pipeAsync<T>(...ps: Array<AsyncFullParser<T, T>>): AsyncFullParser<T, T>;
 export function pipeAsync(...ps: Array<AsyncFullParser<any, any>>): AsyncFullParser<any, any> {
     return async input => {
         const diags: ParserDiagnostic[] = [];
