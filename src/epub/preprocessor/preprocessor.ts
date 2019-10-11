@@ -1,12 +1,7 @@
-import {
-    Book, BookNode,
-    processBookImages, justNodeGenerator, normalizeBook,
-    mapSpan, Span, extractBookText, flatten,
-} from 'booka-common';
+import { Book } from 'booka-common';
 import {
     SuccessLast, yieldLast, ParserDiagnostic, compoundDiagnostic,
 } from '../../combinators';
-import { xmlStringParser, extractAllText } from '../../xml';
 import { EpubBook } from '../epubFileParser';
 import { collectMetrics, metricsDiff } from './bookMetrics';
 
@@ -32,9 +27,3 @@ export async function preprocessWithProcessors({ book, epub }: PreprocessorArgs,
 
     return yieldLast(book, compoundDiagnostic(diags));
 }
-
-// Refs:
-
-// Consistency:
-
-// Normalization:

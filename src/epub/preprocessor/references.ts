@@ -1,12 +1,12 @@
 import {
-    BookNode, justNodeGenerator, mapSpan, Span, flatten,
+    BookNode, justNodeGenerator, mapSpan, Span, flatten, processNodes, refSpan, isRefSpan,
 } from 'booka-common';
 import {
-    SuccessLast, yieldLast, ParserDiagnostic,
+    SuccessLast, yieldLast, ParserDiagnostic, compoundDiagnostic,
 } from '../../combinators';
 import { PreprocessorArgs } from './preprocessor';
 
-export async function references({ book, epub }: PreprocessorArgs) {
+export async function references({ book }: PreprocessorArgs) {
     const { value: nodes, diagnostic } = checkNodesReferences(book.nodes);
     const resultBook = {
         ...book,
@@ -19,16 +19,42 @@ function checkNodesReferences(nodes: BookNode[]): SuccessLast<BookNode[]> {
     const diags: ParserDiagnostic[] = [];
     const nodeIds: string[] = [];
     const refs = extractRefsFromNodes(nodes);
-    for (const node of justNodeGenerator(nodes)) {
-        if (node.refId !== undefined) {
-            if (!refs.some(ref => ref === node.refId)) {
-                // NOTE: ugly mutation
-                node.refId = undefined;
+    type RefMap = { [k: string]: string | undefined };
+    const refMap = refs.reduce((map, ref, idx) => {
+        map[ref] = `ref-${idx}`;
+        return map;
+    }, {} as RefMap);
+    const processed = processNodes(nodes, {
+        span: span => {
+            if (isRefSpan(span)) {
+                const resolved = refMap[span.refToId];
+                return resolved !== undefined
+                    ? refSpan(span.ref, resolved)
+                    : span; // TODO: this should not happen. Report ?
             } else {
-                nodeIds.push(node.refId);
+                return span;
             }
-        }
-    }
+        },
+        node: node => {
+            if (node.refId !== undefined) {
+                if (nodeIds.some(id => id === node.refId)) {
+                    diags.push({
+                        diag: 'duplicate id',
+                        id: node.refId,
+                    });
+                }
+                nodeIds.push(node.refId);
+                const resolved = refMap[node.refId];
+                if (resolved !== undefined) {
+                    return { ...node, refId: resolved };
+                } else {
+                    return { ...node, refId: undefined };
+                }
+            } else {
+                return node;
+            }
+        },
+    });
 
     for (const ref of refs) {
         if (!nodeIds.some(id => id === ref)) {
@@ -39,7 +65,7 @@ function checkNodesReferences(nodes: BookNode[]): SuccessLast<BookNode[]> {
         }
     }
 
-    return yieldLast(nodes);
+    return yieldLast(processed, compoundDiagnostic(diags));
 }
 
 function extractRefsFromNodes(nodes: BookNode[]): string[] {
