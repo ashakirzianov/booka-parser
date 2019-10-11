@@ -11,7 +11,7 @@ import { EpubBook } from './epubFileParser';
 import { collectMetrics, metricsDiff } from './bookMetrics';
 
 type PreprocessorArgs = { book: Book, epub: EpubBook };
-type BookPreprocessor = (args: PreprocessorArgs) => Promise<SuccessLast<PreprocessorArgs>>;
+type BookPreprocessor = (args: PreprocessorArgs) => Promise<SuccessLast<Book>>;
 
 const preprocessors: BookPreprocessor[] = [
     images,
@@ -19,15 +19,14 @@ const preprocessors: BookPreprocessor[] = [
     consistency,
     normalize,
 ];
-export async function preprocessor(args: PreprocessorArgs): Promise<SuccessLast<Book>> {
+export async function preprocessor({ book, epub }: PreprocessorArgs): Promise<SuccessLast<Book>> {
     const diags: ParserDiagnostic[] = [];
-    const before = collectMetrics(args.book);
+    const before = collectMetrics(book);
     for (const proc of preprocessors) {
-        const result = await proc(args);
+        const result = await proc({ book, epub });
         diags.push(result.diagnostic);
-        args = result.value;
+        book = result.value;
     }
-    const book = args.book;
     const after = collectMetrics(book);
     const diff = metricsDiff(before, after);
     if (diff !== undefined) {
@@ -37,7 +36,7 @@ export async function preprocessor(args: PreprocessorArgs): Promise<SuccessLast<
         });
     }
 
-    return yieldLast(args.book, compoundDiagnostic(diags));
+    return yieldLast(book, compoundDiagnostic(diags));
 }
 
 // Images:
@@ -69,7 +68,7 @@ async function images({ book, epub }: PreprocessorArgs) {
         ...book,
         volume: resolvedVolume,
     };
-    return yieldLast({ book: resolved, epub }, compoundDiagnostic(diags));
+    return yieldLast(resolved, compoundDiagnostic(diags));
 }
 
 // Refs:
@@ -80,7 +79,7 @@ async function references({ book, epub }: PreprocessorArgs) {
         ...book,
         nodes: nodes,
     };
-    return yieldLast({ book: resultBook, epub }, diagnostic);
+    return yieldLast(resultBook, diagnostic);
 }
 
 function checkNodesReferences(nodes: BookNode[]): SuccessLast<BookNode[]> {
@@ -143,7 +142,7 @@ async function consistency({ book, epub }: PreprocessorArgs) {
             ratio: Math.floor(ratio * 100),
         }
         : undefined;
-    return yieldLast({ book, epub }, diag);
+    return yieldLast(book, diag);
 }
 
 async function extractEpubText(epub: EpubBook): Promise<string> {
@@ -168,5 +167,5 @@ function extractXmlText(xmlString: string): string {
 async function normalize({ book, epub }: PreprocessorArgs) {
     const normalized = normalizeBook(book);
 
-    return yieldLast({ book: normalized, epub });
+    return yieldLast(normalized);
 }
