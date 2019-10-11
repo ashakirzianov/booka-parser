@@ -5,7 +5,7 @@ import {
 import { epubFileParser } from './epubFileParser';
 import { metadataParser } from './metaParser';
 import { epub2nodes } from './sectionParser';
-import { preprocessor } from './preprocessor';
+import { preprocess } from './preprocessor';
 import { resolveHooks } from './hooks';
 
 export type EpubParserInput = {
@@ -41,7 +41,7 @@ export async function parseEpub({ filePath }: EpubParserInput): Promise<ResultLa
         ? meta.value
         : [];
     const book = buildBook(nodes, tags);
-    const processed = await preprocessor({ book, epub });
+    const processed = await preprocess({ book, epub });
     diags.push(processed.diagnostic);
     const result = {
         book: processed.value,
