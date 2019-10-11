@@ -1,13 +1,14 @@
 import { Book, KnownTag, BookContentNode, VolumeMeta } from 'booka-common';
 import {
-    yieldLast, StreamParser, ParserDiagnostic, ResultLast, compoundDiagnostic,
+    yieldLast, StreamParser, ParserDiagnostic, ResultLast, compoundDiagnostic, SuccessLast,
 } from '../combinators';
-import { epubFileParser } from './epubFileParser';
+import { epubFileParser, EpubBook } from './epubFileParser';
 import { metadataParser } from './metaParser';
 import { epub2nodes } from './sectionParser';
 import { processImages } from './processImages';
 import { checkReferences } from './refProcessor';
 import { diagnoseText } from './diagnoseText';
+import { normalize } from './normalizeBook';
 
 export type EpubParserInput = {
     filePath: string,
@@ -33,16 +34,28 @@ export async function parseEpub({ filePath }: EpubParserInput): Promise<ResultLa
     const tags = meta.success
         ? meta.value
         : [];
-    const { value: processedImages, diagnostic: imagesDiag } = await processImages(epub, buildBook(nodes, tags));
-    diags.push(imagesDiag);
-    const { value: processedRefs, diagnostic: refsDiag } = checkReferences(processedImages);
-    diags.push(refsDiag);
-
-    diags.push(await diagnoseText(epub, processedRefs));
+    const book = buildBook(nodes, tags);
+    const processed = await preprocessBook(book, epub);
+    diags.push(processed.diagnostic);
     const result = {
-        book: processedRefs,
+        book: processed.value,
     };
     return yieldLast(result, compoundDiagnostic(diags));
+}
+
+async function preprocessBook(book: Book, epub: EpubBook): Promise<SuccessLast<Book>> {
+    const diags: ParserDiagnostic[] = [];
+    const images = await processImages(epub, book);
+    diags.push(images.diagnostic);
+    const references = checkReferences(images.value);
+    diags.push(references.diagnostic);
+
+    diags.push(await diagnoseText(epub, references.value));
+
+    const normalized = normalize(references.value);
+    diags.push(normalized.diagnostic);
+
+    return yieldLast(normalized.value, compoundDiagnostic(diags));
 }
 
 export type MetadataRecordParser = StreamParser<[string, any], KnownTag[]>;
