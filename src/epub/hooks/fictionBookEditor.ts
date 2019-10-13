@@ -1,5 +1,4 @@
-import { HooksProvider } from './hooks';
-import { XmlHooks } from '../../xml2nodes';
+import { HooksProvider, Hooks } from './hooks';
 
 export const fictionBookEditor: HooksProvider = epub => {
     const marker = epub.metadata['FB2.document-info.program-used'];
@@ -11,4 +10,6 @@ export const fictionBookEditor: HooksProvider = epub => {
         : undefined;
 };
 
-const fictionBookEditorHooks: XmlHooks = {};
+const fictionBookEditorHooks: Hooks = {
+    xml: {},
+};

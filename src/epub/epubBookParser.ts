@@ -29,7 +29,7 @@ export async function parseEpub({ filePath }: EpubParserInput): Promise<ResultLa
             meta: epub.rawMetadata,
         });
     }
-    const nodesResult = await epub2nodes(epub, hooks);
+    const nodesResult = await epub2nodes(epub, hooks && hooks.xml);
     diags.push(nodesResult.diagnostic);
     if (!nodesResult.success) {
         return nodesResult;
