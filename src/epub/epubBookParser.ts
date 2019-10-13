@@ -35,7 +35,7 @@ export async function parseEpub({ filePath }: EpubParserInput): Promise<ResultLa
         return nodesResult;
     }
     const nodes = nodesResult.value;
-    const meta = await metadataParser(epub);
+    const meta = metadataParser(epub, undefined);
     diags.push(meta.diagnostic);
     const tags = meta.success
         ? meta.value
@@ -48,8 +48,6 @@ export async function parseEpub({ filePath }: EpubParserInput): Promise<ResultLa
     };
     return yieldLast(result, compoundDiagnostic(diags));
 }
-
-export type MetadataRecordParser = StreamParser<[string, any], KnownTag[]>;
 
 function buildBook(nodes: BookNode[], tags: KnownTag[]): Book {
     const meta = buildMeta(tags);

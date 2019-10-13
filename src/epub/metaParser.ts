@@ -1,36 +1,34 @@
-import { KnownTag, buildTagSet, flatten } from 'booka-common';
+import { KnownTag, buildTagSet } from 'booka-common';
 import {
-    headParser, yieldLast, makeStream, choice,
-    AsyncFullParser, some, reportUnparsedTail, reject, translate,
+    yieldLast, SuccessLast, ParserDiagnostic, compoundDiagnostic, ResultLast,
 } from '../combinators';
 import { EpubBook } from './epubFileParser';
-import { MetadataRecordParser } from './epubBookParser';
 
-export const metadataParser: AsyncFullParser<EpubBook, KnownTag[]> = async epub => {
-    const hooks = [] as MetadataRecordParser[]; // epubParserHooks[epub.kind].metadataHooks;
-    const allParsers = hooks.concat(defaultMetadataParser);
-    const singleParser = choice(...allParsers);
-    const full = translate(
-        reportUnparsedTail(some(singleParser), tail => ({
-            diag: 'unexpected-metas',
-            metas: tail.stream,
-        })),
-        flatten,
-    );
+export type MetadataRecordHook = (name: string, value: any) => ResultLast<KnownTag[]>;
+export function metadataParser(epub: EpubBook, hook: MetadataRecordHook | undefined): SuccessLast<KnownTag[]> {
     const records = Object
         .entries(epub.metadata);
-    const metaStream = makeStream(records);
-    const result = full(metaStream);
-    if (result.success) {
-        const unique = buildTagSet(result.value);
-        return yieldLast(unique, result.diagnostic);
-    } else {
-        return result;
+    const diags: ParserDiagnostic[] = [];
+    const tags: KnownTag[] = [];
+    for (const [name, value] of records) {
+        if (hook) {
+            const hookResult = hook(name, value);
+            diags.push(hookResult.diagnostic);
+            if (hookResult.success) {
+                tags.push(...hookResult.value);
+                continue;
+            }
+        }
+        const result = defaultMetadata(name, value);
+        diags.push(result.diagnostic);
+        tags.push(...result.value);
     }
-};
+    const unique = buildTagSet(tags);
+    return yieldLast(unique, compoundDiagnostic(diags));
+}
 
-const defaultMetadataParser: MetadataRecordParser = headParser(([key, value]) => {
-    switch (key) {
+function defaultMetadata(name: string, value: any): SuccessLast<KnownTag[]> {
+    switch (name) {
         case 'title':
             return yieldLast([{ tag: 'title', value }]);
         case 'creator':
@@ -56,8 +54,9 @@ const defaultMetadataParser: MetadataRecordParser = headParser(([key, value]) =>
         case 'dc:identifier':
             return yieldLast([] as KnownTag[]);
         default:
-            // TODO: reject
-            // return reject();
-            return yieldLast([] as KnownTag[]);
+            return yieldLast([] as KnownTag[], {
+                diag: 'unexpected metadata',
+                name, value,
+            });
     }
-});
+}
