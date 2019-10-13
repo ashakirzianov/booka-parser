@@ -79,10 +79,12 @@ function checkNodesReferences(nodes: BookNode[]): SuccessLast<BookNode[]> {
 
     for (const ref of refs) {
         if (!nodeIds.some(id => id === ref)) {
-            diags.push({
-                diag: 'could not resolve ref',
-                ref,
-            });
+            if (!ref.startsWith('http')) { // Do not report external refs
+                diags.push({
+                    diag: 'could not resolve ref',
+                    ref,
+                });
+            }
         }
     }
 
