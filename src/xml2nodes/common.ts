@@ -52,6 +52,7 @@ export function shouldIgnore(node: Xml): boolean {
         case 'element':
             switch (node.name) {
                 case 'svg':
+                case 'br':
                     return true;
                 default:
                     return false;
