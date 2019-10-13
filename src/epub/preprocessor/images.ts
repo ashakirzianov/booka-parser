@@ -8,7 +8,7 @@ import { PreprocessorArgs } from './preprocessor';
 
 export async function images({ book, epub }: PreprocessorArgs) {
     const diags: ParserDiagnostic[] = [];
-    const resolvedVolume = await processBookImages(book, async image => {
+    const resolved = await processBookImages(book, async image => {
         if (image.kind === 'ref') {
             const buffer = await epub.imageResolver(image.ref);
             if (buffer) {
@@ -29,9 +29,5 @@ export async function images({ book, epub }: PreprocessorArgs) {
             return image;
         }
     });
-    const resolved = {
-        ...book,
-        volume: resolvedVolume,
-    };
     return yieldLast(resolved, compoundDiagnostic(diags));
 }
