@@ -195,7 +195,7 @@ export function extractAllText(xml: Xml): string {
         case 'element':
             return xml.children
                 .map(extractAllText)
-                .join('\n');
+                .join('');
         case 'comment':
         case 'cdata':
             return '';
