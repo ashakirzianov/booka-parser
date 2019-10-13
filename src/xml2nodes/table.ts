@@ -49,6 +49,8 @@ function tableRows(nodes: Xml[], env: Xml2NodesEnv): SuccessLast<TableRowData[]>
                     const rows = tableRows(node.children, env);
                     return { values: rows.value, diag: rows.diagnostic };
                 }
+            case 'col':
+                return {};
             default:
                 return { diag: unexpectedNode(node, 'table row') };
         }
