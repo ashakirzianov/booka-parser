@@ -34,7 +34,9 @@ function defaultMetadata(name: string, value: any): SuccessLast<KnownTag[]> {
         case 'creator':
             return yieldLast([{ tag: 'author', value }]);
         case 'cover':
-            return yieldLast([{ tag: 'cover-ref', value }]);
+            return value
+                ? yieldLast([{ tag: 'cover-ref', value }])
+                : yieldLast([]);
         case 'subject':
             return yieldLast([{ tag: 'subject', value }]);
         case 'language':

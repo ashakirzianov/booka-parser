@@ -29,8 +29,9 @@ export const epubFileParser: EpubParser = async input => {
         rawMetadata: getRawData(epub.metadata),
         metadata: extractMetadata(epub),
         imageResolver: async href => {
-
-            const idItem = epub.listImage().find(item => item.href && item.href.endsWith(href));
+            const items = listItems(epub);
+            const idItem = items
+                .find(item => item.href && item.href.endsWith(href));
             if (!idItem || !idItem.id) {
                 return undefined;
             }
@@ -81,10 +82,12 @@ function extractMetadata(epub: EPub): EpubMetadata {
     const metadata = { ...epub.metadata } as any;
     const coverId = metadata.cover;
     if (coverId) {
-        const coverItem = epub.listImage().find(item => item.id === coverId);
-        if (coverItem) {
-            metadata.cover = coverItem.href;
-        }
+        const items = listItems(epub);
+        const coverItem = items
+            .find(item => item.id === coverId);
+        metadata.cover = coverItem !== undefined
+            ? coverItem.href
+            : undefined;
     }
     const raw = getRawData(epub.metadata);
     metadata['dc:rights'] = raw['dc:rights'];
@@ -96,4 +99,8 @@ function extractMetadata(epub: EPub): EpubMetadata {
 function getRawData(object: any): any {
     const symbol = EPub.SYMBOL_RAW_DATA;
     return object[symbol];
+}
+
+function listItems(epub: EPub) {
+    return epub.listImage();
 }
