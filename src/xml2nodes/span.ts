@@ -4,7 +4,7 @@ import {
     ResultLast, compoundResult, compoundDiagnostic,
 } from '../combinators';
 import { Xml, xml2string } from '../xml';
-import { Xml2NodesEnv, unexpectedNode, expectEmptyContent } from './common';
+import { Xml2NodesEnv, unexpectedNode, expectEmptyContent, buildRefId } from './common';
 
 export function expectSpanContent(nodes: Xml[], env: Xml2NodesEnv): SuccessLast<Span[]> {
     const results = nodes.map(n => {
@@ -24,6 +24,20 @@ export function spanContent(nodes: Xml[], env: Xml2NodesEnv): ResultLast<Span[]>
 }
 
 export function singleSpan(node: Xml, env: Xml2NodesEnv): ResultLast<Span> {
+    const result = singleSpanImpl(node, env);
+    if (!result.success) {
+        return result;
+    }
+    let span = result.value;
+    if (node.type === 'element' && node.attributes.id !== undefined) {
+        const refId = buildRefId(env.filePath, node.attributes.id);
+        span = { a: span, refId };
+    }
+
+    return yieldLast(span, result.diagnostic);
+}
+
+function singleSpanImpl(node: Xml, env: Xml2NodesEnv): ResultLast<Span> {
     if (node.type === 'text') {
         return yieldLast(node.text);
     } else if (node.type !== 'element') {
@@ -92,7 +106,6 @@ export function singleSpan(node: Xml, env: Xml2NodesEnv): ResultLast<Span> {
                     xml: xml2string(node),
                 }, insideDiag]));
             }
-            break;
         case 'a':
             if (node.attributes.href !== undefined) {
                 return yieldLast({

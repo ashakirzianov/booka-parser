@@ -1,5 +1,5 @@
 import {
-    BookNode, justNodeGenerator, mapSpan, Span, flatten, processNodes, refSpan, isRefSpan,
+    BookNode, justNodeGenerator, mapSpan, Span, flatten, processNodes, refSpan, isRefSpan, isAnchorSpan,
 } from 'booka-common';
 import {
     SuccessLast, yieldLast, ParserDiagnostic, compoundDiagnostic,
@@ -36,6 +36,20 @@ function checkNodesReferences(nodes: BookNode[]): SuccessLast<BookNode[]> {
                     return span;
                 } else {
                     return refSpan(span.ref, resolved);
+                }
+            } else if (isAnchorSpan(span)) {
+                if (nodeIds.some(id => id === span.refId)) {
+                    diags.push({
+                        diag: 'duplicate id',
+                        id: span.refId,
+                    });
+                }
+                nodeIds.push(span.refId);
+                const resolved = refMap[span.refId];
+                if (resolved !== undefined) {
+                    return { ...span, refId: resolved };
+                } else {
+                    return span.a;
                 }
             } else {
                 return span;

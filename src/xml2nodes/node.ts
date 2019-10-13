@@ -10,7 +10,7 @@ import {
     reject, yieldLast, compoundDiagnostic,
 } from '../combinators';
 import {
-    Xml2NodesEnv, unexpectedNode, expectEmptyContent, shouldIgnore,
+    Xml2NodesEnv, unexpectedNode, expectEmptyContent, shouldIgnore, buildRefId,
 } from './common';
 import { expectSpanContent, singleSpan, spanContent } from './span';
 import { tableNode } from './table';
@@ -70,13 +70,7 @@ function singleNode(node: Xml, env: Xml2NodesEnv): ResultLast<BookNode> {
         let bookNode = result.value;
         if (node.type === 'element' && node.attributes.id !== undefined) {
             const refId = buildRefId(env.filePath, node.attributes.id);
-            bookNode = bookNode.node === undefined
-                ? {
-                    node: 'pph',
-                    span: bookNode,
-                    refId,
-                }
-                : { ...bookNode, refId };
+            bookNode = { ...bookNode, refId };
         }
         if (attrs.semantics && attrs.semantics.length > 0) {
             bookNode = appendSemantics(bookNode, attrs.semantics);
@@ -145,10 +139,4 @@ function groupNode(node: XmlElement, env: Xml2NodesEnv): SuccessLast<GroupNode> 
         nodes: content.value,
     };
     return yieldLast(group, content.diagnostic);
-}
-
-function buildRefId(filePath: string, id: string | undefined) {
-    return id !== undefined
-        ? `${filePath}#${id}`
-        : undefined;
 }
