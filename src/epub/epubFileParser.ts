@@ -1,6 +1,6 @@
 import { EPub } from 'epub2';
 import { last } from '../utils';
-import { AsyncParser, yieldLast } from '../combinators';
+import { AsyncParser, yieldLast, reject } from '../combinators';
 
 export type EpubSection = {
     filePath: string,
@@ -23,39 +23,46 @@ export type EpubFileParserInput = {
 export type EpubParser = AsyncParser<EpubFileParserInput, EpubBook>;
 
 export const epubFileParser: EpubParser = async input => {
-    const epub = await FixedEpub.createAsync(input.filePath) as FixedEpub;
+    try {
+        const epub = await FixedEpub.createAsync(input.filePath) as FixedEpub;
 
-    const book: EpubBook = {
-        rawMetadata: getRawData(epub.metadata),
-        metadata: extractMetadata(epub),
-        imageResolver: async href => {
-            const items = listItems(epub);
-            const idItem = items
-                .find(item => item.href && item.href.endsWith(href));
-            if (!idItem || !idItem.id) {
-                return undefined;
-            }
-            const [buffer] = await epub.getImageAsync(idItem.id);
-            return buffer;
-        },
-        sections: async function* () {
-            for (const el of epub.flow) {
-                if (el.id && el.href) {
-                    // NOTE: couldn't find better solution
-                    const href = last(el.href.split('/'));
-                    const chapter = await epub.chapterForId(el.id);
-                    const section: EpubSection = {
-                        id: el.id,
-                        filePath: href,
-                        content: chapter,
-                    };
-                    yield section;
+        const book: EpubBook = {
+            rawMetadata: getRawData(epub.metadata),
+            metadata: extractMetadata(epub),
+            imageResolver: async href => {
+                const items = listItems(epub);
+                const idItem = items
+                    .find(item => item.href && item.href.endsWith(href));
+                if (!idItem || !idItem.id) {
+                    return undefined;
                 }
-            }
-        },
-    };
+                const [buffer] = await epub.getImageAsync(idItem.id);
+                return buffer;
+            },
+            sections: async function* () {
+                for (const el of epub.flow) {
+                    if (el.id && el.href) {
+                        // NOTE: couldn't find better solution
+                        const href = last(el.href.split('/'));
+                        const chapter = await epub.chapterForId(el.id);
+                        const section: EpubSection = {
+                            id: el.id,
+                            filePath: href,
+                            content: chapter,
+                        };
+                        yield section;
+                    }
+                }
+            },
+        };
 
-    return yieldLast(book);
+        return yieldLast(book);
+    } catch (e) {
+        return reject({
+            diag: 'exception on epub open',
+            exception: e,
+        });
+    }
 };
 
 class FixedEpub extends EPub {
