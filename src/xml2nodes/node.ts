@@ -97,11 +97,10 @@ function singleNodeImpl(node: Xml, env: Xml2NodesEnv): ResultLast<BookNode> {
             {
                 const level = 4 - parseInt(node.name[1], 10);
                 const spans = expectSpanContent(node.children, env);
-                const text = spans.value.map(extractSpanText).join('');
                 const title: BookNode = {
                     node: 'title',
+                    span: compoundSpan(spans.value),
                     level,
-                    lines: [text],
                 };
                 return yieldLast(title, spans.diagnostic);
             }

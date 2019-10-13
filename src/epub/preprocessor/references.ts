@@ -1,5 +1,6 @@
 import {
-    BookNode, justNodeGenerator, mapSpan, Span, flatten, processNodes, refSpan, isRefSpan, isAnchorSpan,
+    BookNode, processNodes, refSpan, isRefSpan, isAnchorSpan,
+    extractRefsFromNodes,
 } from 'booka-common';
 import {
     SuccessLast, yieldLast, ParserDiagnostic, compoundDiagnostic,
@@ -86,25 +87,4 @@ function checkNodesReferences(nodes: BookNode[]): SuccessLast<BookNode[]> {
     }
 
     return yieldLast(processed, compoundDiagnostic(diags));
-}
-
-function extractRefsFromNodes(nodes: BookNode[]): string[] {
-    const refs: string[] = [];
-    for (const node of justNodeGenerator(nodes)) {
-        switch (node.node) {
-            case 'pph':
-                refs.push(...extractRefsFromSpan(node.span));
-                break;
-        }
-    }
-
-    return refs;
-}
-
-function extractRefsFromSpan(span: Span): string[] {
-    return mapSpan(span, {
-        compound: spans => flatten(spans.map(extractRefsFromSpan)),
-        ref: (_, ref) => [ref],
-        default: () => [],
-    });
 }
