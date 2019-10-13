@@ -1,5 +1,8 @@
 import { HooksProvider, Hooks } from './hooks';
 import { AttributesHookResult } from '../../xml2nodes';
+import { MetadataRecordHook } from '../metaParser';
+import { yieldLast, reject } from '../../combinators';
+import { flatten, KnownTag } from 'booka-common';
 
 export const gutenberg: HooksProvider = ({ rawMetadata }) => {
     if (!rawMetadata) {
@@ -23,8 +26,37 @@ export const gutenberg: HooksProvider = ({ rawMetadata }) => {
         : undefined;
 };
 
+const metadata: MetadataRecordHook = (key, value) => {
+    switch (key) {
+        case 'subject':
+            const subs = value as string[];
+            const subjects = flatten(subs.map(sub => sub.split(' -- ')));
+            const tags: KnownTag[] = subjects.map(sub => ({
+                tag: 'subject' as const,
+                value: sub,
+            }));
+            return yieldLast(tags);
+        case 'dc:identifier':
+            const id = value['#'];
+            if (id && typeof id === 'string') {
+                const matches = id.match(/http:\/\/www.gutenberg\.org\/ebooks\/([0-9]*)/);
+                if (matches && matches[1]) {
+                    const index = parseInt(matches[1], 10);
+                    if (index) {
+                        return yieldLast([{ tag: 'pg-index', value: index }]);
+                    }
+                }
+            }
+
+            return yieldLast([], { diag: 'bad-meta', meta: { key, value } });
+        default:
+            return reject();
+    }
+};
+
 const gutenbergHooks: Hooks = {
     xml: { attributesHook },
+    metadata,
 };
 
 function attributesHook(element: string, attr: string, value: string): AttributesHookResult {

@@ -35,7 +35,7 @@ export async function parseEpub({ filePath }: EpubParserInput): Promise<ResultLa
         return nodesResult;
     }
     const nodes = nodesResult.value;
-    const meta = metadataParser(epub, undefined);
+    const meta = metadataParser(epub, hooks && hooks.metadata);
     diags.push(meta.diagnostic);
     const tags = meta.success
         ? meta.value
