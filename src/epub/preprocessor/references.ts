@@ -28,9 +28,15 @@ function checkNodesReferences(nodes: BookNode[]): SuccessLast<BookNode[]> {
         span: span => {
             if (isRefSpan(span)) {
                 const resolved = refMap[span.refToId];
-                return resolved !== undefined
-                    ? refSpan(span.ref, resolved)
-                    : span; // TODO: this should not happen. Report ?
+                if (resolved === undefined) {
+                    diags.push({
+                        diag: 'unexpected ref',
+                        span,
+                    });
+                    return span;
+                } else {
+                    return refSpan(span.ref, resolved);
+                }
             } else {
                 return span;
             }
