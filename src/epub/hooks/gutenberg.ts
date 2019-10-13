@@ -98,6 +98,20 @@ function attributesHook(element: string, attr: string, value: string): Attribute
                     return { flag: 'title-page' };
                 case 'illus':
                     return { flag: 'illustrations' };
+                case 'pgmonospaced':
+                    return { flag: 'formated' };
+                case 'foot':
+                    return {
+                        semantics: [{
+                            semantic: 'footnote',
+                        }],
+                    };
+                case 'foots':
+                    return {
+                        semantics: [{
+                            semantic: 'footnote-group',
+                        }],
+                    };
                 // TODO: handle ?
                 case 'letterdate':
                 case 'preface1': case 'preface2':
@@ -111,14 +125,14 @@ function attributesHook(element: string, attr: string, value: string): Attribute
                 // Ignore
                 case 'state':
                 case 'gapspace': case 'chapterhead':
-                case 'pgmonospaced': case 'pgheader':
+                case 'pgheader':
                 case 'fig': case 'figleft': case 'figcenter':
-                case 'foot': case 'finis':
+                case 'finis':
                 case 'right': case 'pfirst':
                 case 'contents': case 'book':
                 case 'title': case 'title2':
                 case 'centered':
-                case 'chapter': case 'foots':
+                case 'chapter':
                 case 'tiny': case 'short': case 'main':
                 case 'break': case 'full':
                 case 'none': case 'nonetn':
