@@ -1,5 +1,5 @@
 import { HooksProvider } from './hooks';
-import { Hooks } from '../../xml2nodes';
+import { XmlHooks } from '../../xml2nodes';
 
 export const fb2epub: HooksProvider = ({ rawMetadata }) => {
     if (!rawMetadata) {
@@ -20,4 +20,4 @@ export const fb2epub: HooksProvider = ({ rawMetadata }) => {
         : undefined;
 };
 
-const fb2epubHooks: Hooks = {};
+const fb2epubHooks: XmlHooks = {};

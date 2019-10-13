@@ -4,9 +4,9 @@ import {
 } from '../combinators';
 import { EpubSection, EpubBook } from './epubFileParser';
 import { xmlStringParser } from '../xml';
-import { documentParser, Hooks } from '../xml2nodes';
+import { documentParser, XmlHooks } from '../xml2nodes';
 
-export async function epub2nodes(epub: EpubBook, hooks: Hooks | undefined): Promise<ResultLast<BookNode[]>> {
+export async function epub2nodes(epub: EpubBook, hooks: XmlHooks | undefined): Promise<ResultLast<BookNode[]>> {
     const diags: ParserDiagnostic[] = [];
     const content: BookNode[] = [];
 
@@ -19,7 +19,7 @@ export async function epub2nodes(epub: EpubBook, hooks: Hooks | undefined): Prom
     return yieldLast(content, compoundDiagnostic(diags));
 }
 
-function sectionParser(section: EpubSection, hooks: Hooks | undefined): SuccessLast<BookNode[]> {
+function sectionParser(section: EpubSection, hooks: XmlHooks | undefined): SuccessLast<BookNode[]> {
     const xmlDocument = xmlStringParser({
         xmlString: section.content,
         removeTrailingWhitespaces: false,

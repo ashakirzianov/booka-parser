@@ -12,11 +12,11 @@ export type AttributesHookResult = {
     diag?: ParserDiagnostic,
 };
 export type AttributesHook = (element: string, attr: string, value: string) => AttributesHookResult;
-export type Hooks = {
+export type XmlHooks = {
     attributesHook?: AttributesHook,
 };
 export type Xml2NodesEnv = {
-    hooks?: Hooks,
+    hooks?: XmlHooks,
     filePath: string,
 };
 export type Input = Stream<Xml, Xml2NodesEnv>;

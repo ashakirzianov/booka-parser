@@ -1,2 +1,2 @@
-export { Hooks, AttributesHook, AttributesHookResult } from './common';
+export { XmlHooks, AttributesHook, AttributesHookResult } from './common';
 export { documentParser } from './document';

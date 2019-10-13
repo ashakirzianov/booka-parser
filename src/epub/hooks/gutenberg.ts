@@ -1,5 +1,5 @@
 import { HooksProvider } from './hooks';
-import { Hooks, AttributesHookResult } from '../../xml2nodes';
+import { XmlHooks, AttributesHookResult } from '../../xml2nodes';
 
 export const gutenberg: HooksProvider = ({ rawMetadata }) => {
     if (!rawMetadata) {
@@ -23,7 +23,7 @@ export const gutenberg: HooksProvider = ({ rawMetadata }) => {
         : undefined;
 };
 
-const gutenbergHooks: Hooks = {
+const gutenbergHooks: XmlHooks = {
     attributesHook,
 };
 
