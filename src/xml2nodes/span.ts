@@ -92,8 +92,7 @@ function singleSpanImpl(node: Xml, env: Xml2NodesEnv): ResultLast<Span> {
                 return yieldLast(
                     {
                         image: {
-                            kind: 'ref',
-                            ref: node.attributes.src,
+                            image: 'ref',
                             imageId: node.attributes.src,
                             title: node.attributes.title || node.attributes.alt,
                         },

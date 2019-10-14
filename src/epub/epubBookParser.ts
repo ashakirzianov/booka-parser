@@ -55,6 +55,7 @@ function buildBook(nodes: BookNode[], tags: KnownTag[]): Book {
         meta,
         nodes,
         tags,
+        images: {},
     };
 }
 
@@ -70,9 +71,8 @@ function buildMeta(tags: KnownTag[]) {
                 continue;
             case 'cover-ref':
                 meta.coverImage = {
-                    kind: 'ref',
+                    image: 'ref',
                     title: 'cover',
-                    ref: tag.value,
                     imageId: tag.value,
                 };
                 continue;

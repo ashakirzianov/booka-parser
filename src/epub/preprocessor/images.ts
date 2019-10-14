@@ -1,5 +1,5 @@
 import {
-    processBookImages,
+    processBookImages, Image, ImageDic, assertNever,
 } from 'booka-common';
 import {
     yieldLast, ParserDiagnostic, compoundDiagnostic,
@@ -8,26 +8,50 @@ import { PreprocessorArgs } from './preprocessor';
 
 export async function images({ book, epub }: PreprocessorArgs) {
     const diags: ParserDiagnostic[] = [];
+    const imageDic: ImageDic = {};
     const resolved = await processBookImages(book, async image => {
-        if (image.kind === 'ref') {
-            const buffer = await epub.imageResolver(image.ref);
-            if (buffer) {
-                return {
-                    ...image,
-                    kind: 'buffer',
-                    imageId: image.imageId,
-                    buffer: buffer,
-                };
-            } else {
-                diags.push({
-                    diag: 'couldnt-resolve-image',
-                    id: image.imageId,
-                });
+        switch (image.image) {
+            case 'ref':
+                {
+                    const buffer = await epub.imageResolver(image.imageId);
+                    if (buffer) {
+                        const imageBuffer: Image = {
+                            ...image,
+                            image: 'buffer',
+                            imageId: image.imageId,
+                            buffer: buffer,
+                        };
+                        imageDic[image.imageId] = imageBuffer;
+                        return image;
+                    } else {
+                        diags.push({
+                            diag: 'couldnt-resolve-image',
+                            id: image.imageId,
+                        });
+                        return image;
+                    }
+                }
+                break;
+            case 'buffer':
+                {
+                    imageDic[image.imageId] = image;
+                    const imageRef: Image = {
+                        image: 'ref',
+                        imageId: image.imageId,
+                        title: image.title,
+                    };
+                    return imageRef;
+                }
+                break;
+            case 'external':
                 return image;
-            }
-        } else {
-            return image;
+            default:
+                assertNever(image);
+                return image;
         }
     });
-    return yieldLast(resolved, compoundDiagnostic(diags));
+    return yieldLast({
+        ...resolved,
+        images: imageDic,
+    }, compoundDiagnostic(diags));
 }
