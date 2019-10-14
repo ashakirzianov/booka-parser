@@ -1,6 +1,6 @@
 import {
     Span, GroupNode, BookNode, appendSemantics,
-    makePph, extractSpanText, compoundSpan,
+    makePph, compoundSpan,
 } from 'booka-common';
 import {
     Xml, XmlElement,

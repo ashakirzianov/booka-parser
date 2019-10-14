@@ -22,10 +22,8 @@ export type Xml2NodesEnv = {
 export type Input = Stream<Xml, Xml2NodesEnv>;
 export type NodeParser = StreamParser<Xml, BookNode[], Xml2NodesEnv>;
 
-export function buildRefId(filePath: string, id: string | undefined) {
-    return id !== undefined
-        ? `${filePath}#${id}`
-        : undefined;
+export function buildRefId(filePath: string, id: string) {
+    return `${filePath}#${id}`;
 }
 
 export function expectEmptyContent(children: Xml[]): ParserDiagnostic {

@@ -1,5 +1,5 @@
 import {
-    BookNode, TableRow, flatten, Span, extractSpans,
+    BookNode, TableRow, flatten, Span, extractSpans, TableCell,
 } from 'booka-common';
 import { XmlElement, Xml } from '../xml';
 import {
@@ -22,9 +22,7 @@ export function tableNode(node: XmlElement, env: Xml2NodesEnv): SuccessLast<Book
     } else {
         const rows: TableRow[] = rowsData.map(
             row => ({
-                cells: row.map(c => ({
-                    spans: cellToSpans(c),
-                })),
+                cells: row.map(cellDataToCell),
             })
         );
         const table: BookNode = {
@@ -57,16 +55,25 @@ function tableRows(nodes: Xml[], env: Xml2NodesEnv): SuccessLast<TableRowData[]>
     });
 }
 
-type TableCellData = BookNode[];
+type TableCellData = {
+    colspan?: number,
+    nodes: BookNode[],
+};
 function tableCells(nodes: Xml[], env: Xml2NodesEnv): SuccessLast<TableCellData[]> {
     return processNodes(nodes, env, node => {
         switch (node.name) {
             case 'th':
             case 'td':
                 {
+                    const colspan = node.attributes.colspan !== undefined
+                        ? parseInt(node.attributes.colspan, 10)
+                        : undefined;
                     const content = topLevelNodes(node.children, env);
                     return {
-                        values: [content.value],
+                        values: [{
+                            nodes: content.value,
+                            colspan,
+                        }],
                         diag: content.diagnostic,
                     };
                 }
@@ -79,13 +86,14 @@ function tableCells(nodes: Xml[], env: Xml2NodesEnv): SuccessLast<TableCellData[
 function rowToGroup(row: TableRowData): BookNode {
     const group: BookNode = {
         node: 'group',
-        nodes: flatten(row),
+        nodes: flatten(row.map(r => r.nodes)),
     };
     return group;
 }
 
-function cellToSpans(cell: TableCellData): Span[] {
-    return flatten(
-        cell.map(extractSpans)
-    );
+function cellDataToCell(cell: TableCellData): TableCell {
+    const spans = flatten(cell.nodes.map(extractSpans));
+    return cell.colspan !== undefined
+        ? { width: cell.colspan, spans }
+        : { spans };
 }
