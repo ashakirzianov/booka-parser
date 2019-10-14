@@ -1,10 +1,11 @@
-import { Span, compoundSpan, FlagSemanticKey, flagSemantic } from 'booka-common';
+import { Span, compoundSpan, FlagSemanticKey, flagSemantic, semanticSpan } from 'booka-common';
 import {
     reject, yieldLast, SuccessLast,
-    ResultLast, compoundResult, compoundDiagnostic,
+    ResultLast, compoundResult, compoundDiagnostic, ParserDiagnostic,
 } from '../combinators';
 import { Xml, xml2string } from '../xml';
 import { Xml2NodesEnv, unexpectedNode, expectEmptyContent, buildRefId } from './common';
+import { XmlElement } from '../xml/xmlTree';
 
 export function expectSpanContent(nodes: Xml[], env: Xml2NodesEnv): SuccessLast<Span[]> {
     const results = nodes.map(n => {
@@ -13,7 +14,10 @@ export function expectSpanContent(nodes: Xml[], env: Xml2NodesEnv): SuccessLast<
             ? yieldLast('', unexpectedNode(n, 'span'))
             : s;
     });
-    return compoundResult(results);
+    return yieldLast(
+        results.map(r => r.value),
+        compoundDiagnostic(results.map(r => r.diagnostic)),
+    );
 }
 
 export function spanContent(nodes: Xml[], env: Xml2NodesEnv): ResultLast<Span[]> {
@@ -90,6 +94,8 @@ function singleSpanImpl(node: Xml, env: Xml2NodesEnv): ResultLast<Span> {
                     note: node.attributes.title,
                 }],
             }, insideDiag);
+        case 'ruby':
+            return rubySpan(node, env);
         case 'br':
             return yieldLast(
                 '\n',
@@ -113,6 +119,7 @@ function singleSpanImpl(node: Xml, env: Xml2NodesEnv): ResultLast<Span> {
                     xml: xml2string(node),
                 }, insideDiag]));
             }
+        case 'font':
         case 'tt':
         case 'abbr': // TODO: handle
             return inside;
@@ -137,4 +144,56 @@ function flagSpan(inside: Span, flag: FlagSemanticKey): Span {
         span: inside,
         semantics: [flagSemantic(flag)],
     };
+}
+
+function rubySpan(node: XmlElement, env: Xml2NodesEnv): SuccessLast<Span> {
+    const spans: Span[] = [];
+    const diags: ParserDiagnostic[] = [];
+    let explanation: string = '';
+    for (const sub of node.children) {
+        switch (sub.name) {
+            case 'rb':
+                {
+                    const inside = expectSpanContent(sub.children, env);
+                    diags.push(inside.diagnostic);
+                    spans.push(...inside.value);
+                }
+                break;
+            case 'rt':
+                {
+                    const [head, ...rest] = sub.children;
+                    if (head !== undefined && head.type === 'text' && rest.length === 0) {
+                        explanation += head.text;
+                    } else {
+                        diags.push({
+                            diag: 'unexpected rt content',
+                            xml: sub.children.map(xml2string),
+                        });
+                    }
+                }
+                break;
+            case 'rp':
+                break;
+            default:
+                {
+                    const span = singleSpan(node, env);
+                    diags.push(span.diagnostic);
+                    if (span.success) {
+                        spans.push(span.value);
+                    } else {
+                        diags.push({
+                            diag: 'unexpected ruby content',
+                            xml: xml2string(node),
+                        });
+                    }
+                }
+                break;
+        }
+    }
+
+    const resultSpan = semanticSpan(compoundSpan(spans), [{
+        semantic: 'ruby',
+        ruby: explanation,
+    }]);
+    return yieldLast(resultSpan, compoundDiagnostic(diags));
 }

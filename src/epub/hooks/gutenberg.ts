@@ -39,9 +39,9 @@ const metadata: MetadataRecordHook = (key, value) => {
         case 'dc:identifier':
             const id = value['#'];
             if (id && typeof id === 'string') {
-                const matches = id.match(/http:\/\/www.gutenberg\.org\/ebooks\/([0-9]*)/);
-                if (matches && matches[1]) {
-                    const index = parseInt(matches[1], 10);
+                const matches = id.match(/http:\/\/www.gutenberg\.org\/(ebooks\/)?([0-9]*)/);
+                if (matches && matches[2]) {
+                    const index = parseInt(matches[2], 10);
                     if (index) {
                         return yieldLast([{ tag: 'pg-index', value: index }]);
                     }
