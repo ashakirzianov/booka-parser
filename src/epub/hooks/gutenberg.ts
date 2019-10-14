@@ -112,6 +112,8 @@ function attributesHook(element: string, attr: string, value: string): Attribute
                             semantic: 'footnote-group',
                         }],
                     };
+                case 'toc':
+                    return { flag: 'table-of-contents' };
                 // TODO: handle ?
                 case 'letterdate':
                 case 'preface1': case 'preface2':
