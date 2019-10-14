@@ -62,8 +62,8 @@ const gutenbergHooks: Hooks = {
 function attributesHook(element: string, attr: string, value: string): AttributesHookResult {
     switch (attr) {
         case 'class':
-            // Ignore standard: i11, c7, z1, t3b...
-            if (value.match(/[iczt]\d*b?$/)) { return {}; }
+            // Ignore standard: i11, c7, z1, t3b, ind4...
+            if (value.match(/([iczt]|ind)\d*b?$/)) { return {}; }
             switch (value) {
                 case 'charname':
                     return { flag: 'character-name' };
@@ -87,6 +87,7 @@ function attributesHook(element: string, attr: string, value: string): Attribute
                         }],
                     };
                 case 'blockquot':
+                case 'pullquote':
                     return {
                         semantics: [{
                             semantic: 'quote',
@@ -116,6 +117,8 @@ function attributesHook(element: string, attr: string, value: string): Attribute
                     return { flag: 'table-of-contents' };
                 case 'boilerplate':
                     return { flag: 'editor-note' };
+                case 'buscard':
+                    return { flag: 'card' };
                 // TODO: handle ?
                 case 'letterdate':
                 case 'preface1': case 'preface2':
@@ -123,15 +126,18 @@ function attributesHook(element: string, attr: string, value: string): Attribute
                 case 'gapshortline': // as separator ?
                 case 'gutindent': case 'gutsumm': // as list items ?
                 case 'bold': // as bold span ?
+                case 'chaptertitle': // as title node ?
+                case 'signature': case 'author':
                 case 'small':
-                case 'author':
                 case 'noindent':
                 case 'footnote':
                 case 'scene':
-                case 'ctr': case 'ind':
+                case 'major': case 'minor':
                 // Ignore
+                case 'ctr':
                 case 'smcap':
-                case 'double-space-top': case 'quad-space-bottom':
+                case 'double-space-top': case 'quad-space-bottom': case 'no-space-top':
+                case 'left-margin4em':
                 case 'state':
                 case 'gapspace': case 'chapterhead':
                 case 'pgheader':
@@ -142,6 +148,7 @@ function attributesHook(element: string, attr: string, value: string): Attribute
                 case 'title': case 'title2':
                 case 'centered':
                 case 'chapter':
+                case 'narrow': case 'med':
                 case 'tiny': case 'short': case 'main':
                 case 'break': case 'full':
                 case 'none': case 'nonetn':
@@ -161,6 +168,7 @@ function attributesHook(element: string, attr: string, value: string): Attribute
                     return { flag: 'poem' };
                 case 'Illustrations':
                     return { flag: 'illustrations' };
+                case 'Contents':
                 case 'Toc':
                     return { flag: 'table-of-contents' };
                 case '':

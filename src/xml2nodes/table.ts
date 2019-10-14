@@ -43,10 +43,12 @@ function tableRows(nodes: Xml[], env: Xml2NodesEnv): SuccessLast<TableRowData[]>
                     return { values: [row.value], diag: row.diagnostic };
                 }
             case 'tbody':
+            case 'thead':
                 {
                     const rows = tableRows(node.children, env);
                     return { values: rows.value, diag: rows.diagnostic };
                 }
+            case 'caption': // TODO: do not ignore ?
             case 'col':
                 return {};
             default:

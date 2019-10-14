@@ -3,7 +3,7 @@ import {
     makePph, compoundSpan,
 } from 'booka-common';
 import {
-    Xml, XmlElement,
+    Xml, XmlElement, xml2string,
 } from '../xml';
 import {
     ParserDiagnostic, ResultLast, SuccessLast,
@@ -51,6 +51,7 @@ export function topLevelNodes(nodes: Xml[], env: Xml2NodesEnv): SuccessLast<Book
         if (spans.length > 0) {
             const pph: BookNode = makePph(compoundSpan(spans));
             results.push(pph);
+            idx--;
         } else {
             // Report unexpected
             diags.push(unexpectedNode(node));
@@ -63,7 +64,6 @@ export function topLevelNodes(nodes: Xml[], env: Xml2NodesEnv): SuccessLast<Book
 function singleNode(node: Xml, env: Xml2NodesEnv): ResultLast<BookNode> {
     const result = singleNodeImpl(node, env);
     if (result.success) {
-        // const attrs = { diag: undefined };
         const attrs = processNodeAttributes(node, env);
         const diag = compoundDiagnostic([result.diagnostic, attrs.diag]);
 
