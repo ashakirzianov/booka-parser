@@ -7,6 +7,7 @@ import {
 } from '../combinators';
 import { Xml2NodesEnv, unexpectedNode, processNodes } from './common';
 import { topLevelNodes } from './node';
+import { isWhitespaces } from '../utils';
 
 export function listNode(node: XmlElement, env: Xml2NodesEnv): SuccessLast<BookNode> {
     // TODO: handle 'start' attribute
@@ -38,6 +39,10 @@ function listItems(nodes: Xml[], env: Xml2NodesEnv): SuccessLast<ListItemData[]>
                         diag: content.diagnostic,
                     };
                 }
+            case undefined:
+                return node.type === 'text' && isWhitespaces(node.text)
+                    ? {}
+                    : { diag: unexpectedNode(node, 'list') };
             default:
                 return { diag: unexpectedNode(node, 'list') };
         }

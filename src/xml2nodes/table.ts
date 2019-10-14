@@ -45,6 +45,7 @@ function tableRows(nodes: Xml[], env: Xml2NodesEnv): SuccessLast<TableRowData[]>
                 }
             case 'tbody':
             case 'thead':
+            case 'tfoot':
                 {
                     const rows = tableRows(node.children, env);
                     return { values: rows.value, diag: rows.diagnostic };

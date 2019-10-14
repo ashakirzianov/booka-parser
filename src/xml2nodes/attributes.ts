@@ -46,6 +46,7 @@ function diagnoseAttribute(element: string, attr: string, value: string | undefi
     }
 
     switch (element) {
+        case 'blockquote':
         case 'span':
             switch (attr) {
                 // TODO: process ?
@@ -60,11 +61,13 @@ function diagnoseAttribute(element: string, attr: string, value: string | undefi
                 // TODO: assign semantics ?
                 case 'xml:space':
                 case 'xml:lang':
+                case 'xmlns':
                 case 'clas':
                     return undefined;
             }
             break;
-        case 'h2':
+        case 'h1': case 'h2': case 'h3':
+        case 'h4': case 'h5': case 'h6':
             switch (attr) {
                 case 'xml:lang':
                     return undefined;
@@ -72,6 +75,7 @@ function diagnoseAttribute(element: string, attr: string, value: string | undefi
             break;
         case 'table':
             switch (attr) {
+                case 'title':
                 case 'dir':
                 case 'frame':
                 case 'rules':
@@ -111,16 +115,20 @@ function diagnoseAttribute(element: string, attr: string, value: string | undefi
                     return undefined;
             }
             break;
-        case 'ol':
+        case 'ol': case 'ul':
             switch (attr) {
-                case 'start': return undefined;
+                case 'xml:lang':
+                case 'start': // TODO: handle ?
+                    return undefined;
             }
             break;
     }
 
-    return {
-        diag: 'unexpected-attr',
-        node: element,
-        attr, value,
-    };
+    // TODO: re-enable
+    return undefined;
+    // return {
+    //     diag: 'unexpected-attr',
+    //     node: element,
+    //     attr, value,
+    // };
 }

@@ -78,7 +78,11 @@ function singleSpanImpl(node: Xml, env: Xml2NodesEnv): ResultLast<Span> {
             return yieldLast(flagSpan(insideSpan, 'code'), insideDiag);
         case 'dfn':
             return yieldLast(flagSpan(insideSpan, 'definition'), insideDiag);
-        case 'ins':
+        case 'address':
+            return yieldLast(flagSpan(insideSpan, 'address'), insideDiag);
+        case 'bdo':
+            return yieldLast(flagSpan(insideSpan, 'right-to-left'), insideDiag);
+        case 'ins': case 'del':
             return yieldLast({
                 span: insideSpan,
                 semantics: [{
@@ -109,6 +113,7 @@ function singleSpanImpl(node: Xml, env: Xml2NodesEnv): ResultLast<Span> {
                     xml: xml2string(node),
                 }, insideDiag]));
             }
+        case 'tt':
         case 'abbr': // TODO: handle
             return inside;
         case 'a':
