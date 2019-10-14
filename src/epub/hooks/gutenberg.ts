@@ -62,8 +62,8 @@ const gutenbergHooks: Hooks = {
 function attributesHook(element: string, attr: string, value: string): AttributesHookResult {
     switch (attr) {
         case 'class':
-            // Ignore standard: i11, c7, z1...
-            if (value.match(/[icz]\d*$/)) { return {}; }
+            // Ignore standard: i11, c7, z1, t3b...
+            if (value.match(/[iczt]\d*b?$/)) { return {}; }
             switch (value) {
                 case 'charname':
                     return { flag: 'character-name' };
@@ -114,17 +114,24 @@ function attributesHook(element: string, attr: string, value: string): Attribute
                     };
                 case 'toc':
                     return { flag: 'table-of-contents' };
+                case 'boilerplate':
+                    return { flag: 'editor-note' };
                 // TODO: handle ?
                 case 'letterdate':
                 case 'preface1': case 'preface2':
                 case 'center': // as formating ?
                 case 'gapshortline': // as separator ?
                 case 'gutindent': case 'gutsumm': // as list items ?
+                case 'bold': // as bold span ?
+                case 'small':
+                case 'author':
                 case 'noindent':
                 case 'footnote':
                 case 'scene':
                 case 'ctr': case 'ind':
                 // Ignore
+                case 'smcap':
+                case 'double-space-top': case 'quad-space-bottom':
                 case 'state':
                 case 'gapspace': case 'chapterhead':
                 case 'pgheader':
