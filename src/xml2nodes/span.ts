@@ -74,7 +74,7 @@ function singleSpanImpl(node: Xml, env: Xml2NodesEnv): ResultLast<Span> {
                     }],
                 }, insideDiag)
                 : reject();
-        case 'code': case 'samp':
+        case 'code': case 'samp': case 'var':
             return yieldLast(flagSpan(insideSpan, 'code'), insideDiag);
         case 'dfn':
             return yieldLast(flagSpan(insideSpan, 'definition'), insideDiag);

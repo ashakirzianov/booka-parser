@@ -83,6 +83,10 @@ function tableCells(nodes: Xml[], env: Xml2NodesEnv): SuccessLast<TableCellData[
                         diag: content.diagnostic,
                     };
                 }
+            case 'a':
+                return node.children.length === 0
+                    ? {}
+                    : { diag: unexpectedNode(node, 'table cell') };
             case undefined:
                 return node.type === 'text' && isWhitespaces(node.text)
                     ? {}

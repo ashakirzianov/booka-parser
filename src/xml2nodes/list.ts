@@ -39,6 +39,10 @@ function listItems(nodes: Xml[], env: Xml2NodesEnv): SuccessLast<ListItemData[]>
                         diag: content.diagnostic,
                     };
                 }
+            case 'a':
+                return node.children.length === 0
+                    ? {}
+                    : { diag: unexpectedNode(node, 'list') };
             case undefined:
                 return node.type === 'text' && isWhitespaces(node.text)
                     ? {}
