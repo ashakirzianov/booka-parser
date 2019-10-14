@@ -7,6 +7,7 @@ import {
 } from '../combinators';
 import { Xml2NodesEnv, unexpectedNode, processNodes } from './common';
 import { topLevelNodes } from './node';
+import { isWhitespaces } from '../utils';
 
 export function tableNode(node: XmlElement, env: Xml2NodesEnv): SuccessLast<BookNode> {
     const tableData = tableRows(node.children, env);
@@ -81,6 +82,10 @@ function tableCells(nodes: Xml[], env: Xml2NodesEnv): SuccessLast<TableCellData[
                         diag: content.diagnostic,
                     };
                 }
+            case undefined:
+                return node.type === 'text' && isWhitespaces(node.text)
+                    ? {}
+                    : { diag: unexpectedNode(node, 'table cell') };
             default:
                 return { diag: unexpectedNode(node, 'table cell') };
         }

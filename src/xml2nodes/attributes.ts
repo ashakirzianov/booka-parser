@@ -46,20 +46,38 @@ function diagnoseAttribute(element: string, attr: string, value: string | undefi
     }
 
     switch (element) {
+        case 'span':
+            switch (attr) {
+                // TODO: process ?
+                case 'xml:lang':
+                case 'title': return undefined;
+            }
+            break;
         case 'p': case 'div':
             switch (attr) {
+                // TODO: process ?
+                case 'title': return undefined;
                 // TODO: assign semantics ?
                 case 'xml:space':
+                case 'xml:lang':
+                case 'clas':
+                    return undefined;
+            }
+            break;
+        case 'h2':
+            switch (attr) {
                 case 'xml:lang':
                     return undefined;
             }
             break;
         case 'table':
             switch (attr) {
+                case 'dir':
                 case 'frame':
                 case 'rules':
                 case 'summary':
-                case 'border': case 'width':
+                case 'border': case 'bordercolor':
+                case 'height': case 'width':
                 case 'cellpadding': case 'cellspacing':
                     return undefined;
             }
@@ -89,7 +107,8 @@ function diagnoseAttribute(element: string, attr: string, value: string | undefi
             break;
         case 'hr':
             switch (attr) {
-                case 'width': return undefined;
+                case 'title': case 'width':
+                    return undefined;
             }
             break;
         case 'ol':

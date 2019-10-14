@@ -49,6 +49,8 @@ export function shouldIgnore(node: Xml): boolean {
             return node.text.startsWith('\n') && isWhitespaces(node.text);
         case 'element':
             switch (node.name) {
+                case 'meta':
+                case 'basefont':
                 case 'kbd':
                 case 'tt':
                 case 'svg':

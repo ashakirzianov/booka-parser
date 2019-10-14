@@ -1,4 +1,4 @@
-import { Span, compoundSpan } from 'booka-common';
+import { Span, compoundSpan, FlagSemanticKey, flagSemantic } from 'booka-common';
 import {
     reject, yieldLast, SuccessLast,
     ResultLast, compoundResult, compoundDiagnostic,
@@ -74,6 +74,10 @@ function singleSpanImpl(node: Xml, env: Xml2NodesEnv): ResultLast<Span> {
                     }],
                 }, insideDiag)
                 : reject();
+        case 'code': case 'samp':
+            return yieldLast(flagSpan(insideSpan, 'code'), insideDiag);
+        case 'dfn':
+            return yieldLast(flagSpan(insideSpan, 'definition'), insideDiag);
         case 'ins':
             return yieldLast({
                 span: insideSpan,
@@ -105,6 +109,8 @@ function singleSpanImpl(node: Xml, env: Xml2NodesEnv): ResultLast<Span> {
                     xml: xml2string(node),
                 }, insideDiag]));
             }
+        case 'abbr': // TODO: handle
+            return inside;
         case 'a':
             if (node.attributes.href !== undefined) {
                 return yieldLast({
@@ -119,4 +125,11 @@ function singleSpanImpl(node: Xml, env: Xml2NodesEnv): ResultLast<Span> {
         default:
             return reject();
     }
+}
+
+function flagSpan(inside: Span, flag: FlagSemanticKey): Span {
+    return {
+        span: inside,
+        semantics: [flagSemantic(flag)],
+    };
 }
