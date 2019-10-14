@@ -62,8 +62,8 @@ const gutenbergHooks: Hooks = {
 function attributesHook(element: string, attr: string, value: string): AttributesHookResult {
     switch (attr) {
         case 'class':
-            // Ignore standard: i11, c7, z1, t3b, ind4...
-            if (value.match(/([iczt]|ind)\d*b?$/)) { return {}; }
+            // Ignore standard: p1, i11, c7, z1, t3b, ind4...
+            if (value.match(/([icztp]|ind)\d*b?$/)) { return {}; }
             switch (value) {
                 case 'charname':
                     return { flag: 'character-name' };
@@ -73,7 +73,8 @@ function attributesHook(element: string, attr: string, value: string): Attribute
                     return { flag: 'chapter-abstract' };
                 case 'footer':
                     return { flag: 'footer' };
-                case 'poem': case 'poem1':
+                case 'poetry-container':
+                case 'poem': case 'poem1': case 'poem2':
                 case 'verse': case 'poetry':
                 case 'stanza':
                     return { flag: 'poem' };
@@ -116,6 +117,7 @@ function attributesHook(element: string, attr: string, value: string): Attribute
                 case 'toc':
                     return { flag: 'table-of-contents' };
                 case 'boilerplate':
+                case 'tnote':
                     return { flag: 'editor-note' };
                 case 'buscard':
                     return { flag: 'card' };
@@ -126,14 +128,25 @@ function attributesHook(element: string, attr: string, value: string): Attribute
                 case 'gapshortline': // as separator ?
                 case 'gutindent': case 'gutsumm': // as list items ?
                 case 'bold': // as bold span ?
-                case 'chaptertitle': // as title node ?
+                case 'document-title': case 'section-title':
+                case 'maintitle': case 'chaptertitle': // as title node ?
+                case 'language-en':
+                case 'caption':
+                case 'faux':
                 case 'signature': case 'author':
                 case 'small':
                 case 'noindent':
                 case 'footnote':
                 case 'scene':
                 case 'major': case 'minor':
+                case 'line': case 'line-block':
+                case 'simple':
                 // Ignore
+                case 'clearpage': case 'cleardoublepage':
+                case 'level-1': case 'level-2':
+                case 'vspace':
+                case 'section': case 'container':
+                case 'gapline': case 'gapmediumline':
                 case 'ctr':
                 case 'smcap':
                 case 'double-space-top': case 'quad-space-bottom': case 'no-space-top':
@@ -154,12 +167,15 @@ function attributesHook(element: string, attr: string, value: string): Attribute
                 case 'none': case 'nonetn':
                     return {};
                 default:
-                    return {
-                        diag: {
-                            diag: 'unexpected pg class',
-                            class: value,
-                        },
-                    };
+                    // TODO: report all unexpected
+                    return {};
+                // default:
+                //     return {
+                //         diag: {
+                //             diag: 'unexpected pg class',
+                //             class: value,
+                //         },
+                //     };
             }
             break;
         case 'summary':
@@ -173,13 +189,16 @@ function attributesHook(element: string, attr: string, value: string): Attribute
                     return { flag: 'table-of-contents' };
                 case '':
                     return {};
+                // TODO: find all special
                 default:
-                    return {
-                        diag: {
-                            diag: 'unexpected pg summary',
-                            summary: value,
-                        },
-                    };
+                    return {};
+                // default:
+                //     return {
+                //         diag: {
+                //             diag: 'unexpected pg summary',
+                //             summary: value,
+                //         },
+                //     };
             }
             break;
         default:

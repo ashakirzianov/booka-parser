@@ -65,7 +65,7 @@ function singleSpanImpl(node: Xml, env: Xml2NodesEnv): ResultLast<Span> {
             return yieldLast({ sup: insideSpan }, insideDiag);
         case 'sub':
             return yieldLast({ sub: insideSpan }, insideDiag);
-        case 'q': case 'quote': case 'blockquote':
+        case 'q': case 'quote': case 'blockquote': case 'cite':
             return insideDiag === undefined
                 ? yieldLast({
                     span: insideSpan,

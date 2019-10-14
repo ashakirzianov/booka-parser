@@ -49,7 +49,9 @@ function tableRows(nodes: Xml[], env: Xml2NodesEnv): SuccessLast<TableRowData[]>
                     return { values: rows.value, diag: rows.diagnostic };
                 }
             case 'caption': // TODO: do not ignore ?
+            case 'kbd':
             case 'col':
+            case 'colgroup':
                 return {};
             default:
                 return { diag: unexpectedNode(node, 'table row') };

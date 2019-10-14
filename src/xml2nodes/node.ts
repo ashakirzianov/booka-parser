@@ -92,6 +92,7 @@ function singleNodeImpl(node: Xml, env: Xml2NodesEnv): ResultLast<BookNode> {
         case 'p':
         case 'div':
         case 'span':
+        case 'pre': // TODO: assign some semantics ?
             return paragraphNode(node, env);
         case 'h1': case 'h2': case 'h3': case 'h4': case 'h5': case 'h6':
             {
@@ -115,6 +116,7 @@ function singleNodeImpl(node: Xml, env: Xml2NodesEnv): ResultLast<BookNode> {
             return tableNode(node, env);
         case 'ul':
         case 'ol':
+        case 'dl': // TODO: handle separately ?
             return listNode(node, env);
         default:
             return reject();

@@ -9,6 +9,7 @@ import { Xml2NodesEnv, unexpectedNode, processNodes } from './common';
 import { topLevelNodes } from './node';
 
 export function listNode(node: XmlElement, env: Xml2NodesEnv): SuccessLast<BookNode> {
+    // TODO: handle 'start' attribute
     const listData = listItems(node.children, env);
     const items: ListItem[] = listData.value.map(i => ({
         spans: i,
@@ -27,6 +28,7 @@ type ListItemData = Span[];
 function listItems(nodes: Xml[], env: Xml2NodesEnv): SuccessLast<ListItemData[]> {
     return processNodes(nodes, env, node => {
         switch (node.name) {
+            case 'dd': case 'dt': // TODO: handle properly
             case 'li':
                 {
                     const content = topLevelNodes(node.children, env);

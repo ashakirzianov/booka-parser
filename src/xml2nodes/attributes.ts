@@ -48,12 +48,16 @@ function diagnoseAttribute(element: string, attr: string, value: string | undefi
     switch (element) {
         case 'p': case 'div':
             switch (attr) {
+                // TODO: assign semantics ?
                 case 'xml:space':
+                case 'xml:lang':
                     return undefined;
             }
             break;
         case 'table':
             switch (attr) {
+                case 'frame':
+                case 'rules':
                 case 'summary':
                 case 'border': case 'width':
                 case 'cellpadding': case 'cellspacing':
@@ -81,6 +85,16 @@ function diagnoseAttribute(element: string, attr: string, value: string | undefi
         case 'ins':
             switch (attr) {
                 case 'title': return undefined;
+            }
+            break;
+        case 'hr':
+            switch (attr) {
+                case 'width': return undefined;
+            }
+            break;
+        case 'ol':
+            switch (attr) {
+                case 'start': return undefined;
             }
             break;
     }
