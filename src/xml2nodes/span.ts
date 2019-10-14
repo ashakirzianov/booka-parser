@@ -176,14 +176,14 @@ function rubySpan(node: XmlElement, env: Xml2NodesEnv): SuccessLast<Span> {
                 break;
             default:
                 {
-                    const span = singleSpan(node, env);
+                    const span = singleSpan(sub, env);
                     diags.push(span.diagnostic);
                     if (span.success) {
                         spans.push(span.value);
                     } else {
                         diags.push({
                             diag: 'unexpected ruby content',
-                            xml: xml2string(node),
+                            xml: xml2string(sub),
                         });
                     }
                 }
