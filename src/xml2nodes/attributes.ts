@@ -124,11 +124,9 @@ function diagnoseAttribute(element: string, attr: string, value: string | undefi
             break;
     }
 
-    // TODO: re-enable
-    return undefined;
-    // return {
-    //     diag: 'unexpected-attr',
-    //     node: element,
-    //     attr, value,
-    // };
+    return {
+        diag: 'unexpected-attr',
+        node: element,
+        attr, value,
+    };
 }

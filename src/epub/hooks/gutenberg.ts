@@ -62,8 +62,6 @@ const gutenbergHooks: Hooks = {
 function attributesHook(element: string, attr: string, value: string): AttributesHookResult {
     switch (attr) {
         case 'class':
-            // Ignore standard: p1, i11, c7, z1, t3b, ind4...
-            if (value.match(/([icztp]|ind)\d*b?$/)) { return {}; }
             switch (value) {
                 case 'charname':
                     return { flag: 'character-name' };
@@ -74,10 +72,12 @@ function attributesHook(element: string, attr: string, value: string): Attribute
                 case 'footer':
                     return { flag: 'footer' };
                 case 'poetry-container':
-                case 'poem': case 'poem1': case 'poem2':
+                case 'poem': case 'poem1':
+                case 'poem2': case 'poem3':
                 case 'verse': case 'poetry':
                 case 'stanza':
                     return { flag: 'poem' };
+                case 'letter_greeting':
                 case 'letter': case 'letter1': case 'letter2':
                     return { flag: 'letter' };
                 case 'mynote':
@@ -87,8 +87,12 @@ function attributesHook(element: string, attr: string, value: string): Attribute
                             source: 'project-gutenberg',
                         }],
                     };
+                case 'QUOTE':
+                case 'blockquote':
                 case 'blockquot':
                 case 'pullquote':
+                case 'quotation':
+                case 'quote':
                     return {
                         semantics: [{
                             semantic: 'quote',
@@ -102,7 +106,7 @@ function attributesHook(element: string, attr: string, value: string): Attribute
                     return { flag: 'illustrations' };
                 case 'pgmonospaced':
                     return { flag: 'formated' };
-                case 'foot':
+                case 'foot': case 'footnote':
                     return {
                         semantics: [{
                             semantic: 'footnote',
@@ -117,65 +121,10 @@ function attributesHook(element: string, attr: string, value: string): Attribute
                 case 'toc':
                     return { flag: 'table-of-contents' };
                 case 'boilerplate':
-                case 'tnote':
+                case 'tnote': case 'transnote':
                     return { flag: 'editor-note' };
                 case 'buscard':
                     return { flag: 'card' };
-                // TODO: handle ?
-                case 'letterdate':
-                case 'preface1': case 'preface2':
-                case 'center': // as formating ?
-                case 'gapshortline': // as separator ?
-                case 'gutindent': case 'gutsumm': // as list items ?
-                case 'bold': // as bold span ?
-                case 'document-title': case 'section-title':
-                case 'maintitle': case 'chaptertitle': // as title node ?
-                case 'language-en':
-                case 'caption':
-                case 'faux':
-                case 'signature': case 'author':
-                case 'small':
-                case 'noindent':
-                case 'footnote':
-                case 'scene':
-                case 'major': case 'minor':
-                case 'line': case 'line-block':
-                case 'simple':
-                // Ignore
-                case 'clearpage': case 'cleardoublepage':
-                case 'level-1': case 'level-2':
-                case 'vspace':
-                case 'section': case 'container':
-                case 'gapline': case 'gapmediumline':
-                case 'ctr':
-                case 'smcap':
-                case 'double-space-top': case 'quad-space-bottom': case 'no-space-top':
-                case 'left-margin4em':
-                case 'state':
-                case 'gapspace': case 'chapterhead':
-                case 'pgheader':
-                case 'fig': case 'figleft': case 'figcenter':
-                case 'finis':
-                case 'right': case 'pfirst':
-                case 'contents': case 'book':
-                case 'title': case 'title2':
-                case 'centered':
-                case 'chapter':
-                case 'narrow': case 'med':
-                case 'tiny': case 'short': case 'main':
-                case 'break': case 'full':
-                case 'none': case 'nonetn':
-                    return {};
-                default:
-                    // TODO: report all unexpected
-                    return {};
-                // default:
-                //     return {
-                //         diag: {
-                //             diag: 'unexpected pg class',
-                //             class: value,
-                //         },
-                //     };
             }
             break;
         case 'summary':
@@ -187,21 +136,8 @@ function attributesHook(element: string, attr: string, value: string): Attribute
                 case 'Contents':
                 case 'Toc':
                     return { flag: 'table-of-contents' };
-                case '':
-                    return {};
-                // TODO: find all special
-                default:
-                    return {};
-                // default:
-                //     return {
-                //         diag: {
-                //             diag: 'unexpected pg summary',
-                //             summary: value,
-                //         },
-                //     };
             }
             break;
-        default:
-            return {};
     }
+    return {};
 }
