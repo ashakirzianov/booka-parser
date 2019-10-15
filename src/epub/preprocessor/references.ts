@@ -1,6 +1,6 @@
 import {
     BookNode, processNodes, refSpan, isRefSpan, isAnchorSpan,
-    extractRefsFromNodes,
+    visitNodes, filterUndefined,
 } from 'booka-common';
 import {
     SuccessLast, yieldLast, ParserDiagnostic, compoundDiagnostic,
@@ -18,8 +18,23 @@ export async function references({ book }: PreprocessorArgs) {
 
 function checkNodesReferences(nodes: BookNode[]): SuccessLast<BookNode[]> {
     const diags: ParserDiagnostic[] = [];
-    const nodeIds: string[] = [];
-    const refs = extractRefsFromNodes(nodes);
+    const idsAndRefs = visitNodes(nodes, {
+        span: s => {
+            if (isRefSpan(s)) {
+                return { ref: s.refToId, id: undefined };
+            } else if (isAnchorSpan(s)) {
+                return { id: s.refId, ref: undefined };
+            } else {
+                return {};
+            }
+        },
+        node: n => {
+            return { id: n.refId, ref: undefined };
+        },
+    });
+    const ids = filterUndefined(idsAndRefs.map(x => x.id));
+    const refs = filterUndefined(idsAndRefs.map(x => x.ref));
+    diags.push(reportDuplicateIds(ids));
     type RefMap = { [k: string]: string | undefined };
     const refMap = refs.reduce((map, ref, idx) => {
         map[ref] = `ref-${idx}`;
@@ -28,24 +43,25 @@ function checkNodesReferences(nodes: BookNode[]): SuccessLast<BookNode[]> {
     const processed = processNodes(nodes, {
         span: span => {
             if (isRefSpan(span)) {
-                const resolved = refMap[span.refToId];
-                if (resolved === undefined) {
-                    diags.push({
-                        diag: 'unexpected ref',
-                        span,
-                    });
-                    return span;
+                if (ids.some(id => id === span.refToId)) {
+                    const resolved = refMap[span.refToId];
+                    if (resolved === undefined) {
+                        diags.push({
+                            diag: 'unexpected ref',
+                            span,
+                        });
+                        return span;
+                    } else {
+                        return refSpan(span.ref, resolved);
+                    }
                 } else {
-                    return refSpan(span.ref, resolved);
+                    diags.push({
+                        diag: 'missing ref',
+                        refToId: span.refToId,
+                    });
+                    return span.ref;
                 }
             } else if (isAnchorSpan(span)) {
-                if (nodeIds.some(id => id === span.refId)) {
-                    diags.push({
-                        diag: 'duplicate id',
-                        id: span.refId,
-                    });
-                }
-                nodeIds.push(span.refId);
                 const resolved = refMap[span.refId];
                 if (resolved !== undefined) {
                     return { ...span, refId: resolved };
@@ -58,13 +74,6 @@ function checkNodesReferences(nodes: BookNode[]): SuccessLast<BookNode[]> {
         },
         node: node => {
             if (node.refId !== undefined) {
-                if (nodeIds.some(id => id === node.refId)) {
-                    diags.push({
-                        diag: 'duplicate id',
-                        id: node.refId,
-                    });
-                }
-                nodeIds.push(node.refId);
                 const resolved = refMap[node.refId];
                 if (resolved !== undefined) {
                     return { ...node, refId: resolved };
@@ -77,16 +86,21 @@ function checkNodesReferences(nodes: BookNode[]): SuccessLast<BookNode[]> {
         },
     });
 
-    for (const ref of refs) {
-        if (!nodeIds.some(id => id === ref)) {
-            if (!ref.startsWith('http')) { // Do not report external refs
-                diags.push({
-                    diag: 'could not resolve ref',
-                    ref,
-                });
-            }
+    return yieldLast(processed, compoundDiagnostic(diags));
+}
+
+function reportDuplicateIds(ids: string[]): ParserDiagnostic {
+    const diags: ParserDiagnostic[] = [];
+    const already: string[] = [];
+    for (const id of ids) {
+        if (already.some(i => i === id)) {
+            diags.push({
+                diag: 'duplicate id',
+                id,
+            });
+        } else {
+            already.push(id);
         }
     }
-
-    return yieldLast(processed, compoundDiagnostic(diags));
+    return compoundDiagnostic(diags);
 }
