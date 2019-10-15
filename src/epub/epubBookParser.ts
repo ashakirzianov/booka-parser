@@ -60,7 +60,9 @@ function buildBook(nodes: BookNode[], tags: KnownTag[]): Book {
 }
 
 function buildMeta(tags: KnownTag[]) {
-    const meta: BookMeta = {};
+    const meta: BookMeta = {
+        license: 'unknown',
+    };
     for (const tag of tags) {
         switch (tag.tag) {
             case 'title':
@@ -75,6 +77,9 @@ function buildMeta(tags: KnownTag[]) {
                     title: 'cover',
                     imageId: tag.value,
                 };
+                continue;
+            case 'license':
+                meta.license = tag.value;
                 continue;
         }
     }

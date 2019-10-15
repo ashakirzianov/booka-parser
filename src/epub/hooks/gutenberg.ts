@@ -36,6 +36,16 @@ const metadata: MetadataRecordHook = (key, value) => {
                 value: sub,
             }));
             return yieldLast(tags);
+        case 'rights':
+            return value === 'Public domain in the USA.'
+                ? yieldLast([{
+                    tag: 'license',
+                    value: 'public-domain-us',
+                }])
+                : yieldLast([{
+                    tag: 'rights',
+                    value,
+                }]);
         case 'dc:identifier':
             const id = value['#'];
             if (id && typeof id === 'string') {
