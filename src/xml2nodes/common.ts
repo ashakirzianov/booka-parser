@@ -1,5 +1,5 @@
 import {
-    Stream, StreamParser, Diagnostic, SuccessLast, yieldLast,
+    Stream, StreamParser, Diagnostic, Success, success,
     compoundDiagnostic,
 } from '../combinators';
 import { Xml, xml2string } from '../xml';
@@ -72,7 +72,7 @@ type ProcessNodeResult<T> = {
     diag?: Diagnostic,
 };
 type NodeProcessor<T> = (node: Xml, env: Xml2NodesEnv) => ProcessNodeResult<T>;
-export function processNodes<T>(nodes: Xml[], env: Xml2NodesEnv, proc: NodeProcessor<T>): SuccessLast<T[]> {
+export function processNodes<T>(nodes: Xml[], env: Xml2NodesEnv, proc: NodeProcessor<T>): Success<T[]> {
     const diags: Diagnostic[] = [];
     const results: T[] = [];
     for (const node of nodes) {
@@ -86,5 +86,5 @@ export function processNodes<T>(nodes: Xml[], env: Xml2NodesEnv, proc: NodeProce
         }
     }
 
-    return yieldLast(results, compoundDiagnostic(diags));
+    return success(results, compoundDiagnostic(diags));
 }

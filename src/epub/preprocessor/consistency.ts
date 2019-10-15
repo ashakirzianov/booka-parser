@@ -2,7 +2,7 @@ import {
     extractBookText,
 } from 'booka-common';
 import {
-    yieldLast, Diagnostic,
+    success, Diagnostic,
 } from '../../combinators';
 import { xmlStringParser, extractAllText } from '../../xml';
 import { EpubBook } from '../epubFileParser';
@@ -19,7 +19,7 @@ export async function consistency({ book, epub }: PreprocessorArgs) {
             ratio: Math.floor(ratio * 100),
         }
         : undefined;
-    return yieldLast(book, diag);
+    return success(book, diag);
 }
 
 async function extractEpubText(epub: EpubBook): Promise<string> {

@@ -1,33 +1,33 @@
 import { Span, compoundSpan, FlagSemanticKey, flagSemantic, semanticSpan } from 'booka-common';
 import {
-    reject, yieldLast, SuccessLast,
-    ResultLast, compoundResult, compoundDiagnostic, Diagnostic,
+    failure, success, Success,
+    Result, compoundResult, compoundDiagnostic, Diagnostic,
 } from '../combinators';
 import { Xml, xml2string } from '../xml';
 import { Xml2NodesEnv, unexpectedNode, expectEmptyContent, buildRefId } from './common';
 import { XmlElement } from '../xml/xmlTree';
 
-export function expectSpanContent(nodes: Xml[], env: Xml2NodesEnv): SuccessLast<Span[]> {
+export function expectSpanContent(nodes: Xml[], env: Xml2NodesEnv): Success<Span[]> {
     const results = nodes.map(n => {
         const s = singleSpan(n, env);
         return !s.success
-            ? yieldLast('', unexpectedNode(n, 'span'))
+            ? success('', unexpectedNode(n, 'span'))
             : s;
     });
-    return yieldLast(
+    return success(
         results.map(r => r.value),
         compoundDiagnostic(results.map(r => r.diagnostic)),
     );
 }
 
-export function spanContent(nodes: Xml[], env: Xml2NodesEnv): ResultLast<Span[]> {
+export function spanContent(nodes: Xml[], env: Xml2NodesEnv): Result<Span[]> {
     const spans = expectSpanContent(nodes, env);
     return spans.diagnostic === undefined
         ? spans
-        : reject();
+        : failure();
 }
 
-export function singleSpan(node: Xml, env: Xml2NodesEnv): ResultLast<Span> {
+export function singleSpan(node: Xml, env: Xml2NodesEnv): Result<Span> {
     const result = singleSpanImpl(node, env);
     if (!result.success) {
         return result;
@@ -38,15 +38,15 @@ export function singleSpan(node: Xml, env: Xml2NodesEnv): ResultLast<Span> {
         span = { a: span, refId };
     }
 
-    return yieldLast(span, result.diagnostic);
+    return success(span, result.diagnostic);
 }
 
 // TODO: refactor (use attrSpan etc.)
-function singleSpanImpl(node: Xml, env: Xml2NodesEnv): ResultLast<Span> {
+function singleSpanImpl(node: Xml, env: Xml2NodesEnv): Result<Span> {
     if (node.type === 'text') {
-        return yieldLast(node.text);
+        return success(node.text);
     } else if (node.type !== 'element') {
-        return reject();
+        return failure();
     }
 
     const inside = expectSpanContent(node.children, env);
@@ -56,39 +56,39 @@ function singleSpanImpl(node: Xml, env: Xml2NodesEnv): ResultLast<Span> {
     switch (node.name) {
         case 'span':
             return insideDiag === undefined
-                ? yieldLast(inside.value)
-                : reject();
+                ? success(inside.value)
+                : failure();
         case 'i': case 'em':
-            return yieldLast({ italic: insideSpan }, insideDiag);
+            return success({ italic: insideSpan }, insideDiag);
         case 'b': case 'strong':
-            return yieldLast({ bold: insideSpan }, insideDiag);
+            return success({ bold: insideSpan }, insideDiag);
         case 'small':
-            return yieldLast({ small: insideSpan }, insideDiag);
+            return success({ small: insideSpan }, insideDiag);
         case 'big':
-            return yieldLast({ big: insideSpan }, insideDiag);
+            return success({ big: insideSpan }, insideDiag);
         case 'sup':
-            return yieldLast({ sup: insideSpan }, insideDiag);
+            return success({ sup: insideSpan }, insideDiag);
         case 'sub':
-            return yieldLast({ sub: insideSpan }, insideDiag);
+            return success({ sub: insideSpan }, insideDiag);
         case 'q': case 'quote': case 'blockquote': case 'cite':
             return insideDiag === undefined
-                ? yieldLast({
+                ? success({
                     span: insideSpan,
                     semantics: [{
                         semantic: 'quote',
                     }],
                 }, insideDiag)
-                : reject();
+                : failure();
         case 'code': case 'samp': case 'var':
-            return yieldLast(flagSpan(insideSpan, 'code'), insideDiag);
+            return success(flagSpan(insideSpan, 'code'), insideDiag);
         case 'dfn':
-            return yieldLast(flagSpan(insideSpan, 'definition'), insideDiag);
+            return success(flagSpan(insideSpan, 'definition'), insideDiag);
         case 'address':
-            return yieldLast(flagSpan(insideSpan, 'address'), insideDiag);
+            return success(flagSpan(insideSpan, 'address'), insideDiag);
         case 'bdo':
-            return yieldLast(flagSpan(insideSpan, 'right-to-left'), insideDiag);
+            return success(flagSpan(insideSpan, 'right-to-left'), insideDiag);
         case 'ins': case 'del':
-            return yieldLast({
+            return success({
                 span: insideSpan,
                 semantics: [{
                     semantic: 'correction',
@@ -98,7 +98,7 @@ function singleSpanImpl(node: Xml, env: Xml2NodesEnv): ResultLast<Span> {
         case 'ruby':
             return rubySpan(node, env);
         case 'br':
-            return yieldLast(
+            return success(
                 '\n',
                 compoundDiagnostic([expectEmptyContent(node.children), insideDiag]),
             );
@@ -110,17 +110,17 @@ function singleSpanImpl(node: Xml, env: Xml2NodesEnv): ResultLast<Span> {
             return inside;
         case 'a':
             if (node.attributes.href !== undefined) {
-                return yieldLast({
+                return success({
                     ref: insideSpan,
                     refToId: node.attributes.href,
                 }, insideDiag);
             } else {
                 return insideDiag === undefined
-                    ? yieldLast(insideSpan)
-                    : reject();
+                    ? success(insideSpan)
+                    : failure();
             }
         default:
-            return reject();
+            return failure();
     }
 }
 
@@ -131,9 +131,9 @@ function flagSpan(inside: Span, flag: FlagSemanticKey): Span {
     };
 }
 
-function imgSpan(node: XmlElement, env: Xml2NodesEnv): SuccessLast<Span> {
+function imgSpan(node: XmlElement, env: Xml2NodesEnv): Success<Span> {
     if (node.attributes.src !== undefined) {
-        return yieldLast(
+        return success(
             {
                 image: {
                     image: 'ref',
@@ -144,7 +144,7 @@ function imgSpan(node: XmlElement, env: Xml2NodesEnv): SuccessLast<Span> {
             expectEmptyContent(node.children),
         );
     } else {
-        return yieldLast('', compoundDiagnostic([
+        return success('', compoundDiagnostic([
             {
                 diag: 'img: src not set',
                 severity: 'info',
@@ -155,7 +155,7 @@ function imgSpan(node: XmlElement, env: Xml2NodesEnv): SuccessLast<Span> {
     }
 }
 
-function rubySpan(node: XmlElement, env: Xml2NodesEnv): SuccessLast<Span> {
+function rubySpan(node: XmlElement, env: Xml2NodesEnv): Success<Span> {
     const spans: Span[] = [];
     const diags: Diagnostic[] = [];
     let explanation: string = '';
@@ -204,5 +204,5 @@ function rubySpan(node: XmlElement, env: Xml2NodesEnv): SuccessLast<Span> {
         semantic: 'ruby',
         ruby: explanation,
     }]);
-    return yieldLast(resultSpan, compoundDiagnostic(diags));
+    return success(resultSpan, compoundDiagnostic(diags));
 }

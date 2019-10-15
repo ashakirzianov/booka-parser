@@ -1,7 +1,7 @@
-import { Result, SuccessNext } from '../combinators';
+import { ResultNext, SuccessNext } from '../combinators';
 
 // Returning Success<In, Out> is not perfect, but afaik there's no proper way of guarding Success type here
-export function expectSuccess<In, Out>(result: Result<In, Out>): result is SuccessNext<In, Out> {
+export function expectSuccess<In, Out>(result: ResultNext<In, Out>): result is SuccessNext<In, Out> {
     const success = result as SuccessNext<In, Out>;
 
     if (success.value === undefined || !success.success) {

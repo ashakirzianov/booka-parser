@@ -1,5 +1,5 @@
 export {
-    Result, ResultLast,
+    ResultNext as Result, Result as ResultLast,
     isCompoundDiagnostic, isEmptyDiagnostic, Diagnostic,
     getErrors, getNonErrors, compoundDiagnostic,
 } from './combinators';

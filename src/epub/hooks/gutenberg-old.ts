@@ -1,7 +1,7 @@
 import { HooksProvider, Hooks } from './hooks';
 import { AttributesHookResult } from '../../xml2nodes';
 import { MetadataRecordHook } from '../metaParser';
-import { yieldLast, reject } from '../../combinators';
+import { success, failure } from '../../combinators';
 import { flatten, KnownTag } from 'booka-common';
 
 export const gutenberg: HooksProvider = ({ rawMetadata }) => {
@@ -35,7 +35,7 @@ const metadata: MetadataRecordHook = (key, value) => {
                 tag: 'subject' as const,
                 value: sub,
             }));
-            return yieldLast(tags);
+            return success(tags);
         case 'dc:identifier':
             const id = value['#'];
             if (id && typeof id === 'string') {
@@ -43,14 +43,14 @@ const metadata: MetadataRecordHook = (key, value) => {
                 if (matches && matches[2]) {
                     const index = parseInt(matches[2], 10);
                     if (index) {
-                        return yieldLast([{ tag: 'pg-index', value: index }]);
+                        return success([{ tag: 'pg-index', value: index }]);
                     }
                 }
             }
 
-            return yieldLast([], { diag: 'bad-meta', meta: { key, value } });
+            return success([], { diag: 'bad-meta', meta: { key, value } });
         default:
-            return reject();
+            return failure();
     }
 };
 
@@ -91,8 +91,8 @@ function attributesHook(element: string, attr: string, value: string): Attribute
                             source: 'project-gutenberg',
                         }],
                     };
-                    case 'QOUTE':
-                    case 'blockquote':
+                case 'QOUTE':
+                case 'blockquote':
                 case 'blockquot':
                 case 'pullquote':
                 case 'quotation':

@@ -1,6 +1,6 @@
 import * as parseXmlLib from '@rgrove/parse-xml';
 import { assertNever } from 'booka-common';
-import { yieldLast, FullParser, reject } from '../combinators';
+import { success, FullParser, failure } from '../combinators';
 import { isWhitespaces } from '../utils';
 
 export type XmlStringParserInput = {
@@ -22,9 +22,9 @@ export const xmlStringParser: XmlStringParser = input => {
                 children: removeTrailingWhitespaces(tree.children),
             };
         }
-        return yieldLast(tree);
+        return success(tree);
     } catch (e) {
-        return reject({ diag: 'exception', e });
+        return failure({ diag: 'exception', e });
     }
 };
 

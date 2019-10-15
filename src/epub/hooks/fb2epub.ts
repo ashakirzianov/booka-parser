@@ -1,6 +1,6 @@
 import { HooksProvider, Hooks } from './hooks';
 import { MetadataRecordHook } from '../metaParser';
-import { yieldLast, reject } from '../../combinators';
+import { success, failure } from '../../combinators';
 
 export const fb2epub: HooksProvider = ({ rawMetadata }) => {
     if (!rawMetadata) {
@@ -27,9 +27,9 @@ const metadata: MetadataRecordHook = (key, value) => {
         case 'calibre:title_sort':
         case 'calibre:series':
         case 'calibre:series_index':
-            return yieldLast([]);
+            return success([]);
         default:
-            return reject();
+            return failure();
     }
 };
 

@@ -1,6 +1,6 @@
 import { EPub } from 'epub2';
 import { last } from '../utils';
-import { AsyncParser, yieldLast, reject } from '../combinators';
+import { AsyncParser, success, failure } from '../combinators';
 
 export type EpubSection = {
     filePath: string,
@@ -56,9 +56,9 @@ export const epubFileParser: EpubParser = async input => {
             },
         };
 
-        return yieldLast(book);
+        return success(book);
     } catch (e) {
-        return reject({
+        return failure({
             diag: 'exception on epub open',
             exception: e,
         });

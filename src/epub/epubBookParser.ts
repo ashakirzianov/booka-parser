@@ -1,6 +1,6 @@
 import { Book, KnownTag, BookNode, BookMeta } from 'booka-common';
 import {
-    yieldLast, StreamParser, Diagnostic, ResultLast, compoundDiagnostic,
+    success, StreamParser, Diagnostic, Result, compoundDiagnostic,
 } from '../combinators';
 import { epubFileParser } from './epubFileParser';
 import { metadataParser } from './metaParser';
@@ -14,7 +14,7 @@ export type EpubParserInput = {
 export type EpubParserOutput = {
     book: Book,
 };
-export async function parseEpub({ filePath }: EpubParserInput): Promise<ResultLast<EpubParserOutput>> {
+export async function parseEpub({ filePath }: EpubParserInput): Promise<Result<EpubParserOutput>> {
     const diags: Diagnostic[] = [];
     const epubResult = await epubFileParser({ filePath });
     if (!epubResult.success) {
@@ -46,7 +46,7 @@ export async function parseEpub({ filePath }: EpubParserInput): Promise<ResultLa
     const result = {
         book: processed.value,
     };
-    return yieldLast(result, compoundDiagnostic(diags));
+    return success(result, compoundDiagnostic(diags));
 }
 
 function buildBook(nodes: BookNode[], tags: KnownTag[]): Book {

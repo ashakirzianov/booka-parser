@@ -6,8 +6,8 @@ import {
     Xml, XmlElement, xml2string,
 } from '../xml';
 import {
-    Diagnostic, ResultLast, SuccessLast,
-    reject, yieldLast, compoundDiagnostic,
+    Diagnostic, Result, Success,
+    failure, success, compoundDiagnostic,
 } from '../combinators';
 import {
     Xml2NodesEnv, unexpectedNode, expectEmptyContent, shouldIgnore, buildRefId,
@@ -17,7 +17,7 @@ import { tableNode } from './table';
 import { listNode } from './list';
 import { processNodeAttributes } from './attributes';
 
-export function topLevelNodes(nodes: Xml[], env: Xml2NodesEnv): SuccessLast<BookNode[]> {
+export function topLevelNodes(nodes: Xml[], env: Xml2NodesEnv): Success<BookNode[]> {
     const results: BookNode[] = [];
     const diags: Diagnostic[] = [];
     for (let idx = 0; idx < nodes.length; idx++) {
@@ -58,10 +58,10 @@ export function topLevelNodes(nodes: Xml[], env: Xml2NodesEnv): SuccessLast<Book
         }
     }
 
-    return yieldLast(results, compoundDiagnostic(diags));
+    return success(results, compoundDiagnostic(diags));
 }
 
-function singleNode(node: Xml, env: Xml2NodesEnv): ResultLast<BookNode> {
+function singleNode(node: Xml, env: Xml2NodesEnv): Result<BookNode> {
     const result = singleNodeImpl(node, env);
     if (result.success) {
         const attrs = processNodeAttributes(node, env);
@@ -75,19 +75,19 @@ function singleNode(node: Xml, env: Xml2NodesEnv): ResultLast<BookNode> {
         if (attrs.semantics && attrs.semantics.length > 0) {
             bookNode = appendSemantics(bookNode, attrs.semantics);
         }
-        return yieldLast(bookNode, diag);
+        return success(bookNode, diag);
     } else {
         return result;
     }
 }
 
-function singleNodeImpl(node: Xml, env: Xml2NodesEnv): ResultLast<BookNode> {
+function singleNodeImpl(node: Xml, env: Xml2NodesEnv): Result<BookNode> {
     switch (node.name) {
         case 'blockquote':
             {
                 const pph = paragraphNode(node, env);
                 const result = appendSemantics(pph.value, [{ semantic: 'quote' }]);
-                return yieldLast(result, pph.diagnostic);
+                return success(result, pph.diagnostic);
             }
         case 'p':
         case 'div':
@@ -103,14 +103,14 @@ function singleNodeImpl(node: Xml, env: Xml2NodesEnv): ResultLast<BookNode> {
                     span: compoundSpan(spans.value),
                     level,
                 };
-                return yieldLast(title, spans.diagnostic);
+                return success(title, spans.diagnostic);
             }
         case 'hr':
             {
                 const separator: BookNode = {
                     node: 'separator',
                 };
-                return yieldLast(separator, expectEmptyContent(node.children));
+                return success(separator, expectEmptyContent(node.children));
             }
         case 'table':
             return tableNode(node, env);
@@ -119,7 +119,7 @@ function singleNodeImpl(node: Xml, env: Xml2NodesEnv): ResultLast<BookNode> {
         case 'dl': // TODO: handle separately ?
             return listNode(node, env);
         default:
-            return reject();
+            return failure();
     }
 }
 
@@ -127,17 +127,17 @@ function paragraphNode(node: XmlElement, env: Xml2NodesEnv) {
     const span = spanContent(node.children, env);
     if (span.success) {
         const pph: BookNode = makePph(span.value);
-        return yieldLast(pph, span.diagnostic);
+        return success(pph, span.diagnostic);
     } else {
         return groupNode(node, env);
     }
 }
 
-function groupNode(node: XmlElement, env: Xml2NodesEnv): SuccessLast<GroupNode> {
+function groupNode(node: XmlElement, env: Xml2NodesEnv): Success<GroupNode> {
     const content = topLevelNodes(node.children, env);
     const group: BookNode = {
         node: 'group',
         nodes: content.value,
     };
-    return yieldLast(group, content.diagnostic);
+    return success(group, content.diagnostic);
 }

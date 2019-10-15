@@ -1,8 +1,8 @@
-import { Result, yieldNext, ResultLast, reject } from './base';
+import { ResultNext, yieldNext, Result, failure } from './base';
 import { Diagnostic, compoundDiagnostic } from './diagnostics';
 
-export type AsyncParser<I, O> = (input: I) => Promise<Result<I, O>>;
-export type AsyncFullParser<I, O> = (input: I) => Promise<ResultLast<O>>;
+export type AsyncParser<I, O> = (input: I) => Promise<ResultNext<I, O>>;
+export type AsyncFullParser<I, O> = (input: I) => Promise<Result<O>>;
 
 export function andAsync<TI, T1, T2>(
     p1: AsyncParser<TI, T1>, p2: AsyncParser<TI, T2>,
@@ -90,7 +90,7 @@ export function alwaysYieldAsync<In, Out>(f: (input: In) => Promise<Out>): Async
 }
 
 export type DeclaredAsyncParser<TIn, TOut> = {
-    (input: TIn): Promise<Result<TIn, TOut>>,
+    (input: TIn): Promise<ResultNext<TIn, TOut>>,
     implementation: AsyncParser<TIn, TOut>,
 };
 export function declareAsync<TIn, TOut>(): DeclaredAsyncParser<TIn, TOut> {
@@ -98,7 +98,7 @@ export function declareAsync<TIn, TOut>(): DeclaredAsyncParser<TIn, TOut> {
         const impl = (declared as any).implementation;
         return impl
             ? impl(input)
-            : reject({ diag: 'no-implementation' });
+            : failure({ diag: 'no-implementation' });
     };
 
     return declared as DeclaredAsyncParser<TIn, TOut>;
@@ -112,7 +112,7 @@ export function catchExceptionsAsync<In, Out>(parser: AsyncParser<In, Out>): Asy
             const result = parser(input);
             return result;
         } catch (err) {
-            return reject({ diag: 'exception', err });
+            return failure({ diag: 'exception', err });
         }
     };
 }

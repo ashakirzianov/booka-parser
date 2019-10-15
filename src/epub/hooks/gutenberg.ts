@@ -1,7 +1,7 @@
 import { HooksProvider, Hooks } from './hooks';
 import { AttributesHookResult } from '../../xml2nodes';
 import { MetadataRecordHook } from '../metaParser';
-import { yieldLast, reject } from '../../combinators';
+import { success, failure } from '../../combinators';
 import { flatten, KnownTag } from 'booka-common';
 
 export const gutenberg: HooksProvider = ({ rawMetadata }) => {
@@ -35,34 +35,34 @@ const metadata: MetadataRecordHook = (key, value) => {
                 tag: 'subject' as const,
                 value: sub,
             }));
-            return yieldLast(tags);
+            return success(tags);
         case 'dc:rights':
             switch (value) {
                 case 'Copyrighted. Read the copyright notice inside this book for details.':
                 case 'Copyrighted. See text for details.':
-                    return yieldLast([{
+                    return success([{
                         tag: 'license',
                         value: 'pg-copyrighted',
                     }]);
                 case 'Public domain':
-                    return yieldLast([{
+                    return success([{
                         tag: 'license',
                         value: 'public-domain',
                     }]);
                 case 'Public domain in the USA.':
-                    return yieldLast([{
+                    return success([{
                         tag: 'license',
                         value: 'public-domain-us',
                     }]);
                 // PG Special cases
                 case 'La Divina Commedia di Dante':
-                    return yieldLast([{
+                    return success([{
                         tag: 'license',
                         value: 'public-domain',
                     }]);
                 // Report
                 default:
-                    return yieldLast([{
+                    return success([{
                         tag: 'rights',
                         value,
                     }], {
@@ -79,14 +79,14 @@ const metadata: MetadataRecordHook = (key, value) => {
                 if (matches && matches[2]) {
                     const index = parseInt(matches[2], 10);
                     if (index) {
-                        return yieldLast([{ tag: 'pg-index', value: index }]);
+                        return success([{ tag: 'pg-index', value: index }]);
                     }
                 }
             }
 
-            return yieldLast([], { diag: 'bad-meta', meta: { key, value } });
+            return success([], { diag: 'bad-meta', meta: { key, value } });
         default:
-            return reject();
+            return failure();
     }
 };
 
