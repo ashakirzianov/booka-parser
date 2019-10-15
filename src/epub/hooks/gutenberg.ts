@@ -43,13 +43,23 @@ const metadata: MetadataRecordHook = (key, value) => {
                         tag: 'license',
                         value: 'pg-copyrighted',
                     }]);
+                case 'Public domain':
+                    return yieldLast([{
+                        tag: 'license',
+                        value: 'public-domain',
+                    }]);
                 case 'Public domain in the USA.':
                     return yieldLast([{
                         tag: 'license',
                         value: 'public-domain-us',
                     }]);
-                case 'La Divina Commedia di Dante': // Ignoring
-                    return yieldLast([]);
+                // PG Special cases
+                case 'La Divina Commedia di Dante':
+                    return yieldLast([{
+                        tag: 'license',
+                        value: 'public-domain',
+                    }]);
+                // Report
                 default:
                     return yieldLast([{
                         tag: 'rights',
