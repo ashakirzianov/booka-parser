@@ -1,8 +1,8 @@
-import { Span, compoundSpan, FlagSemanticKey, flagSemantic, semanticSpan } from 'booka-common';
 import {
+    Span, compoundSpan, FlagSemanticKey, flagSemantic, semanticSpan,
     failure, success, Success,
     Result, compoundDiagnostic, Diagnostic,
-} from '../combinators';
+} from 'booka-common';
 import { Xml, xml2string } from '../xml';
 import { Xml2NodesEnv, unexpectedNode, expectEmptyContent, buildRefId } from './common';
 import { XmlElement } from '../xml/xmlTree';

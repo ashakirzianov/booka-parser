@@ -1,7 +1,6 @@
-import { Book } from 'booka-common';
 import {
-    Success, success, Diagnostic, compoundDiagnostic,
-} from '../../combinators';
+    Book, Success, success, Diagnostic, compoundDiagnostic,
+} from 'booka-common';
 import { EpubBook } from '../epubFileParser';
 import { collectMetrics, metricsDiff } from './bookMetrics';
 

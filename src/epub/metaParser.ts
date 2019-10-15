@@ -1,7 +1,7 @@
-import { KnownTag, buildTagSet } from 'booka-common';
 import {
+    KnownTag, buildTagSet,
     success, Success, Diagnostic, compoundDiagnostic, Result,
-} from '../combinators';
+} from 'booka-common';
 import { EpubBook } from './epubFileParser';
 
 export type MetadataRecordHook = (name: string, value: any) => Result<KnownTag[]>;

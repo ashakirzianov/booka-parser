@@ -1,10 +1,8 @@
 import {
     BookNode, flatten, Span, extractSpans, ListItem,
+    success, Success,
 } from 'booka-common';
 import { XmlElement, Xml } from '../xml';
-import {
-    success, Success,
-} from '../combinators';
 import { Xml2NodesEnv, unexpectedNode, processNodes } from './common';
 import { topLevelNodes } from './node';
 import { isWhitespaces } from '../utils';

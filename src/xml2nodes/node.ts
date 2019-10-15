@@ -1,14 +1,12 @@
 import {
     Span, GroupNode, BookNode, appendSemantics,
     makePph, compoundSpan,
-} from 'booka-common';
-import {
-    Xml, XmlElement, xml2string,
-} from '../xml';
-import {
     Diagnostic, Result, Success,
     failure, success, compoundDiagnostic,
-} from '../combinators';
+} from 'booka-common';
+import {
+    Xml, XmlElement,
+} from '../xml';
 import {
     Xml2NodesEnv, unexpectedNode, expectEmptyContent, shouldIgnore, buildRefId,
 } from './common';

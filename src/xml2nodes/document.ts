@@ -1,6 +1,5 @@
-import { BookNode } from 'booka-common';
+import { BookNode, success, Success } from 'booka-common';
 import { XmlDocument, xml2string } from '../xml';
-import { success, Success } from '../combinators';
 import { Xml2NodesEnv } from './common';
 import { topLevelNodes } from './node';
 

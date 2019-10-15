@@ -1,9 +1,6 @@
 import {
-    normalizeBook,
+    normalizeBook, success,
 } from 'booka-common';
-import {
-    success,
-} from '../../combinators';
 import { PreprocessorArgs } from './preprocessor';
 
 export async function normalize({ book, epub }: PreprocessorArgs) {

@@ -1,9 +1,6 @@
 import {
-    extractBookText,
+    extractBookText, success, Diagnostic,
 } from 'booka-common';
-import {
-    success, Diagnostic,
-} from '../../combinators';
 import { xmlStringParser, extractAllText } from '../../xml';
 import { EpubBook } from '../epubFileParser';
 import { PreprocessorArgs } from './preprocessor';

@@ -1,6 +1,7 @@
 import * as parseXmlLib from '@rgrove/parse-xml';
-import { assertNever } from 'booka-common';
-import { success, failure, Result } from '../combinators';
+import {
+    assertNever, success, failure, Result,
+} from 'booka-common';
 import { isWhitespaces } from '../utils';
 
 export type XmlStringParserInput = {

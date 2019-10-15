@@ -1,6 +1,6 @@
+import { success, failure } from 'booka-common';
 import { EPub } from 'epub2';
 import { last } from '../utils';
-import { success, failure } from '../combinators';
 
 export type EpubSection = {
     filePath: string,

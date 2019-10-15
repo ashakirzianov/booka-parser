@@ -1,6 +1,6 @@
+import { success, failure } from 'booka-common';
 import { HooksProvider, Hooks } from './hooks';
 import { MetadataRecordHook } from '../metaParser';
-import { failure, success } from '../../combinators';
 import { KnownTag } from 'booka-common';
 
 export const fictionBookEditor: HooksProvider = epub => {

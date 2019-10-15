@@ -1,9 +1,8 @@
 import {
     Diagnostic, Success, success,
-    compoundDiagnostic,
-} from '../combinators';
+    compoundDiagnostic, Semantic, FlagSemanticKey,
+} from 'booka-common';
 import { Xml, xml2string } from '../xml';
-import { BookNode, Semantic, FlagSemanticKey } from 'booka-common';
 import { isWhitespaces } from '../utils';
 
 export type AttributesHookResult = {

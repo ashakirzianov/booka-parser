@@ -1,9 +1,7 @@
 import {
     processBookImages, Image, ImageDic, assertNever,
-} from 'booka-common';
-import {
     success, Diagnostic, compoundDiagnostic,
-} from '../../combinators';
+} from 'booka-common';
 import { PreprocessorArgs } from './preprocessor';
 
 export async function images({ book, epub }: PreprocessorArgs) {

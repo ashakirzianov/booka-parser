@@ -1,10 +1,8 @@
 import {
     BookNode, processNodes, refSpan, isRefSpan, isAnchorSpan,
     visitNodes, filterUndefined,
-} from 'booka-common';
-import {
     Success, success, Diagnostic, compoundDiagnostic,
-} from '../../combinators';
+} from 'booka-common';
 import { PreprocessorArgs } from './preprocessor';
 
 export async function references({ book }: PreprocessorArgs) {

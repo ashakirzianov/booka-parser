@@ -1,5 +1,6 @@
-import { Diagnostic, compoundDiagnostic } from '../combinators';
-import { Semantic, flagSemantic } from 'booka-common';
+import {
+    Semantic, flagSemantic, Diagnostic, compoundDiagnostic,
+} from 'booka-common';
 import { Xml2NodesEnv } from './common';
 import { Xml } from '../xml';
 

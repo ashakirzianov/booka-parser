@@ -1,7 +1,7 @@
-import { Book, KnownTag, BookNode, BookMeta } from 'booka-common';
 import {
+    Book, KnownTag, BookNode, BookMeta,
     success, Diagnostic, Result, compoundDiagnostic,
-} from '../combinators';
+} from 'booka-common';
 import { epubFileParser } from './epubFileParser';
 import { metadataParser } from './metaParser';
 import { epub2nodes } from './sectionParser';

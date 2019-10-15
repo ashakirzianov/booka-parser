@@ -1,7 +1,7 @@
+import { success, failure } from 'booka-common';
 import { HooksProvider, Hooks } from './hooks';
 import { AttributesHookResult } from '../../xml2nodes';
 import { MetadataRecordHook } from '../metaParser';
-import { success, failure } from '../../combinators';
 import { flatten, KnownTag } from 'booka-common';
 
 export const gutenberg: HooksProvider = ({ rawMetadata }) => {

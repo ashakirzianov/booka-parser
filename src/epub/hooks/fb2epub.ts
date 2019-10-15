@@ -1,6 +1,6 @@
+import { success, failure } from 'booka-common';
 import { HooksProvider, Hooks } from './hooks';
 import { MetadataRecordHook } from '../metaParser';
-import { success, failure } from '../../combinators';
 
 export const fb2epub: HooksProvider = ({ rawMetadata }) => {
     if (!rawMetadata) {

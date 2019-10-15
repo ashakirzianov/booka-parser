@@ -1,7 +1,7 @@
-import { BookNode } from 'booka-common';
 import {
+    BookNode,
     Result, Success, compoundDiagnostic, success, Diagnostic,
-} from '../combinators';
+} from 'booka-common';
 import { EpubSection, EpubBook } from './epubFileParser';
 import { xmlStringParser } from '../xml';
 import { documentParser, XmlHooks } from '../xml2nodes';
