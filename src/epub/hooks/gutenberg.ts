@@ -39,6 +39,7 @@ const metadata: MetadataRecordHook = (key, value) => {
         case 'dc:rights':
             switch (value) {
                 case 'Copyrighted. Read the copyright notice inside this book for details.':
+                case 'Copyrighted. See text for details.':
                     return yieldLast([{
                         tag: 'license',
                         value: 'pg-copyrighted',
