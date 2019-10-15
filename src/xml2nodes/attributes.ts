@@ -46,18 +46,25 @@ function diagnoseAttribute(element: string, attr: string, value: string | undefi
         case 'xml:space': case 'xml:lang': case 'xmlns':
         case 'clas': // Typo
             return undefined;
+        case 'dir': // TODO: what is this ?
+            switch (element) {
+                case 'div': case 'p': case 'span':
+                case 'table': case 'h3':
+                    return undefined;
+            }
+            break;
     }
 
     switch (element) {
         case 'div':
             switch (attr) {
                 case 'h3': // TODO: what is this ?
+                case 'cellpadding': case 'cellspacing':
                     return undefined;
             }
             break;
         case 'table':
             switch (attr) {
-                case 'dir':
                 case 'frame':
                 case 'rules':
                 case 'summary':
