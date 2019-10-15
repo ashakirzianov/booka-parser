@@ -1,13 +1,13 @@
 import { BookNode } from 'booka-common';
 import {
-    ResultLast, SuccessLast, compoundDiagnostic, yieldLast, ParserDiagnostic,
+    ResultLast, SuccessLast, compoundDiagnostic, yieldLast, Diagnostic,
 } from '../combinators';
 import { EpubSection, EpubBook } from './epubFileParser';
 import { xmlStringParser } from '../xml';
 import { documentParser, XmlHooks } from '../xml2nodes';
 
 export async function epub2nodes(epub: EpubBook, hooks: XmlHooks | undefined): Promise<ResultLast<BookNode[]>> {
-    const diags: ParserDiagnostic[] = [];
+    const diags: Diagnostic[] = [];
     const content: BookNode[] = [];
 
     for await (const section of epub.sections()) {

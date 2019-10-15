@@ -2,12 +2,12 @@ import {
     processBookImages, Image, ImageDic, assertNever,
 } from 'booka-common';
 import {
-    yieldLast, ParserDiagnostic, compoundDiagnostic,
+    yieldLast, Diagnostic, compoundDiagnostic,
 } from '../../combinators';
 import { PreprocessorArgs } from './preprocessor';
 
 export async function images({ book, epub }: PreprocessorArgs) {
-    const diags: ParserDiagnostic[] = [];
+    const diags: Diagnostic[] = [];
     const imageDic: ImageDic = {};
     const resolved = await processBookImages(book, async image => {
         switch (image.image) {

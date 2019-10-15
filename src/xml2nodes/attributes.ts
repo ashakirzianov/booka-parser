@@ -1,10 +1,10 @@
-import { ParserDiagnostic, compoundDiagnostic } from '../combinators';
+import { Diagnostic, compoundDiagnostic } from '../combinators';
 import { Semantic, flagSemantic } from 'booka-common';
 import { Xml2NodesEnv } from './common';
 import { Xml } from '../xml';
 
 type ProcessAttributesResult = {
-    diag?: ParserDiagnostic,
+    diag?: Diagnostic,
     semantics?: Semantic[],
 };
 export function processNodeAttributes(node: Xml, env: Xml2NodesEnv): ProcessAttributesResult {
@@ -12,7 +12,7 @@ export function processNodeAttributes(node: Xml, env: Xml2NodesEnv): ProcessAttr
         return {};
     }
 
-    const diags: ParserDiagnostic[] = [];
+    const diags: Diagnostic[] = [];
     const semantics: Semantic[] = [];
     for (const [attr, value] of Object.entries(node.attributes)) {
         diags.push(diagnoseAttribute(node.name, attr, value));
@@ -39,7 +39,7 @@ export function processNodeAttributes(node: Xml, env: Xml2NodesEnv): ProcessAttr
     };
 }
 
-function diagnoseAttribute(element: string, attr: string, value: string | undefined): ParserDiagnostic {
+function diagnoseAttribute(element: string, attr: string, value: string | undefined): Diagnostic {
     switch (attr) {
         case 'title': // TODO: support ?
         case 'class': case 'id': case 'style':

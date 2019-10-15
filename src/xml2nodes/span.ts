@@ -1,7 +1,7 @@
 import { Span, compoundSpan, FlagSemanticKey, flagSemantic, semanticSpan } from 'booka-common';
 import {
     reject, yieldLast, SuccessLast,
-    ResultLast, compoundResult, compoundDiagnostic, ParserDiagnostic,
+    ResultLast, compoundResult, compoundDiagnostic, Diagnostic,
 } from '../combinators';
 import { Xml, xml2string } from '../xml';
 import { Xml2NodesEnv, unexpectedNode, expectEmptyContent, buildRefId } from './common';
@@ -157,7 +157,7 @@ function imgSpan(node: XmlElement, env: Xml2NodesEnv): SuccessLast<Span> {
 
 function rubySpan(node: XmlElement, env: Xml2NodesEnv): SuccessLast<Span> {
     const spans: Span[] = [];
-    const diags: ParserDiagnostic[] = [];
+    const diags: Diagnostic[] = [];
     let explanation: string = '';
     for (const sub of node.children) {
         switch (sub.name) {

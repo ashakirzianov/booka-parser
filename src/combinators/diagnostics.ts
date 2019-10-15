@@ -4,20 +4,20 @@ export type Severity =
     | 'warning'
     ;
 
-export type EmptyParserDiagnostic = undefined;
-export type CustomParserDiagnostic = {
+export type EmptyDiagnostic = undefined;
+export type CustomDiagnostic = {
     diag: string,
     severity?: Severity,
     [key: string]: any,
 };
 
 type SimpleDiagnostic =
-    | CustomParserDiagnostic | EmptyParserDiagnostic;
-type CompoundParserDiagnostic = SimpleDiagnostic[];
+    | CustomDiagnostic | EmptyDiagnostic;
+type CompoundDiagnostic = SimpleDiagnostic[];
 
-export type ParserDiagnostic = SimpleDiagnostic | CompoundParserDiagnostic;
+export type Diagnostic = SimpleDiagnostic | CompoundDiagnostic;
 
-export function getErrors(diag: ParserDiagnostic): ParserDiagnostic {
+export function getErrors(diag: Diagnostic): Diagnostic {
     if (diag === undefined) {
         return diag;
     } else if (isCompoundDiagnostic(diag)) {
@@ -29,7 +29,7 @@ export function getErrors(diag: ParserDiagnostic): ParserDiagnostic {
     }
 }
 
-export function compoundDiagnostic(diags: ParserDiagnostic[]): ParserDiagnostic {
+export function compoundDiagnostic(diags: Diagnostic[]): Diagnostic {
     const result = diags.reduce<SimpleDiagnostic[]>(
         (all, one) => {
             if (isCompoundDiagnostic(one)) {
@@ -45,7 +45,7 @@ export function compoundDiagnostic(diags: ParserDiagnostic[]): ParserDiagnostic 
             : result;
 }
 
-export function topDiagnostic(diag: ParserDiagnostic, top: number): ParserDiagnostic {
+export function topDiagnostic(diag: Diagnostic, top: number): Diagnostic {
     const flattened = flattenDiagnostic(diag);
     if (isCompoundDiagnostic(flattened)) {
         return flattened.slice(0, top);
@@ -54,7 +54,7 @@ export function topDiagnostic(diag: ParserDiagnostic, top: number): ParserDiagno
     }
 }
 
-export function flattenDiagnostic(diag: ParserDiagnostic): ParserDiagnostic {
+export function flattenDiagnostic(diag: Diagnostic): Diagnostic {
     if (isCompoundDiagnostic(diag)) {
         const inside = filterUndefined(diag.map(flattenDiagnostic));
         return inside.length === 0 ? undefined
@@ -65,7 +65,7 @@ export function flattenDiagnostic(diag: ParserDiagnostic): ParserDiagnostic {
     }
 }
 
-export function isEmptyDiagnostic(diag: ParserDiagnostic): boolean {
+export function isEmptyDiagnostic(diag: Diagnostic): boolean {
     if (diag === undefined) {
         return true;
     } else if (isCompoundDiagnostic(diag)) {
@@ -75,7 +75,7 @@ export function isEmptyDiagnostic(diag: ParserDiagnostic): boolean {
     }
 }
 
-export function isCompoundDiagnostic(d: ParserDiagnostic): d is CompoundParserDiagnostic {
+export function isCompoundDiagnostic(d: Diagnostic): d is CompoundDiagnostic {
     return Array.isArray(d);
 }
 

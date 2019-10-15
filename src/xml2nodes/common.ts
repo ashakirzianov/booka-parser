@@ -1,5 +1,5 @@
 import {
-    Stream, StreamParser, ParserDiagnostic, SuccessLast, yieldLast,
+    Stream, StreamParser, Diagnostic, SuccessLast, yieldLast,
     compoundDiagnostic,
 } from '../combinators';
 import { Xml, xml2string } from '../xml';
@@ -9,7 +9,7 @@ import { isWhitespaces } from '../utils';
 export type AttributesHookResult = {
     flag?: FlagSemanticKey,
     semantics?: Semantic[],
-    diag?: ParserDiagnostic,
+    diag?: Diagnostic,
 };
 export type AttributesHook = (element: string, attr: string, value: string) => AttributesHookResult;
 export type XmlHooks = {
@@ -26,7 +26,7 @@ export function buildRefId(filePath: string, id: string) {
     return `${filePath}#${id}`;
 }
 
-export function expectEmptyContent(children: Xml[]): ParserDiagnostic {
+export function expectEmptyContent(children: Xml[]): Diagnostic {
     return children.length > 0
         ? {
             diag: 'unexpected children',
@@ -35,7 +35,7 @@ export function expectEmptyContent(children: Xml[]): ParserDiagnostic {
         : undefined;
 }
 
-export function unexpectedNode(node: Xml, context?: any): ParserDiagnostic {
+export function unexpectedNode(node: Xml, context?: any): Diagnostic {
     return {
         diag: 'unexpected node',
         xml: xml2string(node),
@@ -69,11 +69,11 @@ export function shouldIgnore(node: Xml): boolean {
 
 type ProcessNodeResult<T> = {
     values?: T[],
-    diag?: ParserDiagnostic,
+    diag?: Diagnostic,
 };
 type NodeProcessor<T> = (node: Xml, env: Xml2NodesEnv) => ProcessNodeResult<T>;
 export function processNodes<T>(nodes: Xml[], env: Xml2NodesEnv, proc: NodeProcessor<T>): SuccessLast<T[]> {
-    const diags: ParserDiagnostic[] = [];
+    const diags: Diagnostic[] = [];
     const results: T[] = [];
     for (const node of nodes) {
         if (shouldIgnore(node)) {

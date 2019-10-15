@@ -3,7 +3,7 @@ import {
     visitNodes, filterUndefined,
 } from 'booka-common';
 import {
-    SuccessLast, yieldLast, ParserDiagnostic, compoundDiagnostic,
+    SuccessLast, yieldLast, Diagnostic, compoundDiagnostic,
 } from '../../combinators';
 import { PreprocessorArgs } from './preprocessor';
 
@@ -17,7 +17,7 @@ export async function references({ book }: PreprocessorArgs) {
 }
 
 function checkNodesReferences(nodes: BookNode[]): SuccessLast<BookNode[]> {
-    const diags: ParserDiagnostic[] = [];
+    const diags: Diagnostic[] = [];
     const idsAndRefs = visitNodes(nodes, {
         span: s => {
             if (isRefSpan(s)) {
@@ -89,8 +89,8 @@ function checkNodesReferences(nodes: BookNode[]): SuccessLast<BookNode[]> {
     return yieldLast(processed, compoundDiagnostic(diags));
 }
 
-function reportDuplicateIds(ids: string[]): ParserDiagnostic {
-    const diags: ParserDiagnostic[] = [];
+function reportDuplicateIds(ids: string[]): Diagnostic {
+    const diags: Diagnostic[] = [];
     const already: string[] = [];
     for (const id of ids) {
         if (already.some(i => i === id)) {

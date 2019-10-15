@@ -1,6 +1,6 @@
 import { KnownTag, buildTagSet } from 'booka-common';
 import {
-    yieldLast, SuccessLast, ParserDiagnostic, compoundDiagnostic, ResultLast,
+    yieldLast, SuccessLast, Diagnostic, compoundDiagnostic, ResultLast,
 } from '../combinators';
 import { EpubBook } from './epubFileParser';
 
@@ -8,7 +8,7 @@ export type MetadataRecordHook = (name: string, value: any) => ResultLast<KnownT
 export function metadataParser(epub: EpubBook, hook: MetadataRecordHook | undefined): SuccessLast<KnownTag[]> {
     const records = Object
         .entries(epub.metadata);
-    const diags: ParserDiagnostic[] = [];
+    const diags: Diagnostic[] = [];
     const tags: KnownTag[] = [];
     for (const [name, value] of records) {
         if (hook) {

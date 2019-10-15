@@ -6,7 +6,7 @@ import {
     Xml, XmlElement, xml2string,
 } from '../xml';
 import {
-    ParserDiagnostic, ResultLast, SuccessLast,
+    Diagnostic, ResultLast, SuccessLast,
     reject, yieldLast, compoundDiagnostic,
 } from '../combinators';
 import {
@@ -19,7 +19,7 @@ import { processNodeAttributes } from './attributes';
 
 export function topLevelNodes(nodes: Xml[], env: Xml2NodesEnv): SuccessLast<BookNode[]> {
     const results: BookNode[] = [];
-    const diags: ParserDiagnostic[] = [];
+    const diags: Diagnostic[] = [];
     for (let idx = 0; idx < nodes.length; idx++) {
         let node = nodes[idx];
         // Ignore some nodes

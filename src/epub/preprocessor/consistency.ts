@@ -2,7 +2,7 @@ import {
     extractBookText,
 } from 'booka-common';
 import {
-    yieldLast, ParserDiagnostic,
+    yieldLast, Diagnostic,
 } from '../../combinators';
 import { xmlStringParser, extractAllText } from '../../xml';
 import { EpubBook } from '../epubFileParser';
@@ -12,7 +12,7 @@ export async function consistency({ book, epub }: PreprocessorArgs) {
     const epubText = await extractEpubText(epub);
     const bookText = extractBookText(book);
     const ratio = bookText.length / epubText.length;
-    const diag: ParserDiagnostic = ratio < 0.95
+    const diag: Diagnostic = ratio < 0.95
         ? {
             diag: 'low text ratio',
             ratio: Math.floor(ratio * 100),
