@@ -41,41 +41,22 @@ export function processNodeAttributes(node: Xml, env: Xml2NodesEnv): ProcessAttr
 
 function diagnoseAttribute(element: string, attr: string, value: string | undefined): ParserDiagnostic {
     switch (attr) {
+        case 'title': // TODO: support ?
         case 'class': case 'id': case 'style':
+        case 'xml:space': case 'xml:lang': case 'xmlns':
+        case 'clas': // Typo
             return undefined;
     }
 
     switch (element) {
-        case 'blockquote':
-        case 'span':
+        case 'div':
             switch (attr) {
-                // TODO: process ?
-                case 'xml:lang':
-                case 'title': return undefined;
-            }
-            break;
-        case 'p': case 'div':
-            switch (attr) {
-                // TODO: process ?
-                case 'title': return undefined;
-                // TODO: assign semantics ?
-                case 'xml:space':
-                case 'xml:lang':
-                case 'xmlns':
-                case 'clas':
-                    return undefined;
-            }
-            break;
-        case 'h1': case 'h2': case 'h3':
-        case 'h4': case 'h5': case 'h6':
-            switch (attr) {
-                case 'xml:lang':
+                case 'h3': // TODO: what is this ?
                     return undefined;
             }
             break;
         case 'table':
             switch (attr) {
-                case 'title':
                 case 'dir':
                 case 'frame':
                 case 'rules':
@@ -94,30 +75,25 @@ function diagnoseAttribute(element: string, attr: string, value: string | undefi
             break;
         case 'image': case 'img':
             switch (attr) {
-                case 'alt': case 'title': case 'src':
+                case 'alt': case 'src':
                 case 'tag': case 'width':
                     return undefined;
             }
             break;
         case 'a':
             switch (attr) {
-                case 'href': case 'title': case 'tag':
+                case 'href': case 'tag':
                     return undefined;
-            }
-        case 'ins':
-            switch (attr) {
-                case 'title': return undefined;
             }
             break;
         case 'hr':
             switch (attr) {
-                case 'title': case 'width':
+                case 'width':
                     return undefined;
             }
             break;
         case 'ol': case 'ul':
             switch (attr) {
-                case 'xml:lang':
                 case 'start': // TODO: handle ?
                     return undefined;
             }
