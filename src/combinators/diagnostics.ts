@@ -29,6 +29,18 @@ export function getErrors(diag: Diagnostic): Diagnostic {
     }
 }
 
+export function getNonErrors(diag: Diagnostic): Diagnostic {
+    if (diag === undefined) {
+        return diag;
+    } else if (isCompoundDiagnostic(diag)) {
+        return compoundDiagnostic(diag.map(getNonErrors));
+    } else {
+        return diag.severity !== 'error' || diag.severity !== undefined
+            ? diag
+            : undefined;
+    }
+}
+
 export function compoundDiagnostic(diags: Diagnostic[]): Diagnostic {
     const result = diags.reduce<SimpleDiagnostic[]>(
         (all, one) => {
