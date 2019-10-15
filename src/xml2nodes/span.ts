@@ -41,6 +41,7 @@ export function singleSpan(node: Xml, env: Xml2NodesEnv): ResultLast<Span> {
     return yieldLast(span, result.diagnostic);
 }
 
+// TODO: refactor (use attrSpan etc.)
 function singleSpanImpl(node: Xml, env: Xml2NodesEnv): ResultLast<Span> {
     if (node.type === 'text') {
         return yieldLast(node.text);
@@ -102,23 +103,7 @@ function singleSpanImpl(node: Xml, env: Xml2NodesEnv): ResultLast<Span> {
                 compoundDiagnostic([expectEmptyContent(node.children), insideDiag]),
             );
         case 'img':
-            if (node.attributes.src !== undefined) {
-                return yieldLast(
-                    {
-                        image: {
-                            image: 'ref',
-                            imageId: node.attributes.src,
-                            title: node.attributes.title || node.attributes.alt,
-                        },
-                    },
-                    compoundDiagnostic([expectEmptyContent(node.children), insideDiag]),
-                );
-            } else {
-                return yieldLast('', compoundDiagnostic([{
-                    diag: 'img: src not set',
-                    xml: xml2string(node),
-                }, insideDiag]));
-            }
+            return imgSpan(node, env);
         case 'font':
         case 'tt':
         case 'abbr': // TODO: handle
@@ -144,6 +129,30 @@ function flagSpan(inside: Span, flag: FlagSemanticKey): Span {
         span: inside,
         semantics: [flagSemantic(flag)],
     };
+}
+
+function imgSpan(node: XmlElement, env: Xml2NodesEnv): SuccessLast<Span> {
+    if (node.attributes.src !== undefined) {
+        return yieldLast(
+            {
+                image: {
+                    image: 'ref',
+                    imageId: node.attributes.src,
+                    title: node.attributes.title || node.attributes.alt,
+                },
+            },
+            expectEmptyContent(node.children),
+        );
+    } else {
+        return yieldLast('', compoundDiagnostic([
+            {
+                diag: 'img: src not set',
+                severity: 'info',
+                xml: xml2string(node),
+            },
+            expectEmptyContent(node.children),
+        ]));
+    }
 }
 
 function rubySpan(node: XmlElement, env: Xml2NodesEnv): SuccessLast<Span> {
