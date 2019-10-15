@@ -57,6 +57,7 @@ function checkNodesReferences(nodes: BookNode[]): SuccessLast<BookNode[]> {
                 } else {
                     diags.push({
                         diag: 'missing ref',
+                        severity: 'warning',
                         refToId: span.refToId,
                     });
                     return span.ref;

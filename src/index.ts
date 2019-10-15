@@ -1,7 +1,7 @@
 export {
     Result, ResultLast,
     isCompoundDiagnostic, isEmptyDiagnostic, Diagnostic,
-    getErrors,
+    getErrors, compoundDiagnostic,
 } from './combinators';
 export * from './epub';
 

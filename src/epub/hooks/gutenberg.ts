@@ -36,16 +36,31 @@ const metadata: MetadataRecordHook = (key, value) => {
                 value: sub,
             }));
             return yieldLast(tags);
-        case 'rights':
-            return value === 'Public domain in the USA.'
-                ? yieldLast([{
-                    tag: 'license',
-                    value: 'public-domain-us',
-                }])
-                : yieldLast([{
-                    tag: 'rights',
-                    value,
-                }]);
+        case 'dc:rights':
+            switch (value) {
+                case 'Copyrighted. Read the copyright notice inside this book for details.':
+                    return yieldLast([{
+                        tag: 'license',
+                        value: 'pg-copyrighted',
+                    }]);
+                case 'Public domain in the USA.':
+                    return yieldLast([{
+                        tag: 'license',
+                        value: 'public-domain-us',
+                    }]);
+                case 'La Divina Commedia di Dante': // Ignoring
+                    return yieldLast([]);
+                default:
+                    return yieldLast([{
+                        tag: 'rights',
+                        value,
+                    }], {
+                        diag: 'unexpected pg rights meta',
+                        severity: 'warning',
+                        rights: value,
+                    });
+            }
+            break;
         case 'dc:identifier':
             const id = value['#'];
             if (id && typeof id === 'string') {
