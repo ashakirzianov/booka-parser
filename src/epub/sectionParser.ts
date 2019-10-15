@@ -1,70 +1,38 @@
-import { flatten } from 'booka-common';
-import { buildDocumentParser, span, nodeParser, paragraphNode, TreeParserEnv } from '../xmlTreeParser';
+import { BookNode } from 'booka-common';
 import {
-    makeStream, headParser,
-    translate, expected, yieldLast,
-    StreamParser, pipe, fullParser, AsyncFullParser, choice, endOfInput, yieldNext, nextStream,
+    ResultLast, SuccessLast, compoundDiagnostic, yieldLast, Diagnostic,
 } from '../combinators';
-import { AsyncIter } from '../utils';
-import { EpubSection, EpubBook } from './epubBook';
-import { BookElement } from '../bookElementParser';
-import { xmlStringParser, XmlTree } from '../xmlStringParser';
-import { epubParserHooks } from './hooks';
+import { EpubSection, EpubBook } from './epubFileParser';
+import { xmlStringParser } from '../xml';
+import { documentParser, XmlHooks } from '../xml2nodes';
 
-export type SectionsParser = StreamParser<EpubSection, BookElement[], undefined>;
+export async function epub2nodes(epub: EpubBook, hooks: XmlHooks | undefined): Promise<ResultLast<BookNode[]>> {
+    const diags: Diagnostic[] = [];
+    const content: BookNode[] = [];
 
-export const sectionsParser: AsyncFullParser<EpubBook, BookElement[]> = async epub => {
-    const hooks = epubParserHooks[epub.kind];
-    const nodeParserWithHooks = choice(...hooks.nodeHooks, nodeParser);
-    const documentParser = buildDocumentParser(nodeParserWithHooks);
-    const withDiags = expected(documentParser, [], stream => ({
-        diag: 'couldnt-parse-document',
-        tree: stream && stream.stream,
-    }));
+    for await (const section of epub.sections()) {
+        const result = sectionParser(section, hooks);
+        diags.push(result.diagnostic);
+        content.push(...result.value);
+    }
 
-    const singleSection = pipe(
-        (section: EpubSection) => {
-            const xmlDocument = xmlStringParser({
-                xmlString: section.content,
-                removeTrailingWhitespaces: false,
-            });
-            if (!xmlDocument.success) {
-                return xmlDocument;
-            }
+    return yieldLast(content, compoundDiagnostic(diags));
+}
 
-            return yieldLast({
-                filePath: section.filePath,
-                document: xmlDocument.value,
-            });
-        },
-        ({ filePath, document }) => {
-            const docStream = makeStream<XmlTree, TreeParserEnv>(document.children, {
-                filePath: filePath,
-                nodeParser: nodeParserWithHooks,
-                paragraphParser: paragraphNode,
-                spanParser: span,
-            });
-            const res = withDiags(docStream);
-            return res.success
-                ? res
-                : yieldLast([] as BookElement[], { diag: 'couldnt-parse-section', filePath, inside: res.diagnostic });
-        },
-    );
-
-    const reportProblems = choice(headParser(singleSection), input => {
-        return input === undefined || input.stream === undefined || input.stream.length === 0
-            ? yieldLast([])
-            : yieldNext([], nextStream(input), {
-                diag: 'couldnt-parse-section',
-                filePath: input.stream[0].filePath,
-            });
+function sectionParser(section: EpubSection, hooks: XmlHooks | undefined): SuccessLast<BookNode[]> {
+    const xmlDocument = xmlStringParser({
+        xmlString: section.content,
+        removeTrailingWhitespaces: false,
     });
+    if (!xmlDocument.success) {
+        return yieldLast([], {
+            diag: 'couldnt parse xml',
+            xmlDiag: xmlDocument.diagnostic,
+        });
+    }
 
-    const full = translate(
-        fullParser(reportProblems),
-        els => flatten(els),
-    );
-
-    const sections = await AsyncIter.toArray(epub.sections());
-    return full(makeStream(sections));
-};
+    return documentParser(xmlDocument.value, {
+        filePath: section.filePath,
+        hooks,
+    });
+}

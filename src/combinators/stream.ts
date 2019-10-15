@@ -1,5 +1,5 @@
-import { Parser, yieldNext, reject, SuccessParser, some, ResultLast, expected, projectFirst, seq } from './base';
-import { compoundDiagnostic } from './diagnostics';
+import { Parser, yieldNext, reject, SuccessParser, some, ResultLast, expected, projectFirst, seq, yieldLast } from './base';
+import { compoundDiagnostic, Diagnostic } from './diagnostics';
 
 export type Stream<T, E = undefined> = {
     stream: T[],
@@ -41,24 +41,14 @@ export function headParser<In, Out, Env = any>(f: HeadFn<In, Out, Env>): StreamP
     };
 }
 
-export type StringOrFn<T = unknown> = string | ((x: Stream<T, any>) => string);
-export function endOfInput<T = any, E = any>(messageOrFn?: StringOrFn<T>): StreamParser<T, undefined, E> {
-    return input => input.stream.length === 0
-        ? yieldNext(undefined, input)
-        : reject({
-            diag: 'expected-eoi',
-            message: typeof messageOrFn === 'function'
-                ? messageOrFn(input)
-                : messageOrFn,
-        });
-}
-
-export function expectEoi<T = unknown>(messageOrFn: StringOrFn<T>) {
-    return expected(endOfInput(messageOrFn), undefined);
-}
-
-export function expectParseAll<In, Out, E>(single: StreamParser<In, Out, E>, messageOrFn: StringOrFn<In>) {
-    return projectFirst(seq(single, expectEoi(messageOrFn)));
+export function endOfInput<T = any, E = any>(): StreamParser<T, undefined, E> {
+    return input => {
+        if (input.stream.length === 0) {
+            return yieldNext(undefined, input);
+        } else {
+            return reject();
+        }
+    };
 }
 
 export function not<T, E>(parser: StreamParser<T, any, E>): StreamParser<T, T, E> {
@@ -83,18 +73,16 @@ export function envParser<I, O, E>(f: (env: E) => StreamParser<I, O, E>): Stream
     };
 }
 
-export function fullParser<I, O, E>(parser: StreamParser<I, O, E>): SuccessStreamParser<I, O[], E> {
-    return input => {
-        const result = some(parser)(input);
-        if (result.next && result.next.stream.length > 0) {
-            return {
-                ...result,
-                diagnostic: compoundDiagnostic([result.diagnostic, {
-                    diag: 'extra-nodes-tail', nodes: result.next.stream,
-                }]),
-            };
+export function parseAll<In, Out, E>(single: StreamParser<In, Out, E>) {
+    return projectFirst(seq(single, endOfInput()));
+}
+
+export function reportUnparsedTail<In, Out, E>(single: StreamParser<In, Out, E>, reporter: (stream: Stream<In, E>) => Diagnostic) {
+    return projectFirst(seq(single, input => {
+        if (input.stream && input.stream.length > 0) {
+            return yieldLast(undefined, reporter(input));
         } else {
-            return result;
+            return yieldLast(undefined);
         }
-    };
+    }));
 }

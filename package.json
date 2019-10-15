@@ -1,6 +1,6 @@
 {
   "name": "booka-parser",
-  "version": "0.5.2",
+  "version": "0.6.0",
   "description": "Booka parser",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -10,7 +10,6 @@
   },
   "scripts": {
     "cli": "npm run build-ts && pb",
-    "prepare": "npm run build",
     "clean": "rm -rf dist/",
     "lint": "tslint -c tslint.json -p tsconfig.json",
     "build-ts": "tsc",
@@ -40,11 +39,11 @@
     "jest": "^24.5.0",
     "ts-jest": "^24.0.2",
     "tslint": "^5.11.0",
-    "typescript": "^3.5.3"
+    "typescript": "beta"
   },
   "dependencies": {
     "@rgrove/parse-xml": "^2.0.1",
-    "booka-common": "^0.8.1",
+    "booka-common": "^0.9.0",
     "epub2": "^1.3.7",
     "lodash": "^4.17.15"
   }

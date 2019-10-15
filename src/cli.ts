@@ -1,12 +1,10 @@
 #! /usr/bin/env node
 // tslint:disable: no-console
 import * as fs from 'fs';
-import { extname, join } from 'path';
+import { extname, join, dirname, basename } from 'path';
 import { parseEpub } from '.';
 import { promisify, inspect } from 'util';
-import { extractNodeText, tagValue } from 'booka-common';
-import { topDiagnostic } from './combinators';
-import { parseEpubText } from './epub';
+import { tagValue, Book } from 'booka-common';
 
 exec();
 
@@ -28,42 +26,45 @@ async function exec() {
     console.log(epubs);
     logTimeAsync('parsing', async () => {
         for (const epubPath of epubs) {
-            await processEpubFile(epubPath, reportMeta);
+            await processEpubFile(epubPath, reportMeta ? 2 : 1);
         }
     });
 }
 
-async function processEpubFile(filePath: string, reportMeta: boolean) {
+async function processEpubFile(filePath: string, verbosity: number = 0) {
     const result = await parseEpub({ filePath });
     if (!result.success) {
-        logRed(`Couldn't parse epub: '${filePath}'`);
-        console.log(result.diagnostic);
+        if (verbosity > -1) {
+            logRed(`Couldn't parse epub: '${filePath}'`);
+            console.log(result.diagnostic);
+        }
         return;
     }
     const book = result.value.book;
-    console.log(`---- ${filePath}:`);
-    if (reportMeta) {
+    if (verbosity > -1) {
+        console.log(`---- ${filePath}:`);
+    }
+    const pathToSave = join(dirname(filePath), `${basename(filePath, '.epub')}.booka`);
+    await saveBook(pathToSave, book);
+    if (verbosity > 1) {
         console.log('Tags:');
         console.log(book.tags);
     }
-    const bookText = extractNodeText(book.volume);
-    const allXmlText = await parseEpubText(filePath);
-    const ratio = Math.floor(bookText.length / allXmlText.length * 100);
-    console.log(`Book length: ${bookText.length} symbols, ratio: ${ratio}`);
-    if (ratio < 97) {
-        logRed('Low ratio');
-        await saveString(`${filePath}.original`, allXmlText);
-        await saveString(`${filePath}.parsed`, bookText);
-    }
     const skipTag = tagValue(result.value.book.tags, 'pg-skip');
-    if (skipTag !== null) {
+    if (skipTag !== null && verbosity > -1) {
         logYellow('SKIP');
     }
     if (result.diagnostic) {
-        const top = topDiagnostic(result.diagnostic, 10);
-        logRed('Diagnostics:');
-        console.log(inspect(result.diagnostic, false, 10, true));
+        if (verbosity > -1) {
+            logRed('Diagnostics:');
+            console.log(inspect(result.diagnostic, false, 8, true));
+        } else if (verbosity > -2) {
+            console.log(filePath);
+        }
+
     }
+
+    return result.diagnostic;
 }
 
 async function listFiles(path: string) {
@@ -98,6 +99,11 @@ async function logTimeAsync(marker: string, f: () => Promise<void>) {
 
 async function saveString(path: string, content: string) {
     return promisify(fs.writeFile)(path, content);
+}
+
+async function saveBook(path: string, book: Book) {
+    const str = JSON.stringify({ book });
+    return saveString(path, str);
 }
 
 export async function wait(n: number) {

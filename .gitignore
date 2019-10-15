@@ -73,3 +73,8 @@ server.crt
 # epub examples
 epub/*
 pg/*
+pg-full-flat/*
+sample/*
+
+# OS files
+.DS_Store

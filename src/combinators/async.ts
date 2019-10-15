@@ -1,5 +1,5 @@
 import { Result, yieldNext, ResultLast, reject } from './base';
-import { ParserDiagnostic, compoundDiagnostic } from './diagnostics';
+import { Diagnostic, compoundDiagnostic } from './diagnostics';
 
 export type AsyncParser<I, O> = (input: I) => Promise<Result<I, O>>;
 export type AsyncFullParser<I, O> = (input: I) => Promise<ResultLast<O>>;
@@ -17,7 +17,7 @@ export function andAsync<TI, TS>(...ps: Array<AsyncParser<TI, TS>>): AsyncParser
 export function andAsync<T>(...ps: Array<AsyncParser<T, any>>): AsyncParser<T, any[]> {
     return async input => {
         const results: any[] = [];
-        const diagnostics: ParserDiagnostic[] = [];
+        const diagnostics: Diagnostic[] = [];
         let lastNext: T | undefined = input;
         for (let i = 0; i < ps.length; i++) {
             const result = await ps[i](input);
@@ -57,9 +57,10 @@ export function pipeAsync<T1, T2, T3, TR>(
     p2: AsyncFullParser<T2, T3>,
     p3: AsyncFullParser<T3, TR>
 ): AsyncFullParser<T1, TR>;
+export function pipeAsync<T>(...ps: Array<AsyncFullParser<T, T>>): AsyncFullParser<T, T>;
 export function pipeAsync(...ps: Array<AsyncFullParser<any, any>>): AsyncFullParser<any, any> {
     return async input => {
-        const diags: ParserDiagnostic[] = [];
+        const diags: Diagnostic[] = [];
         let currInput = input;
         let r: any = undefined;
         for (const p of ps) {

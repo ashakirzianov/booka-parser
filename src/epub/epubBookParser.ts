@@ -1,72 +1,88 @@
-import { Book, KnownTag, processNodeAsync } from 'booka-common';
-import { equalsToOneOf } from '../utils';
+import { Book, KnownTag, BookNode, BookMeta } from 'booka-common';
 import {
-    makeStream, yieldLast, andAsync, AsyncFullParser, pipeAsync, ParserDiagnostic, compoundDiagnostic, StreamParser,
+    yieldLast, StreamParser, Diagnostic, ResultLast, compoundDiagnostic,
 } from '../combinators';
-import { elements2book, BookElement } from '../bookElementParser';
-import { EpubBook } from './epubBook';
-import { sectionsParser } from './sectionParser';
+import { epubFileParser } from './epubFileParser';
 import { metadataParser } from './metaParser';
-import { Tree2ElementsParser } from '../xmlTreeParser';
+import { epub2nodes } from './sectionParser';
+import { preprocess } from './preprocessor';
+import { resolveHooks } from './hooks';
 
-export type MetadataRecordParser = StreamParser<[string, any], KnownTag[]>;
-export type EpubBookParserHooks = {
-    nodeHooks: Tree2ElementsParser[],
-    metadataHooks: MetadataRecordParser[],
+export type EpubParserInput = {
+    filePath: string,
 };
-
-const diagnoseKind: AsyncFullParser<EpubBook, EpubBook> = async epub =>
-    epub.kind === 'unknown'
-        ? yieldLast(epub, { diag: 'unknown-kind' })
-        : yieldLast(epub);
-
-export const epubBookParser: AsyncFullParser<EpubBook, Book> = pipeAsync(
-    // Diagnose book kind, parse metadata and sections
-    andAsync(diagnoseKind, metadataParser, sectionsParser),
-    // Parse book elements
-    async ([epub, tags, elements]) => {
-        const metaNodes = buildMetaElementsFromTags(tags);
-        const allNodes = elements.concat(metaNodes);
-
-        const bookResult = await elements2book(makeStream(allNodes));
-
-        if (!bookResult.success) {
-            return bookResult;
-        }
-
-        const book: Book = bookResult.value;
-
-        return yieldLast({ book, epub }, bookResult.diagnostic);
-    },
-    // Resolve image references
-    async ({ book, epub }) => {
-        const diags: ParserDiagnostic[] = [];
-        const resolved = await processNodeAsync(book.volume, async node => {
-            if (node.node === 'image-ref') {
-                const buffer = await epub.imageResolver(node.imageRef);
-                if (buffer) {
-                    return {
-                        node: 'image-data',
-                        imageId: node.imageId,
-                        data: buffer,
-                    };
-                } else {
-                    diags.push({ diag: 'couldnt-resolve-image', id: node.imageId });
-                    return node;
-                }
-            } else {
-                return node;
-            }
-        });
-        return yieldLast({ ...book, volume: resolved }, compoundDiagnostic(diags));
+export type EpubParserOutput = {
+    book: Book,
+};
+export async function parseEpub({ filePath }: EpubParserInput): Promise<ResultLast<EpubParserOutput>> {
+    const diags: Diagnostic[] = [];
+    const epubResult = await epubFileParser({ filePath });
+    if (!epubResult.success) {
+        return epubResult;
     }
-);
+    const epub = epubResult.value;
 
-function buildMetaElementsFromTags(tags: KnownTag[]): BookElement[] {
-    const filtered = tags.filter(t => equalsToOneOf(t.tag, ['author', 'title', 'cover-ref']));
-    const elements = filtered.map(t => ({
-        element: 'tag',
-        tag: t,
-    } as const));
-    return elements;
+    const hooks = resolveHooks(epub);
+    if (hooks === undefined) {
+        diags.push({
+            diag: 'unknown book kind',
+            meta: epub.rawMetadata,
+        });
+    }
+    const nodesResult = await epub2nodes(epub, hooks && hooks.xml);
+    diags.push(nodesResult.diagnostic);
+    if (!nodesResult.success) {
+        return nodesResult;
+    }
+    const nodes = nodesResult.value;
+    const meta = metadataParser(epub, hooks && hooks.metadata);
+    diags.push(meta.diagnostic);
+    const tags = meta.success
+        ? meta.value
+        : [];
+    const book = buildBook(nodes, tags);
+    const processed = await preprocess({ book, epub });
+    diags.push(processed.diagnostic);
+    const result = {
+        book: processed.value,
+    };
+    return yieldLast(result, compoundDiagnostic(diags));
+}
+
+function buildBook(nodes: BookNode[], tags: KnownTag[]): Book {
+    const meta = buildMeta(tags);
+    return {
+        meta,
+        nodes,
+        tags,
+        images: {},
+    };
+}
+
+function buildMeta(tags: KnownTag[]) {
+    const meta: BookMeta = {
+        license: 'unknown',
+    };
+    for (const tag of tags) {
+        switch (tag.tag) {
+            case 'title':
+                meta.title = tag.value;
+                continue;
+            case 'author':
+                meta.author = tag.value;
+                continue;
+            case 'cover-ref':
+                meta.coverImage = {
+                    image: 'ref',
+                    title: 'cover',
+                    imageId: tag.value,
+                };
+                continue;
+            case 'license':
+                meta.license = tag.value;
+                continue;
+        }
+    }
+
+    return meta;
 }
