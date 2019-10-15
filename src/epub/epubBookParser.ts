@@ -1,6 +1,6 @@
 import { Book, KnownTag, BookNode, BookMeta } from 'booka-common';
 import {
-    success, StreamParser, Diagnostic, Result, compoundDiagnostic,
+    success, Diagnostic, Result, compoundDiagnostic,
 } from '../combinators';
 import { epubFileParser } from './epubFileParser';
 import { metadataParser } from './metaParser';

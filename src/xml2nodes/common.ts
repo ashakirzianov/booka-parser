@@ -1,5 +1,5 @@
 import {
-    Stream, StreamParser, Diagnostic, Success, success,
+    Diagnostic, Success, success,
     compoundDiagnostic,
 } from '../combinators';
 import { Xml, xml2string } from '../xml';
@@ -19,8 +19,6 @@ export type Xml2NodesEnv = {
     hooks?: XmlHooks,
     filePath: string,
 };
-export type Input = Stream<Xml, Xml2NodesEnv>;
-export type NodeParser = StreamParser<Xml, BookNode[], Xml2NodesEnv>;
 
 export function buildRefId(filePath: string, id: string) {
     return `${filePath}#${id}`;

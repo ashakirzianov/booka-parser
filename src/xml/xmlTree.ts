@@ -1,6 +1,6 @@
 import * as parseXmlLib from '@rgrove/parse-xml';
 import { assertNever } from 'booka-common';
-import { success, FullParser, failure } from '../combinators';
+import { success, failure, Result } from '../combinators';
 import { isWhitespaces } from '../utils';
 
 export type XmlStringParserInput = {
@@ -8,9 +8,8 @@ export type XmlStringParserInput = {
     preserveComments?: boolean,
     removeTrailingWhitespaces?: boolean,
 };
-export type XmlStringParser = FullParser<XmlStringParserInput, XmlDocument>;
 
-export const xmlStringParser: XmlStringParser = input => {
+export function xmlStringParser(input: XmlStringParserInput): Result<XmlDocument> {
     try {
         let tree = parseXmlLib(input.xmlString, {
             preserveComments: input.preserveComments || false,
@@ -26,7 +25,7 @@ export const xmlStringParser: XmlStringParser = input => {
     } catch (e) {
         return failure({ diag: 'exception', e });
     }
-};
+}
 
 export type XmlAttributes = {
     [key: string]: string | undefined,

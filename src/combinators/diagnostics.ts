@@ -1,3 +1,27 @@
+export type Success<Out> = {
+    success: true,
+    value: Out,
+    diagnostic?: Diagnostic,
+};
+
+export type Fail = {
+    success: false,
+    diagnostic?: Diagnostic,
+};
+
+export type Result<Out> = Success<Out> | Fail;
+
+export function failure(reason?: Diagnostic): Fail {
+    return { success: false, diagnostic: reason };
+}
+
+export function success<Out>(value: Out, diagnostic?: Diagnostic): Success<Out> {
+    return {
+        success: true,
+        value, diagnostic,
+    };
+}
+
 export type Severity =
     | 'error' | undefined // NOTE: treat undefined as 'error'
     | 'info'

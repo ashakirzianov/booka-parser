@@ -1,6 +1,5 @@
 export {
-    ResultNext as Result, Result as ResultLast,
-    isCompoundDiagnostic, isEmptyDiagnostic, Diagnostic,
+    Result, isCompoundDiagnostic, isEmptyDiagnostic, Diagnostic,
     getErrors, getNonErrors, compoundDiagnostic,
 } from './combinators';
 export * from './epub';

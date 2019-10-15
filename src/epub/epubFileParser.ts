@@ -1,6 +1,6 @@
 import { EPub } from 'epub2';
 import { last } from '../utils';
-import { AsyncParser, success, failure } from '../combinators';
+import { success, failure } from '../combinators';
 
 export type EpubSection = {
     filePath: string,
@@ -20,9 +20,8 @@ export type EpubBook = {
 export type EpubFileParserInput = {
     filePath: string,
 };
-export type EpubParser = AsyncParser<EpubFileParserInput, EpubBook>;
 
-export const epubFileParser: EpubParser = async input => {
+export async function epubFileParser(input: EpubFileParserInput) {
     try {
         const epub = await FixedEpub.createAsync(input.filePath) as FixedEpub;
 
@@ -63,7 +62,7 @@ export const epubFileParser: EpubParser = async input => {
             exception: e,
         });
     }
-};
+}
 
 class FixedEpub extends EPub {
     static libPromise = Promise;
