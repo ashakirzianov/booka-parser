@@ -15,6 +15,7 @@ export async function consistency({ book, epub }: PreprocessorArgs) {
     const diag: Diagnostic = ratio < 0.95
         ? {
             diag: 'low text ratio',
+            severity: 'warning',
             ratio: Math.floor(ratio * 100),
         }
         : undefined;

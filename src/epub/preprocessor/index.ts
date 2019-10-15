@@ -6,11 +6,10 @@ import { normalize } from './normalize';
 
 export function preprocess(args: PreprocessorArgs) {
     const preprocessors: BookPreprocessor[] = [
-        // TODO: re-enable
-        // references,
-        // normalize,
-        // images,
-        // consistency,
+        references,
+        normalize,
+        images,
+        consistency,
     ];
 
     return preprocessWithProcessors(args, preprocessors);
