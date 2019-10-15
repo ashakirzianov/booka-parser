@@ -5,10 +5,6 @@ export type Severity =
     ;
 
 export type EmptyParserDiagnostic = undefined;
-export type ContextParserDiagnostic = {
-    context: any,
-    diagnostic: ParserDiagnostic,
-};
 export type CustomParserDiagnostic = {
     diag: string,
     severity?: Severity,
@@ -16,10 +12,22 @@ export type CustomParserDiagnostic = {
 };
 
 type SimpleDiagnostic =
-    | ContextParserDiagnostic | CustomParserDiagnostic | EmptyParserDiagnostic;
+    | CustomParserDiagnostic | EmptyParserDiagnostic;
 type CompoundParserDiagnostic = SimpleDiagnostic[];
 
-export type ParserDiagnostic = SimpleDiagnostic | SimpleDiagnostic[];
+export type ParserDiagnostic = SimpleDiagnostic | CompoundParserDiagnostic;
+
+export function getErrors(diag: ParserDiagnostic): ParserDiagnostic {
+    if (diag === undefined) {
+        return diag;
+    } else if (isCompoundDiagnostic(diag)) {
+        return compoundDiagnostic(diag.map(getErrors));
+    } else {
+        return diag.severity === 'error' || diag.severity === undefined
+            ? diag
+            : undefined;
+    }
+}
 
 export function compoundDiagnostic(diags: ParserDiagnostic[]): ParserDiagnostic {
     const result = diags.reduce<SimpleDiagnostic[]>(
@@ -41,12 +49,6 @@ export function topDiagnostic(diag: ParserDiagnostic, top: number): ParserDiagno
     const flattened = flattenDiagnostic(diag);
     if (isCompoundDiagnostic(flattened)) {
         return flattened.slice(0, top);
-    } else if (isContext(flattened)) {
-        const inside = topDiagnostic(flattened.diagnostic, top);
-        return inside && {
-            ...flattened,
-            diagnostic: flattenDiagnostic(flattened.diagnostic),
-        };
     } else {
         return flattened;
     }
@@ -58,12 +60,6 @@ export function flattenDiagnostic(diag: ParserDiagnostic): ParserDiagnostic {
         return inside.length === 0 ? undefined
             : inside.length === 1 ? inside[0]
                 : inside as SimpleDiagnostic[];
-    } else if (isContext(diag)) {
-        const inside = flattenDiagnostic(diag.diagnostic);
-        return inside && {
-            ...diag,
-            diagnostic: flattenDiagnostic(diag.diagnostic),
-        };
     } else {
         return diag;
     }
@@ -74,8 +70,6 @@ export function isEmptyDiagnostic(diag: ParserDiagnostic): boolean {
         return true;
     } else if (isCompoundDiagnostic(diag)) {
         return diag.every(isEmptyDiagnostic);
-    } else if (isContext(diag)) {
-        return isEmptyDiagnostic(diag.diagnostic);
     } else {
         return diag.severity === 'info';
     }
@@ -83,10 +77,6 @@ export function isEmptyDiagnostic(diag: ParserDiagnostic): boolean {
 
 export function isCompoundDiagnostic(d: ParserDiagnostic): d is CompoundParserDiagnostic {
     return Array.isArray(d);
-}
-
-function isContext(d: ParserDiagnostic): d is ContextParserDiagnostic {
-    return d !== undefined && (d as any).context !== undefined;
 }
 
 function filterUndefined<T>(arr: Array<T | undefined>): T[] {

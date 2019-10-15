@@ -282,18 +282,6 @@ export function failed<T>(mOrF: ParserDiagnostic | ((x: T) => ParserDiagnostic))
     }
 }
 
-export function tagged<TIn, TOut>(parser: Parser<TIn, TOut>, f: (x: TIn) => string): Parser<TIn, TOut> {
-    return input => {
-        const result = parser(input);
-        return result.success
-            ? result
-            : reject({
-                context: f(input),
-                diagnostic: result.diagnostic,
-            });
-    };
-}
-
 export function alwaysYield<In, Out>(f: (x: In) => Out): Parser<In, Out> {
     return input => yieldNext(f(input), input);
 }
@@ -312,23 +300,6 @@ export function expectEnd<In, Out>(parser: Parser<In, Out>): FullParser<In, Out>
                 ...result,
                 next: undefined,
             };
-    };
-}
-
-export function diagnosticContext<In, Out>(parser: SuccessParser<In, Out>, context: any): SuccessParser<In, Out>;
-export function diagnosticContext<In, Out>(parser: Parser<In, Out>, context: any): Parser<In, Out>;
-export function diagnosticContext<In, Out>(parser: Parser<In, Out>, context: any): Parser<In, Out> {
-    return function cont(input) {
-        const result = parser(input);
-        return {
-            ...result,
-            diagnostic: result.diagnostic
-                ? {
-                    context,
-                    diagnostic: result.diagnostic,
-                }
-                : undefined,
-        };
     };
 }
 
