@@ -1,7 +1,7 @@
 import {
     Span, compoundSpan,
     failure, success, Success,
-    Result, compoundDiagnostic, Diagnostic, Semantic,
+    Result, compoundDiagnostic, Diagnostic, NodeFlag,
 } from 'booka-common';
 import { Xml, xml2string } from '../xml';
 import { Xml2NodesEnv, unexpectedNode, expectEmptyContent, buildRefId, imgData } from './common';
@@ -123,7 +123,7 @@ function singleSpanImpl(node: Xml, env: Xml2NodesEnv): Result<Span> {
     }
 }
 
-function flagSpan(inside: Span, flag: Semantic): Span {
+function flagSpan(inside: Span, flag: NodeFlag): Span {
     return {
         span: inside,
         flags: [flag],

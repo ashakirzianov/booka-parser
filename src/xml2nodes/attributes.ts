@@ -1,12 +1,12 @@
 import {
-    Semantic, Diagnostic, compoundDiagnostic,
+    NodeFlag, Diagnostic, compoundDiagnostic,
 } from 'booka-common';
 import { Xml2NodesEnv } from './common';
 import { Xml } from '../xml';
 
 type ProcessAttributesResult = {
     diag?: Diagnostic,
-    semantics?: Semantic[],
+    flags?: NodeFlag[],
 };
 export function processNodeAttributes(node: Xml, env: Xml2NodesEnv): ProcessAttributesResult {
     if (node.type !== 'element') {
@@ -14,7 +14,7 @@ export function processNodeAttributes(node: Xml, env: Xml2NodesEnv): ProcessAttr
     }
 
     const diags: Diagnostic[] = [];
-    const semantics: Semantic[] = [];
+    const flags: NodeFlag[] = [];
     for (const [attr, value] of Object.entries(node.attributes)) {
         diags.push(diagnoseAttribute(node.name, attr, value));
         if (env.hooks && env.hooks.attributesHook) {
@@ -24,7 +24,7 @@ export function processNodeAttributes(node: Xml, env: Xml2NodesEnv): ProcessAttr
             for (const v of values) {
                 const result = env.hooks.attributesHook(node.name, attr, v);
                 if (result.flag !== undefined) {
-                    semantics.push(result.flag);
+                    flags.push(result.flag);
                 }
                 diags.push(result.diag);
             }
@@ -33,7 +33,7 @@ export function processNodeAttributes(node: Xml, env: Xml2NodesEnv): ProcessAttr
 
     return {
         diag: compoundDiagnostic(diags),
-        semantics,
+        flags,
     };
 }
 

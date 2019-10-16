@@ -1,8 +1,8 @@
 import {
-    Span, BookNode, appendSemantics,
+    Span, BookNode, flagNode,
     makePph, compoundSpan,
     Diagnostic, Result, Success,
-    failure, success, compoundDiagnostic, Semantic,
+    failure, success, compoundDiagnostic, NodeFlag,
 } from 'booka-common';
 import {
     Xml, XmlElement,
@@ -72,8 +72,8 @@ function singleNode(node: Xml, env: Xml2NodesEnv): Result<BookNode[]> {
             const refId = buildRefId(env.filePath, node.attributes.id);
             bookNodes = assignRefIdToNodes(bookNodes, refId);
         }
-        if (attrs.semantics && attrs.semantics.length > 0) {
-            bookNodes = assignSemanticsToNodes(bookNodes, attrs.semantics);
+        if (attrs.flags && attrs.flags.length > 0) {
+            bookNodes = assignSemanticsToNodes(bookNodes, attrs.flags);
         }
         return success(bookNodes, diag);
     } else {
@@ -199,6 +199,6 @@ function anchorNode(refId: string): BookNode {
     };
 }
 
-function assignSemanticsToNodes(nodes: BookNode[], semantics: Semantic[]): BookNode[] {
-    return nodes.map(n => appendSemantics(n, semantics));
+function assignSemanticsToNodes(nodes: BookNode[], semantics: NodeFlag[]): BookNode[] {
+    return nodes.map(n => flagNode(n, ...semantics));
 }
