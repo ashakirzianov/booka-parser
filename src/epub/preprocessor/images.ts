@@ -1,9 +1,7 @@
 import {
     processBookImages, Image, ImageDic, assertNever,
+    success, Diagnostic, compoundDiagnostic,
 } from 'booka-common';
-import {
-    yieldLast, Diagnostic, compoundDiagnostic,
-} from '../../combinators';
 import { PreprocessorArgs } from './preprocessor';
 
 export async function images({ book, epub }: PreprocessorArgs) {
@@ -50,7 +48,7 @@ export async function images({ book, epub }: PreprocessorArgs) {
                 return image;
         }
     });
-    return yieldLast({
+    return success({
         ...resolved,
         images: imageDic,
     }, compoundDiagnostic(diags));

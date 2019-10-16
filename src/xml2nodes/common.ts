@@ -1,9 +1,8 @@
 import {
-    Stream, StreamParser, Diagnostic, SuccessLast, yieldLast,
-    compoundDiagnostic,
-} from '../combinators';
+    Diagnostic, Success, success,
+    compoundDiagnostic, Semantic, FlagSemanticKey,
+} from 'booka-common';
 import { Xml, xml2string } from '../xml';
-import { BookNode, Semantic, FlagSemanticKey } from 'booka-common';
 import { isWhitespaces } from '../utils';
 
 export type AttributesHookResult = {
@@ -19,8 +18,6 @@ export type Xml2NodesEnv = {
     hooks?: XmlHooks,
     filePath: string,
 };
-export type Input = Stream<Xml, Xml2NodesEnv>;
-export type NodeParser = StreamParser<Xml, BookNode[], Xml2NodesEnv>;
 
 export function buildRefId(filePath: string, id: string) {
     return `${filePath}#${id}`;
@@ -72,7 +69,7 @@ type ProcessNodeResult<T> = {
     diag?: Diagnostic,
 };
 type NodeProcessor<T> = (node: Xml, env: Xml2NodesEnv) => ProcessNodeResult<T>;
-export function processNodes<T>(nodes: Xml[], env: Xml2NodesEnv, proc: NodeProcessor<T>): SuccessLast<T[]> {
+export function processNodes<T>(nodes: Xml[], env: Xml2NodesEnv, proc: NodeProcessor<T>): Success<T[]> {
     const diags: Diagnostic[] = [];
     const results: T[] = [];
     for (const node of nodes) {
@@ -86,5 +83,5 @@ export function processNodes<T>(nodes: Xml[], env: Xml2NodesEnv, proc: NodeProce
         }
     }
 
-    return yieldLast(results, compoundDiagnostic(diags));
+    return success(results, compoundDiagnostic(diags));
 }

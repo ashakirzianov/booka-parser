@@ -1,15 +1,13 @@
 import {
-    BookNode, TableRow, flatten, Span, extractSpans, TableCell,
+    BookNode, TableRow, flatten, extractSpans, TableCell,
+    success, Success,
 } from 'booka-common';
 import { XmlElement, Xml } from '../xml';
-import {
-    yieldLast, SuccessLast,
-} from '../combinators';
 import { Xml2NodesEnv, unexpectedNode, processNodes } from './common';
 import { topLevelNodes } from './node';
 import { isWhitespaces } from '../utils';
 
-export function tableNode(node: XmlElement, env: Xml2NodesEnv): SuccessLast<BookNode> {
+export function tableNode(node: XmlElement, env: Xml2NodesEnv): Success<BookNode> {
     const tableData = tableRows(node.children, env);
     const rowsData = tableData.value;
     // If every row is single column we should treat table as a group
@@ -19,7 +17,7 @@ export function tableNode(node: XmlElement, env: Xml2NodesEnv): SuccessLast<Book
             node: 'group',
             nodes: groups,
         };
-        return yieldLast(group, tableData.diagnostic);
+        return success(group, tableData.diagnostic);
     } else {
         const rows: TableRow[] = rowsData.map(
             row => ({
@@ -30,12 +28,12 @@ export function tableNode(node: XmlElement, env: Xml2NodesEnv): SuccessLast<Book
             node: 'table',
             rows: rows,
         };
-        return yieldLast(table, tableData.diagnostic);
+        return success(table, tableData.diagnostic);
     }
 }
 
 type TableRowData = TableCellData[];
-function tableRows(nodes: Xml[], env: Xml2NodesEnv): SuccessLast<TableRowData[]> {
+function tableRows(nodes: Xml[], env: Xml2NodesEnv): Success<TableRowData[]> {
     return processNodes(nodes, env, node => {
         switch (node.name) {
             case 'tr':
@@ -65,7 +63,7 @@ type TableCellData = {
     colspan?: number,
     nodes: BookNode[],
 };
-function tableCells(nodes: Xml[], env: Xml2NodesEnv): SuccessLast<TableCellData[]> {
+function tableCells(nodes: Xml[], env: Xml2NodesEnv): Success<TableCellData[]> {
     return processNodes(nodes, env, node => {
         switch (node.name) {
             case 'th':

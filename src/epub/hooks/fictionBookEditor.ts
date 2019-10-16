@@ -1,6 +1,6 @@
+import { success, failure } from 'booka-common';
 import { HooksProvider, Hooks } from './hooks';
 import { MetadataRecordHook } from '../metaParser';
-import { reject, yieldLast } from '../../combinators';
 import { KnownTag } from 'booka-common';
 
 export const fictionBookEditor: HooksProvider = epub => {
@@ -16,11 +16,11 @@ export const fictionBookEditor: HooksProvider = epub => {
 const metadata: MetadataRecordHook = (key, value) => {
     switch (key) {
         case 'FB2.book-info.translator':
-            return yieldLast([{ tag: 'translator', value }]);
+            return success([{ tag: 'translator', value }]);
         case 'FB2.publish-info.book-name':
-            return yieldLast([{ tag: 'title', value }]);
+            return success([{ tag: 'title', value }]);
         case 'FB2.publish-info.city':
-            return yieldLast([{ tag: 'publish-city', value }]);
+            return success([{ tag: 'publish-city', value }]);
         case 'FB2.publish-info.year':
             const year = parseInt(value, 10);
             if (!year) {
@@ -33,7 +33,7 @@ const metadata: MetadataRecordHook = (key, value) => {
                     },
                 };
             } else {
-                return yieldLast([{ tag: 'publish-year', value: year }]);
+                return success([{ tag: 'publish-year', value: year }]);
             }
         case 'FB2EPUB.conversionDate':
         case 'FB2EPUB.version':
@@ -45,9 +45,9 @@ const metadata: MetadataRecordHook = (key, value) => {
         case 'FB2.document-info.history':
         case 'FB2.document-info.version':
         case 'FB2.document-info.id':
-            return yieldLast([] as KnownTag[]);
+            return success([] as KnownTag[]);
         default:
-            return reject();
+            return failure();
     }
 };
 

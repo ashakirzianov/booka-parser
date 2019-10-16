@@ -1,14 +1,13 @@
-import { Book } from 'booka-common';
 import {
-    SuccessLast, yieldLast, Diagnostic, compoundDiagnostic,
-} from '../../combinators';
+    Book, Success, success, Diagnostic, compoundDiagnostic,
+} from 'booka-common';
 import { EpubBook } from '../epubFileParser';
 import { collectMetrics, metricsDiff } from './bookMetrics';
 
 export type PreprocessorArgs = { book: Book, epub: EpubBook };
-export type BookPreprocessor = (args: PreprocessorArgs) => Promise<SuccessLast<Book>>;
+export type BookPreprocessor = (args: PreprocessorArgs) => Promise<Success<Book>>;
 
-export async function preprocessWithProcessors({ book, epub }: PreprocessorArgs, processors: BookPreprocessor[]): Promise<SuccessLast<Book>> {
+export async function preprocessWithProcessors({ book, epub }: PreprocessorArgs, processors: BookPreprocessor[]): Promise<Success<Book>> {
     const diags: Diagnostic[] = [];
     const before = collectMetrics(book);
     for (const proc of processors) {
@@ -25,5 +24,5 @@ export async function preprocessWithProcessors({ book, epub }: PreprocessorArgs,
         });
     }
 
-    return yieldLast(book, compoundDiagnostic(diags));
+    return success(book, compoundDiagnostic(diags));
 }

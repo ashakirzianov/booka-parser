@@ -1,6 +1,6 @@
+import { success, failure } from 'booka-common';
 import { EPub } from 'epub2';
 import { last } from '../utils';
-import { AsyncParser, yieldLast, reject } from '../combinators';
 
 export type EpubSection = {
     filePath: string,
@@ -20,9 +20,8 @@ export type EpubBook = {
 export type EpubFileParserInput = {
     filePath: string,
 };
-export type EpubParser = AsyncParser<EpubFileParserInput, EpubBook>;
 
-export const epubFileParser: EpubParser = async input => {
+export async function epubFileParser(input: EpubFileParserInput) {
     try {
         const epub = await FixedEpub.createAsync(input.filePath) as FixedEpub;
 
@@ -56,14 +55,14 @@ export const epubFileParser: EpubParser = async input => {
             },
         };
 
-        return yieldLast(book);
+        return success(book);
     } catch (e) {
-        return reject({
+        return failure({
             diag: 'exception on epub open',
             exception: e,
         });
     }
-};
+}
 
 class FixedEpub extends EPub {
     static libPromise = Promise;

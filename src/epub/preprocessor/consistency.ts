@@ -1,9 +1,6 @@
 import {
-    extractBookText,
+    extractBookText, success, Diagnostic,
 } from 'booka-common';
-import {
-    yieldLast, Diagnostic,
-} from '../../combinators';
 import { xmlStringParser, extractAllText } from '../../xml';
 import { EpubBook } from '../epubFileParser';
 import { PreprocessorArgs } from './preprocessor';
@@ -19,7 +16,7 @@ export async function consistency({ book, epub }: PreprocessorArgs) {
             ratio: Math.floor(ratio * 100),
         }
         : undefined;
-    return yieldLast(book, diag);
+    return success(book, diag);
 }
 
 async function extractEpubText(epub: EpubBook): Promise<string> {

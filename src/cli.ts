@@ -4,7 +4,7 @@ import * as fs from 'fs';
 import { extname, join, dirname, basename } from 'path';
 import { parseEpub } from '.';
 import { promisify, inspect } from 'util';
-import { tagValue, Book } from 'booka-common';
+import { tagValue, Book, filterSeverity } from 'booka-common';
 
 exec();
 
@@ -57,7 +57,7 @@ async function processEpubFile(filePath: string, verbosity: number = 0) {
     if (result.diagnostic) {
         if (verbosity > -1) {
             logRed('Diagnostics:');
-            console.log(inspect(result.diagnostic, false, 8, true));
+            console.log(inspect(filterSeverity(result.diagnostic, 'error'), false, 8, true));
         } else if (verbosity > -2) {
             console.log(filePath);
         }

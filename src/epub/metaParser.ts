@@ -1,11 +1,11 @@
-import { KnownTag, buildTagSet } from 'booka-common';
 import {
-    yieldLast, SuccessLast, Diagnostic, compoundDiagnostic, ResultLast,
-} from '../combinators';
+    KnownTag, buildTagSet,
+    success, Success, Diagnostic, compoundDiagnostic, Result,
+} from 'booka-common';
 import { EpubBook } from './epubFileParser';
 
-export type MetadataRecordHook = (name: string, value: any) => ResultLast<KnownTag[]>;
-export function metadataParser(epub: EpubBook, hook: MetadataRecordHook | undefined): SuccessLast<KnownTag[]> {
+export type MetadataRecordHook = (name: string, value: any) => Result<KnownTag[]>;
+export function metadataParser(epub: EpubBook, hook: MetadataRecordHook | undefined): Success<KnownTag[]> {
     const records = Object
         .entries(epub.metadata);
     const diags: Diagnostic[] = [];
@@ -24,39 +24,39 @@ export function metadataParser(epub: EpubBook, hook: MetadataRecordHook | undefi
         tags.push(...result.value);
     }
     const unique = buildTagSet(tags);
-    return yieldLast(unique, compoundDiagnostic(diags));
+    return success(unique, compoundDiagnostic(diags));
 }
 
-function defaultMetadata(name: string, value: any): SuccessLast<KnownTag[]> {
+function defaultMetadata(name: string, value: any): Success<KnownTag[]> {
     switch (name) {
         case 'title':
-            return yieldLast([{ tag: 'title', value }]);
+            return success([{ tag: 'title', value }]);
         case 'creator':
-            return yieldLast([{ tag: 'author', value }]);
+            return success([{ tag: 'author', value }]);
         case 'cover':
             return value
-                ? yieldLast([{ tag: 'cover-ref', value }])
-                : yieldLast([]);
+                ? success([{ tag: 'cover-ref', value }])
+                : success([]);
         case 'subject':
-            return yieldLast([{ tag: 'subject', value }]);
+            return success([{ tag: 'subject', value }]);
         case 'language':
-            return yieldLast([{ tag: 'language', value }]);
+            return success([{ tag: 'language', value }]);
         case 'publisher':
-            return yieldLast([{ tag: 'publisher', value }]);
+            return success([{ tag: 'publisher', value }]);
         case 'description':
-            return yieldLast([{ tag: 'description', value }]);
+            return success([{ tag: 'description', value }]);
         case 'series':
-            return yieldLast([{ tag: 'series', value }]);
+            return success([{ tag: 'series', value }]);
         case 'ISBN':
-            return yieldLast([{ tag: 'ISBN', value }]);
+            return success([{ tag: 'ISBN', value }]);
         case 'dc:rights':
-            return yieldLast([{ tag: 'rights', value }]);
+            return success([{ tag: 'rights', value }]);
         case 'creatorFileAs':
         case 'date':
         case 'dc:identifier':
-            return yieldLast([] as KnownTag[]);
+            return success([] as KnownTag[]);
         default:
-            return yieldLast([] as KnownTag[], {
+            return success([] as KnownTag[], {
                 diag: 'unexpected metadata',
                 name, value,
             });

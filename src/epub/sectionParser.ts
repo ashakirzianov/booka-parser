@@ -1,12 +1,12 @@
-import { BookNode } from 'booka-common';
 import {
-    ResultLast, SuccessLast, compoundDiagnostic, yieldLast, Diagnostic,
-} from '../combinators';
+    BookNode,
+    Result, Success, compoundDiagnostic, success, Diagnostic,
+} from 'booka-common';
 import { EpubSection, EpubBook } from './epubFileParser';
 import { xmlStringParser } from '../xml';
 import { documentParser, XmlHooks } from '../xml2nodes';
 
-export async function epub2nodes(epub: EpubBook, hooks: XmlHooks | undefined): Promise<ResultLast<BookNode[]>> {
+export async function epub2nodes(epub: EpubBook, hooks: XmlHooks | undefined): Promise<Result<BookNode[]>> {
     const diags: Diagnostic[] = [];
     const content: BookNode[] = [];
 
@@ -16,16 +16,16 @@ export async function epub2nodes(epub: EpubBook, hooks: XmlHooks | undefined): P
         content.push(...result.value);
     }
 
-    return yieldLast(content, compoundDiagnostic(diags));
+    return success(content, compoundDiagnostic(diags));
 }
 
-function sectionParser(section: EpubSection, hooks: XmlHooks | undefined): SuccessLast<BookNode[]> {
+function sectionParser(section: EpubSection, hooks: XmlHooks | undefined): Success<BookNode[]> {
     const xmlDocument = xmlStringParser({
         xmlString: section.content,
         removeTrailingWhitespaces: false,
     });
     if (!xmlDocument.success) {
-        return yieldLast([], {
+        return success([], {
             diag: 'couldnt parse xml',
             xmlDiag: xmlDocument.diagnostic,
         });

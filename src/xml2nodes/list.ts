@@ -1,15 +1,13 @@
 import {
     BookNode, flatten, Span, extractSpans, ListItem,
+    success, Success,
 } from 'booka-common';
 import { XmlElement, Xml } from '../xml';
-import {
-    yieldLast, SuccessLast,
-} from '../combinators';
 import { Xml2NodesEnv, unexpectedNode, processNodes } from './common';
 import { topLevelNodes } from './node';
 import { isWhitespaces } from '../utils';
 
-export function listNode(node: XmlElement, env: Xml2NodesEnv): SuccessLast<BookNode> {
+export function listNode(node: XmlElement, env: Xml2NodesEnv): Success<BookNode> {
     // TODO: handle 'start' attribute
     const listData = listItems(node.children, env);
     const items: ListItem[] = listData.value.map(i => ({
@@ -22,11 +20,11 @@ export function listNode(node: XmlElement, env: Xml2NodesEnv): SuccessLast<BookN
             : 'basic',
         items,
     };
-    return yieldLast(list, listData.diagnostic);
+    return success(list, listData.diagnostic);
 }
 
 type ListItemData = Span[];
-function listItems(nodes: Xml[], env: Xml2NodesEnv): SuccessLast<ListItemData[]> {
+function listItems(nodes: Xml[], env: Xml2NodesEnv): Success<ListItemData[]> {
     return processNodes(nodes, env, node => {
         switch (node.name) {
             case 'dd': case 'dt': // TODO: handle properly
