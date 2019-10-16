@@ -83,6 +83,12 @@ function singleNode(node: Xml, env: Xml2NodesEnv): Result<BookNode[]> {
 
 function singleNodeImpl(node: Xml, env: Xml2NodesEnv): Result<BookNode[]> {
     switch (node.name) {
+        case 'ins':
+            {
+                const pph = paragraphNode(node, env);
+                const result = assignSemanticsToNodes(pph.value, ['correction']);
+                return success(result, pph.diagnostic);
+            }
         case 'blockquote':
             {
                 const pph = paragraphNode(node, env);
