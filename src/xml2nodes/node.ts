@@ -8,7 +8,8 @@ import {
     Xml, XmlElement,
 } from '../xml';
 import {
-    Xml2NodesEnv, unexpectedNode, expectEmptyContent, shouldIgnore, buildRefId, imgData,
+    Xml2NodesEnv, unexpectedNode, expectEmptyContent,
+    buildRefId, imgData, isTrailingWhitespace,
 } from './common';
 import { expectSpanContent, singleSpan, spanContent } from './span';
 import { tableNode } from './table';
@@ -20,10 +21,11 @@ export function topLevelNodes(nodes: Xml[], env: Xml2NodesEnv): Success<BookNode
     const diags: Diagnostic[] = [];
     for (let idx = 0; idx < nodes.length; idx++) {
         let node = nodes[idx];
-        // Ignore some nodes
-        if (shouldIgnore(node)) {
+        // Ignore trailing whitespaces
+        if (isTrailingWhitespace(node)) {
             continue;
         }
+
         // Try parse top-level node
         const nodeResult = singleNode(node, env);
         if (nodeResult.success) {
@@ -111,6 +113,19 @@ function singleNodeImpl(node: Xml, env: Xml2NodesEnv): Result<BookNode[]> {
             return listNode(node, env);
         case 'img':
             return imageNode(node, env);
+        case 'input':
+        case 'map':
+        case 'object':
+        case 'meta':
+        case 'basefont':
+        case 'kbd':
+        case 'tt':
+        case 'svg':
+        case 'br':
+            return success([{
+                node: 'ignore',
+                name: node.name,
+            }]);
         default:
             return failure();
     }

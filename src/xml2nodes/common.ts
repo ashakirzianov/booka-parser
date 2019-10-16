@@ -39,31 +39,6 @@ export function unexpectedNode(node: Xml, context?: any): Diagnostic {
     };
 }
 
-// TODO: remove ?
-export function shouldIgnore(node: Xml): boolean {
-    switch (node.type) {
-        case 'text':
-            return node.text.startsWith('\n') && isWhitespaces(node.text);
-        case 'element':
-            switch (node.name) {
-                case 'input':
-                case 'map':
-                case 'object':
-                case 'meta':
-                case 'basefont':
-                case 'kbd':
-                case 'tt':
-                case 'svg':
-                case 'br':
-                    return true;
-                default:
-                    return false;
-            }
-        default:
-            return false;
-    }
-}
-
 export function imgData(node: XmlElement, env: Xml2NodesEnv): Success<Image | undefined> {
     const src = node.attributes.src;
     if (src !== undefined) {
@@ -98,4 +73,8 @@ export function imgData(node: XmlElement, env: Xml2NodesEnv): Success<Image | un
             expectEmptyContent(node.children),
         ]));
     }
+}
+
+export function isTrailingWhitespace(node: Xml): boolean {
+    return node.type === 'text' && isWhitespaces(node.text);
 }

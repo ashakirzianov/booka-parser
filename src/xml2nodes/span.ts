@@ -1,7 +1,7 @@
 import {
     Span, compoundSpan,
     failure, success, Success,
-    Result, compoundDiagnostic, Diagnostic, Semantic, projectResult,
+    Result, compoundDiagnostic, Diagnostic, Semantic,
 } from 'booka-common';
 import { Xml, xml2string } from '../xml';
 import { Xml2NodesEnv, unexpectedNode, expectEmptyContent, buildRefId, imgData } from './common';

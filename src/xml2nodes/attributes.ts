@@ -39,6 +39,7 @@ export function processNodeAttributes(node: Xml, env: Xml2NodesEnv): ProcessAttr
 
 function diagnoseAttribute(element: string, attr: string, value: string | undefined): Diagnostic {
     switch (attr) {
+        case 'content': case 'http-equiv':
         case 'title': // TODO: support ?
         case 'class': case 'id': case 'style':
         case 'xml:space': case 'xml:lang': case 'xmlns':

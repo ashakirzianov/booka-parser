@@ -3,9 +3,8 @@ import {
     success, Success, Diagnostic, compoundDiagnostic, compoundSpan,
 } from 'booka-common';
 import { XmlElement } from '../xml';
-import { Xml2NodesEnv, unexpectedNode, shouldIgnore } from './common';
+import { Xml2NodesEnv, unexpectedNode, isTrailingWhitespace } from './common';
 import { topLevelNodes } from './node';
-import { isWhitespaces } from '../utils';
 
 export function listNode(node: XmlElement, env: Xml2NodesEnv): Success<BookNode[]> {
     // TODO: handle 'start' attribute
@@ -24,7 +23,7 @@ function listItems(list: XmlElement, env: Xml2NodesEnv): Success<ListItem[]> {
     const diags: Diagnostic[] = [];
     const items: ListItem[] = [];
     for (const node of list.children) {
-        if (shouldIgnore(node)) {
+        if (isTrailingWhitespace(node)) {
             continue;
         }
         switch (node.name) {
@@ -41,11 +40,6 @@ function listItems(list: XmlElement, env: Xml2NodesEnv): Success<ListItem[]> {
                 break;
             case 'a':
                 if (node.children.length !== 0) {
-                    diags.push(unexpectedNode(node, 'list'));
-                }
-                break;
-            case undefined:
-                if (node.type !== 'text' || !isWhitespaces(node.text)) {
                     diags.push(unexpectedNode(node, 'list'));
                 }
                 break;

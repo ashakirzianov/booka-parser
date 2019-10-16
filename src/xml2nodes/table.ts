@@ -3,9 +3,8 @@ import {
     success, Success, Diagnostic, compoundDiagnostic, compoundSpan,
 } from 'booka-common';
 import { XmlElement } from '../xml';
-import { Xml2NodesEnv, unexpectedNode, shouldIgnore } from './common';
+import { Xml2NodesEnv, unexpectedNode, isTrailingWhitespace } from './common';
 import { topLevelNodes } from './node';
-import { isWhitespaces } from '../utils';
 
 export function tableNode(node: XmlElement, env: Xml2NodesEnv): Success<BookNode[]> {
     const tableData = tableBody(node, env);
@@ -37,7 +36,7 @@ function tableBody(bodyNode: XmlElement, env: Xml2NodesEnv): Success<TableRowDat
     const diags: Diagnostic[] = [];
     const rows: TableRowData[] = [];
     for (const node of bodyNode.children) {
-        if (shouldIgnore(node)) {
+        if (isTrailingWhitespace(node)) {
             continue;
         }
         switch (node.name) {
@@ -87,7 +86,7 @@ function tableCells(rowNode: XmlElement, env: Xml2NodesEnv): Success<TableCellDa
     const diags: Diagnostic[] = [];
     const cells: TableCellData[] = [];
     for (const node of rowNode.children) {
-        if (shouldIgnore(node)) {
+        if (isTrailingWhitespace(node)) {
             continue;
         }
         switch (node.name) {
@@ -107,11 +106,6 @@ function tableCells(rowNode: XmlElement, env: Xml2NodesEnv): Success<TableCellDa
                 break;
             case 'a':
                 if (node.children.length !== 0) {
-                    diags.push(unexpectedNode(node, 'table cell'));
-                }
-                break;
-            case undefined:
-                if (node.type !== 'text' || !isWhitespaces(node.text)) {
                     diags.push(unexpectedNode(node, 'table cell'));
                 }
                 break;
