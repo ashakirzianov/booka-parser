@@ -17,6 +17,7 @@ export function tableNode(node: XmlElement, env: Xml2NodesEnv): Success<BookNode
     } else {
         const rows: TableRow[] = rowsData.map(
             row => ({
+                kind: row.kind,
                 cells: row.cells.map(cellDataToCell),
             })
         );
@@ -29,7 +30,7 @@ export function tableNode(node: XmlElement, env: Xml2NodesEnv): Success<BookNode
 }
 
 type TableRowData = {
-    kind: 'header' | 'body' | 'footer',
+    kind: TableRow['kind'],
     cells: TableCellData[],
 };
 function tableBody(bodyNode: XmlElement, env: Xml2NodesEnv): Success<TableRowData[]> {
@@ -54,7 +55,7 @@ function tableBody(bodyNode: XmlElement, env: Xml2NodesEnv): Success<TableRowDat
             case 'thead':
             case 'tfoot':
                 {
-                    const kind = node.name === 'tbody' ? 'body'
+                    const kind: TableRow['kind'] = node.name === 'tbody' ? 'body'
                         : node.name === 'thead' ? 'header'
                             : 'footer';
                     const body = tableBody(node, env);
@@ -93,10 +94,10 @@ function tableCells(rowNode: XmlElement, env: Xml2NodesEnv): Success<TableCellDa
             case 'th':
             case 'td':
                 {
-                    const colspan = rowNode.attributes.colspan !== undefined
-                        ? parseInt(rowNode.attributes.colspan, 10)
+                    const colspan = node.attributes.colspan !== undefined
+                        ? parseInt(node.attributes.colspan, 10)
                         : undefined;
-                    const content = topLevelNodes(rowNode.children, env);
+                    const content = topLevelNodes(node.children, env);
                     diags.push(content.diagnostic);
                     cells.push({
                         colspan,
