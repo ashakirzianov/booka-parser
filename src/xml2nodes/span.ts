@@ -146,7 +146,7 @@ function aSpan(node: XmlElement, env: Xml2NodesEnv): Result<Span> {
 function imgSpan(node: XmlElement, env: Xml2NodesEnv): Success<Span> {
     const src = node.attributes.src;
     if (src !== undefined) {
-        if (!src.endsWith('.png') || !src.endsWith('.jpg') || !src.endsWith('jpeg')) {
+        if (!src.endsWith('.png') && !src.endsWith('.jpg') && !src.endsWith('jpeg')) {
             return success([], {
                 diag: 'unsupported image format',
                 severity: 'info',
