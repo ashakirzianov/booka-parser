@@ -1,7 +1,7 @@
 import {
     Span, compoundSpan,
     failure, success, Success,
-    Result, compoundDiagnostic, Diagnostic, NodeFlag, AttributeName, attrSpan,
+    Result, compoundDiagnostic, Diagnostic, NodeFlag, AttributeName, attrSpan, flagSpan,
 } from 'booka-common';
 import { Xml, xml2string } from '../xml';
 import { Xml2NodesEnv, unexpectedNode, expectEmptyContent, buildRefId, imgData } from './common';
@@ -68,19 +68,19 @@ function singleSpanImpl(node: Xml, env: Xml2NodesEnv): Result<Span> {
                     : inside;
             }
         case 'i': case 'em':
-            return attributeSpan(node, 'italic', env);
+            return parseAttributeSpan(node, 'italic', env);
         case 'b': case 'strong':
-            return attributeSpan(node, 'bold', env);
+            return parseAttributeSpan(node, 'bold', env);
         case 'small':
-            return attributeSpan(node, 'small', env);
+            return parseAttributeSpan(node, 'small', env);
         case 'big':
-            return attributeSpan(node, 'big', env);
+            return parseAttributeSpan(node, 'big', env);
         case 'sup':
-            return attributeSpan(node, 'sup', env);
+            return parseAttributeSpan(node, 'sup', env);
         case 'sub':
-            return attributeSpan(node, 'sub', env);
+            return parseAttributeSpan(node, 'sub', env);
         case 'q': case 'quote':
-            return attributeSpan(node, 'quote', env);
+            return parseAttributeSpan(node, 'quote', env);
         case 'blockquote': case 'cite':
             {
                 const inside = spanContent(node.children, env);
@@ -89,15 +89,15 @@ function singleSpanImpl(node: Xml, env: Xml2NodesEnv): Result<Span> {
                     : inside;
             }
         case 'code': case 'samp': case 'var':
-            return flagSpan(node, 'code', env);
+            return parseFlagSpan(node, 'code', env);
         case 'dfn':
-            return flagSpan(node, 'definition', env);
+            return parseFlagSpan(node, 'definition', env);
         case 'address':
-            return flagSpan(node, 'address', env);
+            return parseFlagSpan(node, 'address', env);
         case 'bdo':
-            return flagSpan(node, 'right-to-left', env);
+            return parseFlagSpan(node, 'right-to-left', env);
         case 'ins': case 'del':
-            return flagSpan(node, 'correction', env);
+            return parseFlagSpan(node, 'correction', env);
         case 'ruby':
             return rubySpan(node, env);
         case 'br':
@@ -110,7 +110,7 @@ function singleSpanImpl(node: Xml, env: Xml2NodesEnv): Result<Span> {
         case 'font':
         case 'tt':
         case 'abbr':
-            return flagSpan(node, 'abbreviation', env);
+            return parseFlagSpan(node, 'abbreviation', env);
         case 'a':
             return aSpan(node, env);
         default:
@@ -118,7 +118,7 @@ function singleSpanImpl(node: Xml, env: Xml2NodesEnv): Result<Span> {
     }
 }
 
-function attributeSpan(node: XmlElement, attr: AttributeName, env: Xml2NodesEnv): Success<Span> {
+function parseAttributeSpan(node: XmlElement, attr: AttributeName, env: Xml2NodesEnv): Success<Span> {
     const inside = expectSpanContent(node.children, env);
 
     return success(
@@ -127,13 +127,10 @@ function attributeSpan(node: XmlElement, attr: AttributeName, env: Xml2NodesEnv)
     );
 }
 
-function flagSpan(node: XmlElement, flag: NodeFlag, env: Xml2NodesEnv): Success<Span> {
+function parseFlagSpan(node: XmlElement, flag: NodeFlag, env: Xml2NodesEnv): Success<Span> {
     const inside = expectSpanContent(node.children, env);
     return success(
-        {
-            span: compoundSpan(inside.value),
-            flags: [flag],
-        },
+        flagSpan(compoundSpan(inside.value), flag),
         inside.diagnostic,
     );
 }

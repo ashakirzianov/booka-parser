@@ -118,7 +118,7 @@ function singleNodeImpl(node: Xml, env: Xml2NodesEnv): Result<BookNode[]> {
             return tableNode(node, env);
         case 'ul':
         case 'ol':
-            // case 'dl': // TODO: handle
+        case 'dl':
             return listNode(node, env);
         case 'img':
             return imageNode(node, env);
