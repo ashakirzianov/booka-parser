@@ -1,7 +1,7 @@
 import {
     NodeFlag, Diagnostic, compoundDiagnostic,
 } from 'booka-common';
-import { Xml2NodesEnv } from './common';
+import { Xml2NodesEnv, AttributesHookResult } from './common';
 import { Xml } from '../xml';
 
 type ProcessAttributesResult = {
@@ -15,20 +15,25 @@ export function processNodeAttributes(node: Xml, env: Xml2NodesEnv): ProcessAttr
 
     const diags: Diagnostic[] = [];
     const flags: NodeFlag[] = [];
+    const results: AttributesHookResult[] = [];
     for (const [attr, value] of Object.entries(node.attributes)) {
-        diags.push(diagnoseAttribute(node.name, attr, value));
         if (env.hooks && env.hooks.attributesHook) {
             const values = value !== undefined
                 ? (attr === 'class' ? value.split(' ') : [value])
                 : [];
             for (const v of values) {
-                const result = env.hooks.attributesHook(node.name, attr, v);
-                if (result.flag !== undefined) {
-                    flags.push(result.flag);
-                }
-                diags.push(result.diag);
+                const hookResult = env.hooks.attributesHook(node.name, attr, v);
+                results.push(hookResult);
+                const defaultResult = processAttribute(node.name, attr, v);
+                results.push(defaultResult);
             }
         }
+    }
+    for (const result of results) {
+        if (result.flag !== undefined) {
+            flags.push(result.flag);
+        }
+        diags.push(result.diag);
     }
 
     return {
@@ -37,21 +42,18 @@ export function processNodeAttributes(node: Xml, env: Xml2NodesEnv): ProcessAttr
     };
 }
 
-function diagnoseAttribute(element: string, attr: string, value: string | undefined): Diagnostic {
+function processAttribute(element: string, attr: string, value: string | undefined): AttributesHookResult {
     switch (attr) {
         case 'content': case 'http-equiv':
         case 'title':
         case 'class': case 'id': case 'style':
         case 'xml:space': case 'xml:lang': case 'xmlns':
         case 'clas': // Typo
-            return undefined;
-        case 'dir': // TODO: what is this ?
-            switch (element) {
-                case 'div': case 'p': case 'span':
-                case 'table': case 'h3':
-                    return undefined;
-            }
-            break;
+            return {};
+        case 'dir':
+            return value === 'rtl'
+                ? { flag: 'right-to-left' }
+                : {};
     }
 
     switch (element) {
@@ -59,7 +61,7 @@ function diagnoseAttribute(element: string, attr: string, value: string | undefi
             switch (attr) {
                 case 'h3': // TODO: what is this ?
                 case 'cellpadding': case 'cellspacing':
-                    return undefined;
+                    return {};
             }
             break;
         case 'table':
@@ -70,45 +72,47 @@ function diagnoseAttribute(element: string, attr: string, value: string | undefi
                 case 'border': case 'bordercolor':
                 case 'height': case 'width':
                 case 'cellpadding': case 'cellspacing':
-                    return undefined;
+                    return {};
             }
             break;
         case 'td':
             switch (attr) {
                 case 'colspan': case 'align': case 'valign':
-                    return undefined;
+                    return {};
             }
             break;
         case 'image': case 'img':
             switch (attr) {
                 case 'alt': case 'src':
                 case 'tag': case 'width':
-                    return undefined;
+                    return {};
             }
             break;
         case 'a':
             switch (attr) {
                 case 'href': case 'tag':
-                    return undefined;
+                    return {};
             }
             break;
         case 'hr':
             switch (attr) {
                 case 'width':
-                    return undefined;
+                    return {};
             }
             break;
         case 'ol': case 'ul':
             switch (attr) {
                 case 'start':
-                    return undefined;
+                    return {};
             }
             break;
     }
 
     return {
-        diag: 'unexpected-attr',
-        node: element,
-        attr, value,
+        diag: {
+            diag: 'unexpected-attr',
+            node: element,
+            attr, value,
+        },
     };
 }

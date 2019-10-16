@@ -1,9 +1,12 @@
 import {
     BookNode, flatten, nodeSpans, ListItem, flagSpan,
-    success, Success, Diagnostic, compoundDiagnostic, compoundSpan,
+    success, Success, Diagnostic, compoundDiagnostic,
+    compoundSpan,
 } from 'booka-common';
 import { XmlElement } from '../xml';
-import { Xml2NodesEnv, unexpectedNode, isTrailingWhitespace } from './common';
+import {
+    Xml2NodesEnv, unexpectedNode, isTrailingWhitespace,
+} from './common';
 import { topLevelNodes } from './node';
 
 export function listNode(node: XmlElement, env: Xml2NodesEnv): Success<BookNode[]> {
