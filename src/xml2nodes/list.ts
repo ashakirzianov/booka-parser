@@ -7,7 +7,6 @@ import { Xml2NodesEnv, unexpectedNode, isTrailingWhitespace } from './common';
 import { topLevelNodes } from './node';
 
 export function listNode(node: XmlElement, env: Xml2NodesEnv): Success<BookNode[]> {
-    // TODO: handle 'start' attribute
     const items = listItems(node, env);
     const list: BookNode = {
         node: 'list',

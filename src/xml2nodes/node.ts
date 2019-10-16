@@ -72,6 +72,9 @@ function singleNode(node: Xml, env: Xml2NodesEnv): Result<BookNode[]> {
             const refId = buildRefId(env.filePath, node.attributes.id);
             bookNodes = assignRefIdToNodes(bookNodes, refId);
         }
+        if (node.type === 'element' && node.attributes.title !== undefined) {
+            bookNodes = assignTitleToNodes(bookNodes, node.attributes.title);
+        }
         if (attrs.flags && attrs.flags.length > 0) {
             bookNodes = assignSemanticsToNodes(bookNodes, attrs.flags);
         }
@@ -115,7 +118,7 @@ function singleNodeImpl(node: Xml, env: Xml2NodesEnv): Result<BookNode[]> {
             return tableNode(node, env);
         case 'ul':
         case 'ol':
-        case 'dl': // TODO: handle separately ?
+            // case 'dl': // TODO: handle
             return listNode(node, env);
         case 'img':
             return imageNode(node, env);
@@ -194,6 +197,22 @@ function assignRefIdToNodes([head, ...rest]: BookNode[], refId: string): BookNod
         }
     } else {
         return [anchorNode(refId)];
+    }
+}
+
+function assignTitleToNodes([head, ...rest]: BookNode[], title: string): BookNode[] {
+    if (head !== undefined) {
+        if (head.title === undefined) {
+            const withId = {
+                ...head,
+                title,
+            };
+            return [withId, ...rest];
+        } else {
+            return [head, ...rest];
+        }
+    } else {
+        return [];
     }
 }
 
