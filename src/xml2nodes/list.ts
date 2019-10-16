@@ -1,52 +1,59 @@
 import {
-    BookNode, flatten, Span, extractSpans, ListItem,
-    success, Success,
+    BookNode, flatten, nodeSpans, ListItem,
+    success, Success, Diagnostic, compoundDiagnostic, compoundSpan,
 } from 'booka-common';
-import { XmlElement, Xml } from '../xml';
-import { Xml2NodesEnv, unexpectedNode, processNodes } from './common';
+import { XmlElement } from '../xml';
+import { Xml2NodesEnv, unexpectedNode, shouldIgnore } from './common';
 import { topLevelNodes } from './node';
 import { isWhitespaces } from '../utils';
 
 export function listNode(node: XmlElement, env: Xml2NodesEnv): Success<BookNode[]> {
     // TODO: handle 'start' attribute
-    const listData = listItems(node.children, env);
-    const items: ListItem[] = listData.value.map(i => ({
-        spans: i,
-    }));
+    const items = listItems(node, env);
     const list: BookNode = {
         node: 'list',
         kind: node.name === 'ol'
             ? 'ordered'
             : 'basic',
-        items,
+        items: items.value,
     };
-    return success([list], listData.diagnostic);
+    return success([list], items.diagnostic);
 }
 
-type ListItemData = Span[];
-function listItems(nodes: Xml[], env: Xml2NodesEnv): Success<ListItemData[]> {
-    return processNodes(nodes, env, node => {
+function listItems(list: XmlElement, env: Xml2NodesEnv): Success<ListItem[]> {
+    const diags: Diagnostic[] = [];
+    const items: ListItem[] = [];
+    for (const node of list.children) {
+        if (shouldIgnore(node)) {
+            continue;
+        }
         switch (node.name) {
             case 'dd': case 'dt': // TODO: handle properly
             case 'li':
                 {
                     const content = topLevelNodes(node.children, env);
-                    const spans = flatten(content.value.map(extractSpans));
-                    return {
-                        values: [spans],
-                        diag: content.diagnostic,
-                    };
+                    diags.push(content.diagnostic);
+                    const spans = flatten(content.value.map(nodeSpans));
+                    items.push({
+                        span: compoundSpan(spans),
+                    });
                 }
+                break;
             case 'a':
-                return node.children.length === 0
-                    ? {}
-                    : { diag: unexpectedNode(node, 'list') };
+                if (node.children.length !== 0) {
+                    diags.push(unexpectedNode(node, 'list'));
+                }
+                break;
             case undefined:
-                return node.type === 'text' && isWhitespaces(node.text)
-                    ? {}
-                    : { diag: unexpectedNode(node, 'list') };
+                if (node.type !== 'text' || !isWhitespaces(node.text)) {
+                    diags.push(unexpectedNode(node, 'list'));
+                }
+                break;
             default:
-                return { diag: unexpectedNode(node, 'list') };
+                diags.push(unexpectedNode(node, 'list'));
+                break;
         }
-    });
+    }
+
+    return success(items, compoundDiagnostic(diags));
 }

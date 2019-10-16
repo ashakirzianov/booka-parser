@@ -39,6 +39,7 @@ export function unexpectedNode(node: Xml, context?: any): Diagnostic {
     };
 }
 
+// TODO: remove ?
 export function shouldIgnore(node: Xml): boolean {
     switch (node.type) {
         case 'text':
@@ -61,26 +62,4 @@ export function shouldIgnore(node: Xml): boolean {
         default:
             return false;
     }
-}
-
-type ProcessNodeResult<T> = {
-    values?: T[],
-    diag?: Diagnostic,
-};
-type NodeProcessor<T> = (node: Xml, env: Xml2NodesEnv) => ProcessNodeResult<T>;
-export function processNodes<T>(nodes: Xml[], env: Xml2NodesEnv, proc: NodeProcessor<T>): Success<T[]> {
-    const diags: Diagnostic[] = [];
-    const results: T[] = [];
-    for (const node of nodes) {
-        if (shouldIgnore(node)) {
-            continue;
-        }
-        const result = proc(node, env);
-        diags.push(result.diag);
-        if (result.values !== undefined) {
-            results.push(...result.values);
-        }
-    }
-
-    return success(results, compoundDiagnostic(diags));
 }
