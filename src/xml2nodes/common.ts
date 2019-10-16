@@ -1,8 +1,8 @@
 import {
     Diagnostic, Success, success,
-    compoundDiagnostic, Semantic,
+    compoundDiagnostic, Semantic, Image,
 } from 'booka-common';
-import { Xml, xml2string } from '../xml';
+import { Xml, xml2string, XmlElement } from '../xml';
 import { isWhitespaces } from '../utils';
 
 export type AttributesHookResult = {
@@ -61,5 +61,41 @@ export function shouldIgnore(node: Xml): boolean {
             }
         default:
             return false;
+    }
+}
+
+export function imgData(node: XmlElement, env: Xml2NodesEnv): Success<Image | undefined> {
+    const src = node.attributes.src;
+    if (src !== undefined) {
+        if (!src.endsWith('.png') && !src.endsWith('.jpg') && !src.endsWith('jpeg')) {
+            return success(undefined, {
+                diag: 'unsupported image format',
+                severity: 'info',
+                src,
+            });
+        } else if (src.match(/^www\.[^\.]+\.com/)) {
+            return success(undefined, {
+                diag: 'external src',
+                severity: 'info',
+                src,
+            });
+        }
+        return success(
+            {
+                image: 'ref',
+                imageId: src,
+                title: node.attributes.title || node.attributes.alt,
+            },
+            expectEmptyContent(node.children),
+        );
+    } else {
+        return success(undefined, compoundDiagnostic([
+            {
+                diag: 'img: src not set',
+                severity: 'info',
+                xml: xml2string(node),
+            },
+            expectEmptyContent(node.children),
+        ]));
     }
 }

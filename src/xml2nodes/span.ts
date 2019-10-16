@@ -1,10 +1,10 @@
 import {
     Span, compoundSpan,
     failure, success, Success,
-    Result, compoundDiagnostic, Diagnostic, Semantic,
+    Result, compoundDiagnostic, Diagnostic, Semantic, projectResult,
 } from 'booka-common';
 import { Xml, xml2string } from '../xml';
-import { Xml2NodesEnv, unexpectedNode, expectEmptyContent, buildRefId } from './common';
+import { Xml2NodesEnv, unexpectedNode, expectEmptyContent, buildRefId, imgData } from './common';
 import { XmlElement } from '../xml/xmlTree';
 
 export function expectSpanContent(nodes: Xml[], env: Xml2NodesEnv): Success<Span[]> {
@@ -144,40 +144,14 @@ function aSpan(node: XmlElement, env: Xml2NodesEnv): Result<Span> {
 }
 
 function imgSpan(node: XmlElement, env: Xml2NodesEnv): Success<Span> {
-    const src = node.attributes.src;
-    if (src !== undefined) {
-        if (!src.endsWith('.png') && !src.endsWith('.jpg') && !src.endsWith('jpeg')) {
-            return success([], {
-                diag: 'unsupported image format',
-                severity: 'info',
-                src,
-            });
-        } else if (src.match(/^www\.[^\.]+\.com/)) {
-            return success([], {
-                diag: 'external src',
-                severity: 'info',
-                src,
-            });
-        }
+    const image = imgData(node, env);
+    if (image.value !== undefined) {
         return success(
-            {
-                image: {
-                    image: 'ref',
-                    imageId: src,
-                    title: node.attributes.title || node.attributes.alt,
-                },
-            },
-            expectEmptyContent(node.children),
+            { image: image.value },
+            image.diagnostic,
         );
     } else {
-        return success([], compoundDiagnostic([
-            {
-                diag: 'img: src not set',
-                severity: 'info',
-                xml: xml2string(node),
-            },
-            expectEmptyContent(node.children),
-        ]));
+        return success([], image.diagnostic);
     }
 }
 

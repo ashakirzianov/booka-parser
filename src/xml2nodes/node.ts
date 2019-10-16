@@ -8,7 +8,7 @@ import {
     Xml, XmlElement,
 } from '../xml';
 import {
-    Xml2NodesEnv, unexpectedNode, expectEmptyContent, shouldIgnore, buildRefId,
+    Xml2NodesEnv, unexpectedNode, expectEmptyContent, shouldIgnore, buildRefId, imgData,
 } from './common';
 import { expectSpanContent, singleSpan, spanContent } from './span';
 import { tableNode } from './table';
@@ -109,8 +109,22 @@ function singleNodeImpl(node: Xml, env: Xml2NodesEnv): Result<BookNode[]> {
         case 'ol':
         case 'dl': // TODO: handle separately ?
             return listNode(node, env);
+        case 'img':
+            return imageNode(node, env);
         default:
             return failure();
+    }
+}
+
+function imageNode(node: XmlElement, env: Xml2NodesEnv): Success<BookNode[]> {
+    const image = imgData(node, env);
+    if (image.value !== undefined) {
+        return success([{
+            node: 'image',
+            image: image.value,
+        }], image.diagnostic);
+    } else {
+        return success([], image.diagnostic);
     }
 }
 
