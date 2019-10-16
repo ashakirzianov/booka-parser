@@ -109,16 +109,7 @@ function singleSpanImpl(node: Xml, env: Xml2NodesEnv): Result<Span> {
         case 'abbr': // TODO: handle
             return inside;
         case 'a':
-            if (node.attributes.href !== undefined) {
-                return success({
-                    ref: insideSpan,
-                    refToId: node.attributes.href,
-                }, insideDiag);
-            } else {
-                return insideDiag === undefined
-                    ? success(insideSpan)
-                    : failure();
-            }
+            return aSpan(node, env);
         default:
             return failure();
     }
@@ -131,20 +122,47 @@ function flagSpan(inside: Span, flag: FlagSemanticKey): Span {
     };
 }
 
+function aSpan(node: XmlElement, env: Xml2NodesEnv): Result<Span> {
+    if (node.attributes.href !== undefined) {
+        const inside = expectSpanContent(node.children, env);
+        return success({
+            ref: inside.value,
+            refToId: node.attributes.href,
+        }, inside.diagnostic);
+    } else {
+        const inside = spanContent(node.children, env);
+        return inside;
+    }
+}
+
 function imgSpan(node: XmlElement, env: Xml2NodesEnv): Success<Span> {
-    if (node.attributes.src !== undefined) {
+    const src = node.attributes.src;
+    if (src !== undefined) {
+        if (!src.endsWith('.png') || !src.endsWith('.jpg') || !src.endsWith('jpeg')) {
+            return success([], {
+                diag: 'unsupported image format',
+                severity: 'info',
+                src,
+            });
+        } else if (src.match(/^www\.[^\.]+\.com/)) {
+            return success([], {
+                diag: 'external src',
+                severity: 'info',
+                src,
+            });
+        }
         return success(
             {
                 image: {
                     image: 'ref',
-                    imageId: node.attributes.src,
+                    imageId: src,
                     title: node.attributes.title || node.attributes.alt,
                 },
             },
             expectEmptyContent(node.children),
         );
     } else {
-        return success('', compoundDiagnostic([
+        return success([], compoundDiagnostic([
             {
                 diag: 'img: src not set',
                 severity: 'info',
