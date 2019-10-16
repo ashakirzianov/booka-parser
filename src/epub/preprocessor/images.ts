@@ -12,12 +12,13 @@ export async function images({ book, epub }: PreprocessorArgs) {
             case 'ref':
                 {
                     const buffer = await epub.imageResolver(image.imageId);
-                    if (buffer) {
+                    const base64 = buffer && Buffer.from(buffer).toString('base64');
+                    if (base64) {
                         const imageBuffer: Image = {
                             ...image,
                             image: 'buffer',
                             imageId: image.imageId,
-                            buffer: buffer,
+                            base64,
                         };
                         imageDic[image.imageId] = imageBuffer;
                         return image;
