@@ -8,12 +8,16 @@ import { topLevelNodes } from './node';
 
 export function listNode(node: XmlElement, env: Xml2NodesEnv): Success<BookNode[]> {
     const items = listItems(node, env);
+    const start = node.attributes.start !== undefined
+        ? (parseInt(node.attributes.start, 10) ?? undefined)
+        : undefined;
     const list: BookNode = {
         node: 'list',
         kind: node.name === 'ol' ? 'ordered'
             : node.name === 'dl' ? 'definitions'
                 : 'basic',
         items: items.value,
+        start,
     };
     return success([list], items.diagnostic);
 }

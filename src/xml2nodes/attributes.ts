@@ -98,13 +98,12 @@ function diagnoseAttribute(element: string, attr: string, value: string | undefi
                     return undefined;
             }
             break;
-        // TODO: uncomment
-        // case 'ol': case 'ul':
-        //     switch (attr) {
-        //         case 'start': // TODO: handle ?
-        //             return undefined;
-        //     }
-        //     break;
+        case 'ol': case 'ul':
+            switch (attr) {
+                case 'start':
+                    return undefined;
+            }
+            break;
     }
 
     return {
