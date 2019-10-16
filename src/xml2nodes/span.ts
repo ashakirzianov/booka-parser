@@ -45,9 +45,6 @@ export function singleSpan(node: Xml, env: Xml2NodesEnv): Result<Span> {
         const refId = buildRefId(env.filePath, node.attributes.id);
         span = { span, refId };
     }
-    if (node.type === 'element' && node.attributes.title !== undefined) {
-        span = { span, title: node.attributes.title };
-    }
 
     return success(span, result.diagnostic);
 }

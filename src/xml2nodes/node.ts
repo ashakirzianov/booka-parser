@@ -72,9 +72,6 @@ function singleNode(node: Xml, env: Xml2NodesEnv): Result<BookNode[]> {
             const refId = buildRefId(env.filePath, node.attributes.id);
             bookNodes = assignRefIdToNodes(bookNodes, refId);
         }
-        if (node.type === 'element' && node.attributes.title !== undefined) {
-            bookNodes = assignTitleToNodes(bookNodes, node.attributes.title);
-        }
         if (attrs.flags && attrs.flags.length > 0) {
             bookNodes = assignSemanticsToNodes(bookNodes, attrs.flags);
         }
