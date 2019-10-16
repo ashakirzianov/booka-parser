@@ -1,7 +1,7 @@
 import {
-    Span, compoundSpan, FlagSemanticKey, flagSemantic, semanticSpan,
+    Span, compoundSpan,
     failure, success, Success,
-    Result, compoundDiagnostic, Diagnostic,
+    Result, compoundDiagnostic, Diagnostic, Semantic,
 } from 'booka-common';
 import { Xml, xml2string } from '../xml';
 import { Xml2NodesEnv, unexpectedNode, expectEmptyContent, buildRefId } from './common';
@@ -43,7 +43,7 @@ export function singleSpan(node: Xml, env: Xml2NodesEnv): Result<Span> {
     let span = result.value;
     if (node.type === 'element' && node.attributes.id !== undefined) {
         const refId = buildRefId(env.filePath, node.attributes.id);
-        span = { a: span, refId };
+        span = { span, refId };
     }
 
     return success(span, result.diagnostic);
@@ -123,10 +123,10 @@ function singleSpanImpl(node: Xml, env: Xml2NodesEnv): Result<Span> {
     }
 }
 
-function flagSpan(inside: Span, flag: FlagSemanticKey): Span {
+function flagSpan(inside: Span, flag: Semantic): Span {
     return {
         span: inside,
-        semantics: [flagSemantic(flag)],
+        flags: [flag],
     };
 }
 
@@ -134,7 +134,7 @@ function aSpan(node: XmlElement, env: Xml2NodesEnv): Result<Span> {
     if (node.attributes.href !== undefined) {
         const inside = expectSpanContent(node.children, env);
         return success({
-            ref: inside.value,
+            span: inside.value,
             refToId: node.attributes.href,
         }, inside.diagnostic);
     } else {
@@ -226,9 +226,9 @@ function rubySpan(node: XmlElement, env: Xml2NodesEnv): Success<Span> {
         }
     }
 
-    const resultSpan = semanticSpan(compoundSpan(spans), [{
-        semantic: 'ruby',
+    const resultSpan: Span = {
+        span: compoundSpan(spans),
         ruby: explanation,
-    }]);
+    };
     return success(resultSpan, compoundDiagnostic(diags));
 }

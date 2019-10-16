@@ -118,10 +118,7 @@ function attributesHook(element: string, attr: string, value: string): Attribute
                     return { flag: 'letter' };
                 case 'mynote':
                     return {
-                        semantics: [{
-                            semantic: 'tech-note',
-                            source: 'project-gutenberg',
-                        }],
+                        flag: 'tech-note',
                     };
                 case 'QUOTE':
                 case 'blockquote':
@@ -130,9 +127,7 @@ function attributesHook(element: string, attr: string, value: string): Attribute
                 case 'quotation':
                 case 'quote':
                     return {
-                        semantics: [{
-                            semantic: 'quote',
-                        }],
+                        flag: 'quote',
                     };
                 case 'extracts':
                     return { flag: 'extracts' };
@@ -142,17 +137,9 @@ function attributesHook(element: string, attr: string, value: string): Attribute
                     return { flag: 'illustrations' };
                 case 'pgmonospaced':
                     return { flag: 'formated' };
-                case 'foot': case 'footnote':
+                case 'foots': case 'foot': case 'footnote':
                     return {
-                        semantics: [{
-                            semantic: 'footnote',
-                        }],
-                    };
-                case 'foots':
-                    return {
-                        semantics: [{
-                            semantic: 'footnote-group',
-                        }],
+                        flag: 'footnote',
                     };
                 case 'toc':
                     return { flag: 'table-of-contents' };

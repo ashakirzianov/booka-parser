@@ -1,5 +1,5 @@
 import {
-    Semantic, flagSemantic, Diagnostic, compoundDiagnostic,
+    Semantic, Diagnostic, compoundDiagnostic,
 } from 'booka-common';
 import { Xml2NodesEnv } from './common';
 import { Xml } from '../xml';
@@ -24,10 +24,7 @@ export function processNodeAttributes(node: Xml, env: Xml2NodesEnv): ProcessAttr
             for (const v of values) {
                 const result = env.hooks.attributesHook(node.name, attr, v);
                 if (result.flag !== undefined) {
-                    semantics.push(flagSemantic(result.flag));
-                }
-                if (result.semantics !== undefined) {
-                    semantics.push(...result.semantics);
+                    semantics.push(result.flag);
                 }
                 diags.push(result.diag);
             }

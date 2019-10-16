@@ -1,13 +1,12 @@
 import {
     Diagnostic, Success, success,
-    compoundDiagnostic, Semantic, FlagSemanticKey,
+    compoundDiagnostic, Semantic,
 } from 'booka-common';
 import { Xml, xml2string } from '../xml';
 import { isWhitespaces } from '../utils';
 
 export type AttributesHookResult = {
-    flag?: FlagSemanticKey,
-    semantics?: Semantic[],
+    flag?: Semantic,
     diag?: Diagnostic,
 };
 export type AttributesHook = (element: string, attr: string, value: string) => AttributesHookResult;
