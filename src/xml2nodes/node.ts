@@ -93,23 +93,9 @@ function singleNodeImpl(node: Xml, env: Xml2NodesEnv): Result<BookNode[]> {
         case 'pre': // TODO: assign some semantics ?
             return paragraphNode(node, env);
         case 'h1': case 'h2': case 'h3': case 'h4': case 'h5': case 'h6':
-            {
-                const level = 4 - parseInt(node.name[1], 10);
-                const spans = expectSpanContent(node.children, env);
-                const title: BookNode = {
-                    node: 'title',
-                    span: compoundSpan(spans.value),
-                    level,
-                };
-                return success([title], spans.diagnostic);
-            }
+            return titleNode(node, env);
         case 'hr':
-            {
-                const separator: BookNode = {
-                    node: 'separator',
-                };
-                return success([separator], expectEmptyContent(node.children));
-            }
+            return separatorNode(node, env);
         case 'table':
             return tableNode(node, env);
         case 'ul':
@@ -119,6 +105,24 @@ function singleNodeImpl(node: Xml, env: Xml2NodesEnv): Result<BookNode[]> {
         default:
             return failure();
     }
+}
+
+function separatorNode(node: XmlElement, env: Xml2NodesEnv): Success<BookNode[]> {
+    const separator: BookNode = {
+        node: 'separator',
+    };
+    return success([separator], expectEmptyContent(node.children));
+}
+
+function titleNode(node: XmlElement, env: Xml2NodesEnv): Success<BookNode[]> {
+    const level = 4 - parseInt(node.name[1], 10);
+    const spans = expectSpanContent(node.children, env);
+    const title: BookNode = {
+        node: 'title',
+        span: compoundSpan(spans.value),
+        level,
+    };
+    return success([title], spans.diagnostic);
 }
 
 function paragraphNode(node: XmlElement, env: Xml2NodesEnv): Success<BookNode[]> {
@@ -135,21 +139,28 @@ function containerNode(node: XmlElement, env: Xml2NodesEnv): Success<BookNode[]>
     return topLevelNodes(node.children, env);
 }
 
-// TODO: rethink
 function assignRefIdToNodes([head, ...rest]: BookNode[], refId: string): BookNode[] {
     if (head !== undefined) {
-        const withId = {
-            ...head,
-            refId,
-        };
-        return [withId, ...rest];
+        if (head.refId === undefined) {
+            const withId = {
+                ...head,
+                refId,
+            };
+            return [withId, ...rest];
+        } else {
+            return [anchorNode(refId), head, ...rest];
+        }
     } else {
-        return [{
-            node: 'pph',
-            span: [],
-            refId,
-        }];
+        return [anchorNode(refId)];
     }
+}
+
+function anchorNode(refId: string): BookNode {
+    return {
+        node: 'pph',
+        span: [],
+        refId,
+    };
 }
 
 function assignSemanticsToNodes(nodes: BookNode[], semantics: Semantic[]): BookNode[] {
