@@ -7,7 +7,7 @@ import { Xml2NodesEnv, unexpectedNode, processNodes } from './common';
 import { topLevelNodes } from './node';
 import { isWhitespaces } from '../utils';
 
-export function listNode(node: XmlElement, env: Xml2NodesEnv): Success<BookNode> {
+export function listNode(node: XmlElement, env: Xml2NodesEnv): Success<BookNode[]> {
     // TODO: handle 'start' attribute
     const listData = listItems(node.children, env);
     const items: ListItem[] = listData.value.map(i => ({
@@ -20,7 +20,7 @@ export function listNode(node: XmlElement, env: Xml2NodesEnv): Success<BookNode>
             : 'basic',
         items,
     };
-    return success(list, listData.diagnostic);
+    return success([list], listData.diagnostic);
 }
 
 type ListItemData = Span[];

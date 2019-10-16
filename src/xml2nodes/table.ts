@@ -7,17 +7,13 @@ import { Xml2NodesEnv, unexpectedNode, processNodes } from './common';
 import { topLevelNodes } from './node';
 import { isWhitespaces } from '../utils';
 
-export function tableNode(node: XmlElement, env: Xml2NodesEnv): Success<BookNode> {
+export function tableNode(node: XmlElement, env: Xml2NodesEnv): Success<BookNode[]> {
     const tableData = tableRows(node.children, env);
     const rowsData = tableData.value;
     // If every row is single column we should treat table as a group
     if (rowsData.every(r => r.length === 1)) {
-        const groups = rowsData.map(rowToGroup);
-        const group: BookNode = {
-            node: 'group',
-            nodes: groups,
-        };
-        return success(group, tableData.diagnostic);
+        const content = flatten(rowsData.map(rowToGroup));
+        return success(content, tableData.diagnostic);
     } else {
         const rows: TableRow[] = rowsData.map(
             row => ({
@@ -28,7 +24,7 @@ export function tableNode(node: XmlElement, env: Xml2NodesEnv): Success<BookNode
             node: 'table',
             rows: rows,
         };
-        return success(table, tableData.diagnostic);
+        return success([table], tableData.diagnostic);
     }
 }
 
@@ -95,12 +91,8 @@ function tableCells(nodes: Xml[], env: Xml2NodesEnv): Success<TableCellData[]> {
     });
 }
 
-function rowToGroup(row: TableRowData): BookNode {
-    const group: BookNode = {
-        node: 'group',
-        nodes: flatten(row.map(r => r.nodes)),
-    };
-    return group;
+function rowToGroup(row: TableRowData): BookNode[] {
+    return flatten(row.map(r => r.nodes));
 }
 
 function cellDataToCell(cell: TableCellData): TableCell {

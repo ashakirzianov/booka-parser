@@ -1,8 +1,8 @@
 import {
-    Span, GroupNode, BookNode, appendSemantics,
+    Span, BookNode, appendSemantics,
     makePph, compoundSpan,
     Diagnostic, Result, Success,
-    failure, success, compoundDiagnostic,
+    failure, success, compoundDiagnostic, Semantic,
 } from 'booka-common';
 import {
     Xml, XmlElement,
@@ -27,7 +27,7 @@ export function topLevelNodes(nodes: Xml[], env: Xml2NodesEnv): Success<BookNode
         // Try parse top-level node
         const nodeResult = singleNode(node, env);
         if (nodeResult.success) {
-            results.push(nodeResult.value);
+            results.push(...nodeResult.value);
             diags.push(nodeResult.diagnostic);
             continue;
         }
@@ -59,32 +59,32 @@ export function topLevelNodes(nodes: Xml[], env: Xml2NodesEnv): Success<BookNode
     return success(results, compoundDiagnostic(diags));
 }
 
-function singleNode(node: Xml, env: Xml2NodesEnv): Result<BookNode> {
+function singleNode(node: Xml, env: Xml2NodesEnv): Result<BookNode[]> {
     const result = singleNodeImpl(node, env);
     if (result.success) {
         const attrs = processNodeAttributes(node, env);
         const diag = compoundDiagnostic([result.diagnostic, attrs.diag]);
 
-        let bookNode = result.value;
+        let bookNodes = result.value;
         if (node.type === 'element' && node.attributes.id !== undefined) {
             const refId = buildRefId(env.filePath, node.attributes.id);
-            bookNode = { ...bookNode, refId };
+            bookNodes = assignRefIdToNodes(bookNodes, refId);
         }
         if (attrs.semantics && attrs.semantics.length > 0) {
-            bookNode = appendSemantics(bookNode, attrs.semantics);
+            bookNodes = assignSemanticsToNodes(bookNodes, attrs.semantics);
         }
-        return success(bookNode, diag);
+        return success(bookNodes, diag);
     } else {
         return result;
     }
 }
 
-function singleNodeImpl(node: Xml, env: Xml2NodesEnv): Result<BookNode> {
+function singleNodeImpl(node: Xml, env: Xml2NodesEnv): Result<BookNode[]> {
     switch (node.name) {
         case 'blockquote':
             {
                 const pph = paragraphNode(node, env);
-                const result = appendSemantics(pph.value, [{ semantic: 'quote' }]);
+                const result = assignSemanticsToNodes(pph.value, [{ semantic: 'quote' }]);
                 return success(result, pph.diagnostic);
             }
         case 'p':
@@ -101,14 +101,14 @@ function singleNodeImpl(node: Xml, env: Xml2NodesEnv): Result<BookNode> {
                     span: compoundSpan(spans.value),
                     level,
                 };
-                return success(title, spans.diagnostic);
+                return success([title], spans.diagnostic);
             }
         case 'hr':
             {
                 const separator: BookNode = {
                     node: 'separator',
                 };
-                return success(separator, expectEmptyContent(node.children));
+                return success([separator], expectEmptyContent(node.children));
             }
         case 'table':
             return tableNode(node, env);
@@ -121,21 +121,37 @@ function singleNodeImpl(node: Xml, env: Xml2NodesEnv): Result<BookNode> {
     }
 }
 
-function paragraphNode(node: XmlElement, env: Xml2NodesEnv) {
+function paragraphNode(node: XmlElement, env: Xml2NodesEnv): Success<BookNode[]> {
     const span = spanContent(node.children, env);
     if (span.success) {
         const pph: BookNode = makePph(span.value);
-        return success(pph, span.diagnostic);
+        return success([pph], span.diagnostic);
     } else {
-        return groupNode(node, env);
+        return containerNode(node, env);
     }
 }
 
-function groupNode(node: XmlElement, env: Xml2NodesEnv): Success<GroupNode> {
-    const content = topLevelNodes(node.children, env);
-    const group: BookNode = {
-        node: 'group',
-        nodes: content.value,
-    };
-    return success(group, content.diagnostic);
+function containerNode(node: XmlElement, env: Xml2NodesEnv): Success<BookNode[]> {
+    return topLevelNodes(node.children, env);
+}
+
+// TODO: rethink
+function assignRefIdToNodes([head, ...rest]: BookNode[], refId: string): BookNode[] {
+    if (head !== undefined) {
+        const withId = {
+            ...head,
+            refId,
+        };
+        return [withId, ...rest];
+    } else {
+        return [{
+            node: 'pph',
+            span: [],
+            refId,
+        }];
+    }
+}
+
+function assignSemanticsToNodes(nodes: BookNode[], semantics: Semantic[]): BookNode[] {
+    return nodes.map(n => appendSemantics(n, semantics));
 }
