@@ -97,6 +97,10 @@ const gutenbergHooks: Hooks = {
 
 function attributesHook(element: string, attr: string, value: string): AttributesHookResult {
     switch (attr) {
+        case 'xml:space':
+            return value === 'preserve'
+                ? { flag: 'preserve' }
+                : {};
         case 'class':
             switch (value) {
                 case 'charname':
@@ -136,7 +140,7 @@ function attributesHook(element: string, attr: string, value: string): Attribute
                 case 'illus':
                     return { flag: 'illustrations' };
                 case 'pgmonospaced':
-                    return { flag: 'formated' };
+                    return { flag: 'preserve' };
                 case 'foots': case 'foot': case 'footnote':
                     return {
                         flag: 'footnote',

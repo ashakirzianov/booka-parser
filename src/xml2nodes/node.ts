@@ -87,10 +87,17 @@ function singleNodeImpl(node: Xml, env: Xml2NodesEnv): Result<BookNode[]> {
                 const result = assignSemanticsToNodes(pph.value, ['quote']);
                 return success(result, pph.diagnostic);
             }
+        case 'pre':
+            {
+                const result = paragraphNode(node, env);
+                return success(
+                    assignSemanticsToNodes(result.value, ['preserve']),
+                    result.diagnostic
+                );
+            }
         case 'p':
         case 'div':
         case 'span':
-        case 'pre': // TODO: assign some semantics ?
             return paragraphNode(node, env);
         case 'h1': case 'h2': case 'h3': case 'h4': case 'h5': case 'h6':
             return titleNode(node, env);
