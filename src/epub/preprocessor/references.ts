@@ -78,7 +78,7 @@ function checkNodesReferences(nodes: BookNode[]): Success<BookNode[]> {
                     } else {
                         result = { ...result, refToId: resolved };
                     }
-                } else {
+                } else if (result.refToId) {
                     diags.push({
                         diag: 'missing ref',
                         severity: 'warning',

@@ -57,7 +57,7 @@ async function processEpubFile(filePath: string, verbosity: number = 0) {
     if (result.diagnostic) {
         if (verbosity > -1) {
             logRed('Diagnostics:');
-            console.log(inspect(filterSeverity(result.diagnostic, 'error'), false, 8, true));
+            console.log(inspect(result.diagnostic), false, 8, true);
         } else if (verbosity > -2) {
             console.log(filePath);
         }
