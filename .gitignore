@@ -71,10 +71,7 @@ server.key
 server.crt
 
 # epub examples
-epub/*
-pg/*
-pg-full-flat/*
-sample/*
+examples/**/*
 
 # OS files
 .DS_Store
