@@ -65,7 +65,7 @@ function tableBody(bodyNode: XmlElement, env: Xml2NodesEnv): Success<TableRowDat
                     } as const)));
                 }
                 break;
-            case 'caption': // TODO: do not ignore ?
+            case 'caption':
             case 'kbd':
             case 'col':
             case 'colgroup':

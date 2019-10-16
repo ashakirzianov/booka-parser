@@ -59,7 +59,7 @@ function processAttribute(element: string, attr: string, value: string | undefin
     switch (element) {
         case 'div':
             switch (attr) {
-                case 'h3': // TODO: what is this ?
+                case 'h3':
                 case 'cellpadding': case 'cellspacing':
                     return {};
             }
