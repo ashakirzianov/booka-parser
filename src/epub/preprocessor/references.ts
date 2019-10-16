@@ -16,23 +16,40 @@ export async function references({ book }: PreprocessorArgs) {
 
 function checkNodesReferences(nodes: BookNode[]): Success<BookNode[]> {
     const diags: Diagnostic[] = [];
-    const idsAndRefs = visitNodes(nodes, {
+    const ids: string[] = [];
+    const refs: string[] = [];
+    visitNodes(nodes, {
         span: s => {
             if (isRefSpan(s)) {
-                return { ref: s.refToId, id: undefined };
+                refs.push(s.refToId);
             } else if (isAnchorSpan(s)) {
-                return { id: s.refId, ref: undefined };
-            } else {
-                return {};
+                if (ids.some(id => id === s.refId)) {
+                    diags.push({
+                        diag: 'duplicate id',
+                        id: s.refId,
+                        span: s,
+                    });
+                } else {
+                    ids.push(s.refId);
+                }
             }
+            return undefined;
         },
         node: n => {
-            return { id: n.refId, ref: undefined };
+            if (n.refId !== undefined) {
+                if (ids.some(id => id === n.refId)) {
+                    diags.push({
+                        diag: 'duplicate id',
+                        id: n.refId,
+                        node: n,
+                    });
+                } else {
+                    ids.push(n.refId);
+                }
+            }
+            return undefined;
         },
     });
-    const ids = filterUndefined(idsAndRefs.map(x => x.id));
-    const refs = filterUndefined(idsAndRefs.map(x => x.ref));
-    diags.push(reportDuplicateIds(ids));
     type RefMap = { [k: string]: string | undefined };
     const refMap = refs.reduce((map, ref, idx) => {
         map[ref] = `ref-${idx}`;
@@ -86,20 +103,4 @@ function checkNodesReferences(nodes: BookNode[]): Success<BookNode[]> {
     });
 
     return success(processed, compoundDiagnostic(diags));
-}
-
-function reportDuplicateIds(ids: string[]): Diagnostic {
-    const diags: Diagnostic[] = [];
-    const already: string[] = [];
-    for (const id of ids) {
-        if (already.some(i => i === id)) {
-            diags.push({
-                diag: 'duplicate id',
-                id,
-            });
-        } else {
-            already.push(id);
-        }
-    }
-    return compoundDiagnostic(diags);
 }
