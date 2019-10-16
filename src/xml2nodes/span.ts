@@ -11,7 +11,7 @@ export function expectSpanContent(nodes: Xml[], env: Xml2NodesEnv): Success<Span
     const results = nodes.map(n => {
         const s = singleSpan(n, env);
         return !s.success
-            ? success('', unexpectedNode(n, 'span'))
+            ? success([], unexpectedNode(n, 'span'))
             : s;
     });
     return success(
@@ -21,10 +21,18 @@ export function expectSpanContent(nodes: Xml[], env: Xml2NodesEnv): Success<Span
 }
 
 export function spanContent(nodes: Xml[], env: Xml2NodesEnv): Result<Span[]> {
-    const spans = expectSpanContent(nodes, env);
-    return spans.diagnostic === undefined
-        ? spans
-        : failure();
+    const diags: Diagnostic[] = [];
+    const spans: Span[] = [];
+    for (const node of nodes) {
+        const result = singleSpan(node, env);
+        if (!result.success) {
+            return result;
+        }
+        spans.push(result.value);
+        diags.push(result.diagnostic);
+    }
+
+    return success(spans, compoundDiagnostic(diags));
 }
 
 export function singleSpan(node: Xml, env: Xml2NodesEnv): Result<Span> {
