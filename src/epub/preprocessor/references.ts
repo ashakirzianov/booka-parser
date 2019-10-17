@@ -1,6 +1,6 @@
 import {
     BookNode, processNodes, visitNodes,
-    Success, success, Diagnostic, compoundDiagnostic, isComplexSpan,
+    Success, success, Diagnostic, compoundDiagnostic, isComplexSpan, iterateNodeRefIds,
 } from 'booka-common';
 import { PreprocessorArgs } from './preprocessor';
 
@@ -38,18 +38,19 @@ function checkNodesReferences(nodes: BookNode[]): Success<BookNode[]> {
             }
             return undefined;
         },
-        node: n => {
-            if (n.refId !== undefined) {
-                if (ids.some(id => id === n.refId)) {
+        node: nn => {
+            for (const nodeRefId of iterateNodeRefIds(nn)) {
+                if (ids.some(id => id === nodeRefId)) {
                     diags.push({
                         diag: 'duplicate id',
-                        id: n.refId,
-                        node: n,
+                        id: nodeRefId,
+                        node: nn,
                     });
                 } else {
-                    ids.push(n.refId);
+                    ids.push(nodeRefId);
                 }
             }
+
             return undefined;
         },
     });

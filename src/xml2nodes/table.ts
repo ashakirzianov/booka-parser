@@ -3,7 +3,7 @@ import {
     success, Success, Diagnostic, compoundDiagnostic, compoundSpan,
 } from 'booka-common';
 import { XmlElement } from '../xml';
-import { Xml2NodesEnv, unexpectedNode, isTrailingWhitespace } from './common';
+import { Xml2NodesEnv, unexpectedNode, isTrailingWhitespace, buildRefId } from './common';
 import { topLevelNodes } from './node';
 
 export function tableNode(node: XmlElement, env: Xml2NodesEnv): Success<BookNode[]> {
@@ -29,6 +29,7 @@ export function tableNode(node: XmlElement, env: Xml2NodesEnv): Success<BookNode
 }
 
 type TableRowData = {
+    refId: string | undefined,
     kind: TableRow['kind'],
     cells: TableCellData[],
 };
@@ -45,6 +46,9 @@ function tableBody(bodyNode: XmlElement, env: Xml2NodesEnv): Success<TableRowDat
                     const cells = tableCells(node, env);
                     diags.push(cells.diagnostic);
                     rows.push({
+                        refId: node.attributes.id
+                            ? buildRefId(env.filePath, node.attributes.id)
+                            : undefined,
                         kind: 'body',
                         cells: cells.value,
                     });
@@ -80,6 +84,7 @@ function tableBody(bodyNode: XmlElement, env: Xml2NodesEnv): Success<TableRowDat
 
 type TableCellData = {
     colspan?: number,
+    refId: string | undefined,
     nodes: BookNode[],
 };
 function tableCells(rowNode: XmlElement, env: Xml2NodesEnv): Success<TableCellData[]> {
@@ -100,6 +105,9 @@ function tableCells(rowNode: XmlElement, env: Xml2NodesEnv): Success<TableCellDa
                     diags.push(content.diagnostic);
                     cells.push({
                         colspan,
+                        refId: node.attributes.id
+                            ? buildRefId(env.filePath, node.attributes.id)
+                            : undefined,
                         nodes: content.value,
                     });
                 }

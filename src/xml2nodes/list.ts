@@ -5,7 +5,7 @@ import {
 } from 'booka-common';
 import { XmlElement } from '../xml';
 import {
-    Xml2NodesEnv, unexpectedNode, isTrailingWhitespace,
+    Xml2NodesEnv, unexpectedNode, isTrailingWhitespace, buildRefId,
 } from './common';
 import { topLevelNodes } from './node';
 
@@ -44,6 +44,9 @@ function listItems(list: XmlElement, env: Xml2NodesEnv): Success<ListItem[]> {
                         : node.name === 'dt' ? flagSpan(span, 'term')
                             : span;
                     items.push({
+                        refId: node.attributes.id
+                            ? buildRefId(env.filePath, node.attributes.id)
+                            : undefined,
                         span,
                     });
                 }
