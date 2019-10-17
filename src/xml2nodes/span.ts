@@ -97,7 +97,7 @@ function singleSpanImpl(node: Xml, env: Xml2NodesEnv): Result<Span> {
         case 'ins': case 'del':
             return parseFlagSpan(node, 'correction', env);
         case 'ruby':
-            return rubySpan(node, env);
+            return parseRubySpan(node, env);
         case 'br':
             return success(
                 '\n',
@@ -158,7 +158,7 @@ function imgSpan(node: XmlElement, env: Xml2NodesEnv): Success<Span> {
     }
 }
 
-function rubySpan(node: XmlElement, env: Xml2NodesEnv): Success<Span> {
+function parseRubySpan(node: XmlElement, env: Xml2NodesEnv): Success<Span> {
     const spans: Span[] = [];
     const diags: Diagnostic[] = [];
     let explanation: string = '';
@@ -173,15 +173,9 @@ function rubySpan(node: XmlElement, env: Xml2NodesEnv): Success<Span> {
                 break;
             case 'rt':
                 {
-                    const [head, ...rest] = sub.children;
-                    if (head !== undefined && head.type === 'text' && rest.length === 0) {
-                        explanation += head.text;
-                    } else {
-                        diags.push({
-                            diag: 'unexpected rt content',
-                            xml: sub.children.map(xml2string),
-                        });
-                    }
+                    const inside = expectSpanContent(sub.children, env);
+                    diags.push(inside.diagnostic);
+                    explanation += extractSpanText(inside.value);
                 }
                 break;
             case 'rp':
