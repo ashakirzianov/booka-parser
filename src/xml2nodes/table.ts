@@ -1,6 +1,6 @@
 import {
-    BookNode, TableRow, flatten, nodeSpans, TableCell,
-    success, Success, Diagnostic, compoundDiagnostic, compoundSpan,
+    BookNode, TableRow, flatten, TableCell,
+    success, Success, Diagnostic, compoundDiagnostic, compoundSpan, convertNodeToSpan,
 } from 'booka-common';
 import { XmlElement } from '../xml';
 import { Xml2NodesEnv, unexpectedNode, isTrailingWhitespace, buildRefId } from './common';
@@ -131,7 +131,7 @@ function rowToGroup(row: TableRowData): BookNode[] {
 }
 
 function cellDataToCell(cell: TableCellData): TableCell {
-    const spans = flatten(cell.nodes.map(nodeSpans));
+    const spans = cell.nodes.map(convertNodeToSpan);
     return cell.colspan !== undefined
         ? { width: cell.colspan, span: compoundSpan(spans) }
         : { span: compoundSpan(spans) };
