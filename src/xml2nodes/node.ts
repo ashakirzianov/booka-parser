@@ -55,6 +55,10 @@ export function topLevelNodes(nodes: Xml[], env: Xml2NodesEnv): Success<BookNode
         } else {
             // Report unexpected
             diags.push(unexpectedNode(node));
+            results.push({
+                node: 'ignore',
+                name: node.name,
+            });
         }
     }
 
