@@ -115,7 +115,7 @@ function attributesHook(element: string, attr: string, value: string): Attribute
                 case 'poem': case 'poem1':
                 case 'poem2': case 'poem3':
                 case 'verse': case 'poetry':
-                case 'stanza':
+                case 'stanza': case 'rhyme':
                     return { flag: 'poem' };
                 case 'letter_greeting':
                 case 'letter': case 'letter1': case 'letter2':
