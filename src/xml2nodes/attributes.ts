@@ -75,9 +75,10 @@ function processAttribute(element: string, attr: string, value: string | undefin
                     return {};
             }
             break;
-        case 'td':
+        case 'td': case 'tr':
             switch (attr) {
                 case 'colspan': case 'align': case 'valign':
+                case 'height': case 'width':
                     return {};
             }
             break;

@@ -1,11 +1,12 @@
 import {
     Span, compoundSpan,
     failure, success, Success,
-    Result, compoundDiagnostic, Diagnostic, NodeFlag, AttributeName, attrSpan, flagSpan,
+    Result, compoundDiagnostic, Diagnostic, NodeFlag, AttributeName, attrSpan, flagSpan, nodeSpans, flatten, extractSpanText,
 } from 'booka-common';
 import { Xml, xml2string } from '../xml';
 import { Xml2NodesEnv, unexpectedNode, expectEmptyContent, buildRefId, imgData } from './common';
 import { XmlElement } from '../xml/xmlTree';
+import { tableNode } from './table';
 
 export function expectSpanContent(nodes: Xml[], env: Xml2NodesEnv): Success<Span[]> {
     const results = nodes.map(n => {

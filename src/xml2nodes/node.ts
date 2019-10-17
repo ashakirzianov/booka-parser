@@ -106,6 +106,7 @@ function singleNodeImpl(node: Xml, env: Xml2NodesEnv): Result<BookNode[]> {
         case 'p':
         case 'div':
         case 'span':
+        case 'tr': case 'td': // Note: some books has issues ¯\_(ツ)_/¯
             return paragraphNode(node, env);
         case 'h1': case 'h2': case 'h3': case 'h4': case 'h5': case 'h6':
             return titleNode(node, env);
