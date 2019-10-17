@@ -130,7 +130,6 @@ function singleNodeImpl(node: Xml, env: Xml2NodesEnv): Result<BookNode[]> {
         case 'meta':
         case 'basefont':
         case 'kbd':
-        case 'tt': // TODO: do not ignore ?
         case 'svg':
         case 'br':
             return success([{

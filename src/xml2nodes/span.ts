@@ -58,7 +58,7 @@ function singleSpanImpl(node: Xml, env: Xml2NodesEnv): Result<Span> {
     }
 
     switch (node.name) {
-        case 'span':
+        case 'span': case 'tt': case 'font':
             {
                 const inside = spanContent(node.children, env);
                 return inside.success
@@ -99,8 +99,6 @@ function singleSpanImpl(node: Xml, env: Xml2NodesEnv): Result<Span> {
             );
         case 'img':
             return imgSpan(node, env);
-        case 'font':
-        case 'tt':
         case 'abbr':
             return parseFlagSpan(node, 'abbreviation', env);
         case 'a':
