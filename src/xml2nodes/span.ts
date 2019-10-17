@@ -1,7 +1,6 @@
 import {
-    Span, compoundSpan,
-    failure, success, Success,
-    Result, compoundDiagnostic, Diagnostic, NodeFlag, AttributeName, attrSpan, flagSpan, extractSpanText,
+    Span, failure, success, Success,
+    Result, compoundDiagnostic, Diagnostic, NodeFlag, AttributeName, extractSpanText,
 } from 'booka-common';
 import { Xml, xml2string } from '../xml';
 import { Xml2NodesEnv, unexpectedNode, expectEmptyContent, buildRefId, imgData } from './common';
@@ -43,7 +42,9 @@ export function singleSpan(node: Xml, env: Xml2NodesEnv): Result<Span> {
     let span = result.value;
     if (node.type === 'element' && node.attributes.id !== undefined) {
         const refId = buildRefId(env.filePath, node.attributes.id);
-        span = { span, refId };
+        span = span.spanKind === undefined
+            ? { spanKind: 'span', span, refId }
+            : { ...span, refId };
     }
 
     return success(span, result.diagnostic);
@@ -61,7 +62,7 @@ function singleSpanImpl(node: Xml, env: Xml2NodesEnv): Result<Span> {
             {
                 const inside = spanContent(node.children, env);
                 return inside.success
-                    ? success(compoundSpan(inside.value), inside.diagnostic)
+                    ? success(inside.value, inside.diagnostic)
                     : inside;
             }
         case 'i': case 'em':
@@ -77,14 +78,8 @@ function singleSpanImpl(node: Xml, env: Xml2NodesEnv): Result<Span> {
         case 'sub':
             return parseAttributeSpan(node, 'sub', env);
         case 'q': case 'quote':
-            return parseAttributeSpan(node, 'quote', env);
         case 'blockquote': case 'cite':
-            {
-                const inside = spanContent(node.children, env);
-                return inside.success
-                    ? success(attrSpan(compoundSpan(inside.value), 'quote'), inside.diagnostic)
-                    : inside;
-            }
+            return parseAttributeSpan(node, 'quote', env);
         case 'code': case 'samp': case 'var':
             return parseFlagSpan(node, 'code', env);
         case 'dfn':
@@ -119,17 +114,26 @@ function singleSpanImpl(node: Xml, env: Xml2NodesEnv): Result<Span> {
 
 function parseAttributeSpan(node: XmlElement, attr: AttributeName, env: Xml2NodesEnv): Success<Span> {
     const inside = expectSpanContent(node.children, env);
+    const span: Span = {
+        spanKind: attr,
+        span: inside.value,
+    };
 
     return success(
-        attrSpan(compoundSpan(inside.value), attr),
+        span,
         inside.diagnostic,
     );
 }
 
 function parseFlagSpan(node: XmlElement, flag: NodeFlag, env: Xml2NodesEnv): Success<Span> {
     const inside = expectSpanContent(node.children, env);
+    const span: Span = {
+        spanKind: 'span',
+        span: inside.value,
+        flags: [flag],
+    };
     return success(
-        flagSpan(compoundSpan(inside.value), flag),
+        span,
         inside.diagnostic,
     );
 }
@@ -137,10 +141,12 @@ function parseFlagSpan(node: XmlElement, flag: NodeFlag, env: Xml2NodesEnv): Suc
 function aSpan(node: XmlElement, env: Xml2NodesEnv): Result<Span> {
     if (node.attributes.href !== undefined) {
         const inside = expectSpanContent(node.children, env);
-        return success({
-            span: inside.value,
+        const span: Span = {
+            spanKind: 'ref',
             refToId: node.attributes.href,
-        }, inside.diagnostic);
+            span: inside.value,
+        };
+        return success(span, inside.diagnostic);
     } else {
         const inside = spanContent(node.children, env);
         return inside;
@@ -151,7 +157,7 @@ function imgSpan(node: XmlElement, env: Xml2NodesEnv): Success<Span> {
     const image = imgData(node, env);
     if (image.value !== undefined) {
         return success(
-            { image: image.value },
+            { spanKind: 'image-span', image: image.value },
             image.diagnostic,
         );
     } else {
@@ -199,8 +205,9 @@ function parseRubySpan(node: XmlElement, env: Xml2NodesEnv): Success<Span> {
     }
 
     const resultSpan: Span = {
-        span: compoundSpan(spans),
-        ruby: explanation,
+        spanKind: 'ruby',
+        explanation,
+        span: spans,
     };
     return success(resultSpan, compoundDiagnostic(diags));
 }

@@ -1,6 +1,6 @@
 import {
     BookNode, processNodes, visitNodes,
-    Success, success, Diagnostic, compoundDiagnostic, isComplexSpan, iterateNodeRefIds,
+    Success, success, Diagnostic, compoundDiagnostic, iterateNodeRefIds, Span,
 } from 'booka-common';
 import { PreprocessorArgs } from './preprocessor';
 
@@ -19,12 +19,6 @@ function checkNodesReferences(nodes: BookNode[]): Success<BookNode[]> {
     const refs: string[] = [];
     visitNodes(nodes, {
         span: s => {
-            if (!isComplexSpan(s)) {
-                return undefined;
-            }
-            if (s.refToId) {
-                refs.push(s.refToId);
-            }
             if (s.refId) {
                 if (ids.some(id => id === s.refId)) {
                     diags.push({
@@ -36,6 +30,10 @@ function checkNodesReferences(nodes: BookNode[]): Success<BookNode[]> {
                     ids.push(s.refId);
                 }
             }
+            if (s.spanKind === 'ref') {
+                refs.push(s.refToId);
+            }
+
             return undefined;
         },
         node: nn => {
@@ -61,15 +59,19 @@ function checkNodesReferences(nodes: BookNode[]): Success<BookNode[]> {
     }, {} as RefMap);
     const processed = processNodes(nodes, {
         span: span => {
-            if (isComplexSpan(span)) {
-                let result = { ...span };
-                if (result.refId) {
-                    const resolvedId = refMap[result.refId];
-                    result = resolvedId !== undefined
-                        ? { ...result, refId: resolvedId }
-                        : { ...result, refId: undefined };
-                }
-                if (result.refToId && ids.some(id => id === result.refToId)) {
+            if (span.spanKind === undefined) {
+                return span;
+            }
+            let result: Span = { ...span };
+            if (result.refId) {
+                const resolvedId = refMap[result.refId];
+                result = resolvedId !== undefined
+                    ? { ...result, refId: resolvedId }
+                    : { ...result, refId: undefined };
+            }
+            if (result.spanKind === 'ref') {
+                const refToId = result.refToId;
+                if (ids.some(id => id === refToId)) {
                     const resolved = refMap[result.refToId];
                     if (resolved === undefined) {
                         diags.push({
@@ -79,21 +81,16 @@ function checkNodesReferences(nodes: BookNode[]): Success<BookNode[]> {
                     } else {
                         result = { ...result, refToId: resolved };
                     }
-                } else if (result.refToId) {
+                } else if (refToId) {
                     diags.push({
                         diag: 'missing ref',
                         severity: 'warning',
                         refToId: result.refToId,
                     });
-                    result = {
-                        ...result,
-                        refToId: undefined,
-                    };
+                    result = result.span;
                 }
-                return result;
-            } else {
-                return span;
             }
+            return result;
         },
         node: node => {
             if (node.refId !== undefined) {

@@ -1,8 +1,9 @@
 import {
-    BookNode, flatten, ListItem, flagSpan,
+    BookNode, ListItem,
     success, Success, Diagnostic, compoundDiagnostic,
     compoundSpan,
     convertNodeToSpan,
+    Span,
 } from 'booka-common';
 import { XmlElement } from '../xml';
 import {
@@ -40,10 +41,9 @@ function listItems(list: XmlElement, env: Xml2NodesEnv): Success<ListItem[]> {
                     const content = topLevelNodes(node.children, env);
                     diags.push(content.diagnostic);
                     const spans = content.value.map(convertNodeToSpan);
-                    let span = compoundSpan(spans);
-                    span = node.name === 'dd' ? flagSpan(span, 'definition')
-                        : node.name === 'dt' ? flagSpan(span, 'term')
-                            : span;
+                    const span: Span = node.name === 'dd' ? { spanKind: 'span', span: spans, flags: ['definition'] }
+                        : node.name === 'dt' ? { spanKind: 'span', span: spans, flags: ['term'] }
+                            : spans;
                     items.push({
                         refId: node.attributes.id
                             ? buildRefId(env.filePath, node.attributes.id)
