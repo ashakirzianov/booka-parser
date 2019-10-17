@@ -86,6 +86,7 @@ function processAttribute(element: string, attr: string, value: string | undefin
                 case 'alt': case 'src':
                 case 'tag':
                 case 'height': case 'width':
+                case 'longdesc': case 'usemap':
                     return {};
             }
             break;

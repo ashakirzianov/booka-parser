@@ -4,6 +4,7 @@ import {
 } from 'booka-common';
 import { Xml, xml2string, XmlElement } from '../xml';
 import { isWhitespaces } from '../utils';
+import { extname } from 'path';
 
 export type AttributesHookResult = {
     flag?: NodeFlag,
@@ -42,35 +43,45 @@ export function unexpectedNode(node: Xml, context?: any): Diagnostic {
 export function imgData(node: XmlElement, env: Xml2NodesEnv): Success<Image | undefined> {
     const src = node.attributes.src;
     if (src !== undefined) {
-        if (!src.endsWith('.png') && !src.endsWith('.jpg') && !src.endsWith('.jpeg') || !src.endsWith('.gif')) {
-            return success(undefined, {
-                diag: 'unsupported image format',
-                severity: 'info',
-                src,
-            });
-        } else if (src.match(/^www\.[^\.]+\.com/)) {
+        if (src.match(/^www\.[^\.]+\.com/)) {
             return success(undefined, {
                 diag: 'external src',
                 severity: 'info',
                 src,
             });
         }
-        const title = node.attributes.title || node.attributes.alt;
-        const height = node.attributes.height
-            ? parseInt(node.attributes.height, 10) ?? undefined
-            : undefined;
-        const width = node.attributes.width
-            ? parseInt(node.attributes.width, 10) ?? undefined
-            : undefined;
-        return success(
-            {
-                image: 'ref',
-                imageId: src,
-                title,
-                height, width,
-            },
-            expectEmptyContent(node.children),
-        );
+        const ext = extname(src).toLowerCase();
+        switch (ext) {
+            case '.png':
+            case '.jpg':
+            case '.jpeg':
+            case '.gif':
+            case '.bmp':
+                {
+                    const title = node.attributes.title || node.attributes.alt;
+                    const height = node.attributes.height
+                        ? parseInt(node.attributes.height, 10) ?? undefined
+                        : undefined;
+                    const width = node.attributes.width
+                        ? parseInt(node.attributes.width, 10) ?? undefined
+                        : undefined;
+                    return success(
+                        {
+                            image: 'ref',
+                            imageId: src,
+                            title,
+                            height, width,
+                        },
+                        expectEmptyContent(node.children),
+                    );
+                }
+            default:
+                return success(undefined, {
+                    diag: 'unsupported image format',
+                    severity: 'info',
+                    src,
+                });
+        }
     } else {
         return success(undefined, compoundDiagnostic([
             {
