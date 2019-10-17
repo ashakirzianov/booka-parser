@@ -56,7 +56,6 @@ export function imgData(node: XmlElement, env: Xml2NodesEnv): Success<Image | un
             case '.jpg':
             case '.jpeg':
             case '.gif':
-            case '.bmp':
                 {
                     const title = node.attributes.title || node.attributes.alt;
                     const height = node.attributes.height
