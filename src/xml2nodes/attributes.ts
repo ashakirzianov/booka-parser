@@ -84,7 +84,8 @@ function processAttribute(element: string, attr: string, value: string | undefin
         case 'image': case 'img':
             switch (attr) {
                 case 'alt': case 'src':
-                case 'tag': case 'width':
+                case 'tag':
+                case 'height': case 'width':
                     return {};
             }
             break;
@@ -106,6 +107,15 @@ function processAttribute(element: string, attr: string, value: string | undefin
                     return {};
             }
             break;
+        case 'input':
+        case 'map':
+        case 'object':
+        case 'meta':
+        case 'basefont':
+        case 'kbd':
+        case 'svg':
+        case 'br':
+            return {};
     }
 
     return {

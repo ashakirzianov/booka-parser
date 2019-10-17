@@ -42,7 +42,7 @@ export function unexpectedNode(node: Xml, context?: any): Diagnostic {
 export function imgData(node: XmlElement, env: Xml2NodesEnv): Success<Image | undefined> {
     const src = node.attributes.src;
     if (src !== undefined) {
-        if (!src.endsWith('.png') && !src.endsWith('.jpg') && !src.endsWith('jpeg')) {
+        if (!src.endsWith('.png') && !src.endsWith('.jpg') && !src.endsWith('.jpeg') || !src.endsWith('.gif')) {
             return success(undefined, {
                 diag: 'unsupported image format',
                 severity: 'info',
@@ -55,11 +55,19 @@ export function imgData(node: XmlElement, env: Xml2NodesEnv): Success<Image | un
                 src,
             });
         }
+        const title = node.attributes.title || node.attributes.alt;
+        const height = node.attributes.height
+            ? parseInt(node.attributes.height, 10) ?? undefined
+            : undefined;
+        const width = node.attributes.width
+            ? parseInt(node.attributes.width, 10) ?? undefined
+            : undefined;
         return success(
             {
                 image: 'ref',
                 imageId: src,
-                title: node.attributes.title || node.attributes.alt,
+                title,
+                height, width,
             },
             expectEmptyContent(node.children),
         );
