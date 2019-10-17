@@ -78,8 +78,21 @@ function singleSpanImpl(node: Xml, env: Xml2NodesEnv): Result<Span> {
         case 'sub':
             return parseAttributeSpan(node, 'sub', env);
         case 'q': case 'quote':
-        case 'blockquote': case 'cite':
             return parseAttributeSpan(node, 'quote', env);
+        case 'blockquote': case 'cite': // Note: for some reason pg use it as a container sometimes
+            {
+                const content = spanContent(node.children, env);
+                if (content.success) {
+                    const span: Span = {
+                        node: 'span',
+                        flags: ['quote'],
+                        span: content.value,
+                    };
+                    return success(span, content.diagnostic);
+                } else {
+                    return content;
+                }
+            }
         case 'code': case 'samp': case 'var':
             return parseFlagSpan(node, 'code', env);
         case 'dfn':
