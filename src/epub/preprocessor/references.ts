@@ -1,6 +1,6 @@
 import {
     BookNode, processNodes, visitNodes,
-    Success, success, Diagnostic, compoundDiagnostic, iterateNodeRefIds, Span,
+    Success, success, Diagnostic, compoundDiagnostic, iterateBookNodeRefIds, Span,
 } from 'booka-common';
 import { PreprocessorArgs } from './preprocessor';
 
@@ -30,14 +30,14 @@ function checkNodesReferences(nodes: BookNode[]): Success<BookNode[]> {
                     ids.push(s.refId);
                 }
             }
-            if (s.spanKind === 'ref') {
+            if (s.node === 'ref') {
                 refs.push(s.refToId);
             }
 
             return undefined;
         },
         node: nn => {
-            for (const nodeRefId of iterateNodeRefIds(nn)) {
+            for (const nodeRefId of iterateBookNodeRefIds(nn)) {
                 if (ids.some(id => id === nodeRefId)) {
                     diags.push({
                         diag: 'duplicate id',
@@ -59,7 +59,7 @@ function checkNodesReferences(nodes: BookNode[]): Success<BookNode[]> {
     }, {} as RefMap);
     const processed = processNodes(nodes, {
         span: span => {
-            if (span.spanKind === undefined) {
+            if (span.node === undefined) {
                 return span;
             }
             let result: Span = { ...span };
@@ -69,7 +69,7 @@ function checkNodesReferences(nodes: BookNode[]): Success<BookNode[]> {
                     ? { ...result, refId: resolvedId }
                     : { ...result, refId: undefined };
             }
-            if (result.spanKind === 'ref') {
+            if (result.node === 'ref') {
                 const refToId = result.refToId;
                 if (ids.some(id => id === refToId)) {
                     const resolved = refMap[result.refToId];

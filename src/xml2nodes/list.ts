@@ -1,7 +1,6 @@
 import {
     BookNode, ListItem,
     success, Success, Diagnostic, compoundDiagnostic,
-    compoundSpan,
     convertNodeToSpan,
     Span,
 } from 'booka-common';
@@ -41,8 +40,8 @@ function listItems(list: XmlElement, env: Xml2NodesEnv): Success<ListItem[]> {
                     const content = topLevelNodes(node.children, env);
                     diags.push(content.diagnostic);
                     const spans = content.value.map(convertNodeToSpan);
-                    const span: Span = node.name === 'dd' ? { spanKind: 'span', span: spans, flags: ['definition'] }
-                        : node.name === 'dt' ? { spanKind: 'span', span: spans, flags: ['term'] }
+                    const span: Span = node.name === 'dd' ? { node: 'span', span: spans, flags: ['definition'] }
+                        : node.name === 'dt' ? { node: 'span', span: spans, flags: ['term'] }
                             : spans;
                     items.push({
                         refId: node.attributes.id

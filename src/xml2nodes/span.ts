@@ -42,8 +42,8 @@ export function singleSpan(node: Xml, env: Xml2NodesEnv): Result<Span> {
     let span = result.value;
     if (node.type === 'element' && node.attributes.id !== undefined) {
         const refId = buildRefId(env.filePath, node.attributes.id);
-        span = span.spanKind === undefined
-            ? { spanKind: 'span', span, refId }
+        span = span.node === undefined
+            ? { node: 'span', span, refId }
             : { ...span, refId };
     }
 
@@ -115,7 +115,7 @@ function singleSpanImpl(node: Xml, env: Xml2NodesEnv): Result<Span> {
 function parseAttributeSpan(node: XmlElement, attr: AttributeName, env: Xml2NodesEnv): Success<Span> {
     const inside = expectSpanContent(node.children, env);
     const span: Span = {
-        spanKind: attr,
+        node: attr,
         span: inside.value,
     };
 
@@ -128,7 +128,7 @@ function parseAttributeSpan(node: XmlElement, attr: AttributeName, env: Xml2Node
 function parseFlagSpan(node: XmlElement, flag: NodeFlag, env: Xml2NodesEnv): Success<Span> {
     const inside = expectSpanContent(node.children, env);
     const span: Span = {
-        spanKind: 'span',
+        node: 'span',
         span: inside.value,
         flags: [flag],
     };
@@ -142,7 +142,7 @@ function aSpan(node: XmlElement, env: Xml2NodesEnv): Result<Span> {
     if (node.attributes.href !== undefined) {
         const inside = expectSpanContent(node.children, env);
         const span: Span = {
-            spanKind: 'ref',
+            node: 'ref',
             refToId: node.attributes.href,
             span: inside.value,
         };
@@ -157,7 +157,7 @@ function imgSpan(node: XmlElement, env: Xml2NodesEnv): Success<Span> {
     const image = imgData(node, env);
     if (image.value !== undefined) {
         return success(
-            { spanKind: 'image-span', image: image.value },
+            { node: 'image-span', image: image.value },
             image.diagnostic,
         );
     } else {
@@ -205,7 +205,7 @@ function parseRubySpan(node: XmlElement, env: Xml2NodesEnv): Success<Span> {
     }
 
     const resultSpan: Span = {
-        spanKind: 'ruby',
+        node: 'ruby',
         explanation,
         span: spans,
     };
