@@ -68,18 +68,8 @@ export function topLevelNodes(nodes: Xml[], env: Xml2NodesEnv): Success<BookNode
 function singleNode(node: Xml, env: Xml2NodesEnv): Result<BookNode[]> {
     const result = singleNodeImpl(node, env);
     if (result.success) {
-        const attrs = processNodeAttributes(node, env);
-        const diag = compoundDiagnostic([result.diagnostic, attrs.diag]);
-
-        let bookNodes = result.value;
-        if (node.type === 'element' && node.attributes.id !== undefined) {
-            const refId = buildRefId(env.filePath, node.attributes.id);
-            bookNodes = assignRefIdToNodes(bookNodes, refId);
-        }
-        if (attrs.flags && attrs.flags.length > 0) {
-            bookNodes = assignSemanticsToNodes(bookNodes, attrs.flags);
-        }
-        return success(bookNodes, diag);
+        const assignData = assignNodeData(node, result.value, env);
+        return success(assignData.value, compoundDiagnostic([result.diagnostic, assignData.diagnostic]));
     } else {
         return result;
     }
@@ -183,6 +173,19 @@ function paragraphNode(node: XmlElement, env: Xml2NodesEnv): Success<BookNode[]>
 
 function containerNode(node: XmlElement, env: Xml2NodesEnv): Success<BookNode[]> {
     return topLevelNodes(node.children, env);
+}
+
+function assignNodeData(node: Xml, bookNodes: BookNode[], env: Xml2NodesEnv): Success<BookNode[]> {
+    const attrs = processNodeAttributes(node, env);
+    const diag = attrs.diag;
+    if (node.type === 'element' && node.attributes.id !== undefined) {
+        const refId = buildRefId(env.filePath, node.attributes.id);
+        bookNodes = assignRefIdToNodes(bookNodes, refId);
+    }
+    if (attrs.flags && attrs.flags.length > 0) {
+        bookNodes = assignSemanticsToNodes(bookNodes, attrs.flags);
+    }
+    return success(bookNodes, diag);
 }
 
 function assignRefIdToNodes([head, ...rest]: BookNode[], refId: string): BookNode[] {
