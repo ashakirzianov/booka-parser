@@ -39,15 +39,15 @@ export function singleSpan(node: Xml, env: Xml2NodesEnv): Result<Span> {
     if (!result.success) {
         return result;
     }
-    let span = result.value;
+    let content = result.value;
     if (node.type === 'element' && node.attributes.id !== undefined) {
         const refId = buildRefId(env.filePath, node.attributes.id);
-        span = span.node === undefined
-            ? { node: 'span', span, refId }
-            : { ...span, refId };
+        content = content.span === undefined
+            ? { span: 'span', content, refId }
+            : { ...content, refId };
     }
 
-    return success(span, result.diagnostic);
+    return success(content, result.diagnostic);
 }
 
 function singleSpanImpl(node: Xml, env: Xml2NodesEnv): Result<Span> {
@@ -84,9 +84,9 @@ function singleSpanImpl(node: Xml, env: Xml2NodesEnv): Result<Span> {
                 const content = spanContent(node.children, env);
                 if (content.success) {
                     const span: Span = {
-                        node: 'span',
+                        span: 'span',
                         flags: ['quote'],
-                        span: content.value,
+                        content: content.value,
                     };
                     return success(span, content.diagnostic);
                 } else {
@@ -124,40 +124,40 @@ function singleSpanImpl(node: Xml, env: Xml2NodesEnv): Result<Span> {
 }
 
 function parseAttributeSpan(node: XmlElement, attr: AttributeName, env: Xml2NodesEnv): Success<Span> {
-    const inside = expectSpanContent(node.children, env);
+    const content = expectSpanContent(node.children, env);
     const span: Span = {
-        node: attr,
-        span: inside.value,
+        span: attr,
+        content: content.value,
     };
 
     return success(
         span,
-        inside.diagnostic,
+        content.diagnostic,
     );
 }
 
 function parseFlagSpan(node: XmlElement, flag: NodeFlag, env: Xml2NodesEnv): Success<Span> {
-    const inside = expectSpanContent(node.children, env);
+    const content = expectSpanContent(node.children, env);
     const span: Span = {
-        node: 'span',
-        span: inside.value,
+        span: 'span',
+        content: content.value,
         flags: [flag],
     };
     return success(
         span,
-        inside.diagnostic,
+        content.diagnostic,
     );
 }
 
 function aSpan(node: XmlElement, env: Xml2NodesEnv): Result<Span> {
     if (node.attributes.href !== undefined) {
-        const inside = expectSpanContent(node.children, env);
+        const content = expectSpanContent(node.children, env);
         const span: Span = {
-            node: 'ref',
+            span: 'ref',
             refToId: node.attributes.href,
-            span: inside.value,
+            content: content.value,
         };
-        return success(span, inside.diagnostic);
+        return success(span, content.diagnostic);
     } else {
         const inside = spanContent(node.children, env);
         return inside;
@@ -168,7 +168,7 @@ function imgSpan(node: XmlElement, env: Xml2NodesEnv): Success<Span> {
     const image = imgData(node, env);
     if (image.value !== undefined) {
         return success(
-            { node: 'image-span', image: image.value },
+            { span: 'image-span', image: image.value },
             image.diagnostic,
         );
     } else {
@@ -216,9 +216,9 @@ function parseRubySpan(node: XmlElement, env: Xml2NodesEnv): Success<Span> {
     }
 
     const resultSpan: Span = {
-        node: 'ruby',
+        span: 'ruby',
         explanation,
-        span: spans,
+        content: spans,
     };
     return success(resultSpan, compoundDiagnostic(diags));
 }

@@ -45,7 +45,7 @@ function collectRefData(nodes: BookNode[]): Success<RefData> {
                     ids.push(span.refId);
                 }
             }
-            if (span.node === 'ref') {
+            if (span.span === 'ref') {
                 refs.push(span.refToId);
             }
         }
@@ -82,7 +82,7 @@ function checkAndResolveRefs(nodes: BookNode[], { refs, ids }: RefData): Success
                 : { ...node, refId: undefined };
         }
         node = processNodeSpans(node, span => {
-            if (span.node === undefined) {
+            if (span.span === undefined) {
                 return span;
             }
             let result: Span = { ...span };
@@ -92,7 +92,7 @@ function checkAndResolveRefs(nodes: BookNode[], { refs, ids }: RefData): Success
                     ? { ...result, refId: resolvedId }
                     : { ...result, refId: undefined };
             }
-            if (result.node === 'ref') {
+            if (result.span === 'ref') {
                 const refToId = result.refToId;
                 if (ids.some(id => id === refToId)) {
                     const resolved = refMap[result.refToId];
@@ -110,7 +110,7 @@ function checkAndResolveRefs(nodes: BookNode[], { refs, ids }: RefData): Success
                         severity: 'warning',
                         refToId: result.refToId,
                     });
-                    result = result.span;
+                    result = result.content;
                 }
             }
             return result;
