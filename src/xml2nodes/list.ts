@@ -40,8 +40,8 @@ function listItems(list: XmlElement, env: Xml2NodesEnv): Success<ListItem[]> {
                     const content = topLevelNodes(node.children, env);
                     diags.push(content.diagnostic);
                     const spans = content.value.map(convertNodeToSpan);
-                    const span: Span = node.name === 'dd' ? { span: 'span', content: spans, flags: ['definition'] }
-                        : node.name === 'dt' ? { span: 'span', content: spans, flags: ['term'] }
+                    const span: Span = node.name === 'dd' ? { span: 'plain', content: spans, flags: ['definition'] }
+                        : node.name === 'dt' ? { span: 'plain', content: spans, flags: ['term'] }
                             : spans;
                     items.push({
                         refId: node.attributes.id

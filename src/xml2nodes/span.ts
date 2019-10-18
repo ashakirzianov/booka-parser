@@ -43,7 +43,7 @@ export function singleSpan(node: Xml, env: Xml2NodesEnv): Result<Span> {
     if (node.type === 'element' && node.attributes.id !== undefined) {
         const refId = buildRefId(env.filePath, node.attributes.id);
         content = content.span === undefined
-            ? { span: 'span', content, refId }
+            ? { span: 'plain', content, refId }
             : { ...content, refId };
     }
 
@@ -84,7 +84,7 @@ function singleSpanImpl(node: Xml, env: Xml2NodesEnv): Result<Span> {
                 const content = spanContent(node.children, env);
                 if (content.success) {
                     const span: Span = {
-                        span: 'span',
+                        span: 'plain',
                         flags: ['quote'],
                         content: content.value,
                     };
@@ -139,7 +139,7 @@ function parseAttributeSpan(node: XmlElement, attr: AttributeName, env: Xml2Node
 function parseFlagSpan(node: XmlElement, flag: NodeFlag, env: Xml2NodesEnv): Success<Span> {
     const content = expectSpanContent(node.children, env);
     const span: Span = {
-        span: 'span',
+        span: 'plain',
         content: content.value,
         flags: [flag],
     };
@@ -168,7 +168,7 @@ function imgSpan(node: XmlElement, env: Xml2NodesEnv): Success<Span> {
     const image = imgData(node, env);
     if (image.value !== undefined) {
         return success(
-            { span: 'image-span', image: image.value },
+            { span: 'image', image: image.value },
             image.diagnostic,
         );
     } else {
