@@ -1,10 +1,9 @@
 import {
-    Span, compoundSpan, FlagSemanticKey, flagSemantic, semanticSpan,
-    failure, success, Success,
-    Result, compoundDiagnostic, Diagnostic,
+    Span, failure, success, Success,
+    Result, compoundDiagnostic, Diagnostic, NodeFlag, AttributeName, extractSpanText,
 } from 'booka-common';
 import { Xml, xml2string } from '../xml';
-import { Xml2NodesEnv, unexpectedNode, expectEmptyContent, buildRefId } from './common';
+import { Xml2NodesEnv, unexpectedNode, expectEmptyContent, buildRefId, imgData } from './common';
 import { XmlElement } from '../xml/xmlTree';
 
 export function expectSpanContent(nodes: Xml[], env: Xml2NodesEnv): Success<Span[]> {
@@ -40,16 +39,17 @@ export function singleSpan(node: Xml, env: Xml2NodesEnv): Result<Span> {
     if (!result.success) {
         return result;
     }
-    let span = result.value;
+    let content = result.value;
     if (node.type === 'element' && node.attributes.id !== undefined) {
         const refId = buildRefId(env.filePath, node.attributes.id);
-        span = { a: span, refId };
+        content = content.span === undefined
+            ? { span: 'plain', content, refId }
+            : { ...content, refId };
     }
 
-    return success(span, result.diagnostic);
+    return success(content, result.diagnostic);
 }
 
-// TODO: refactor (use attrSpan etc.)
 function singleSpanImpl(node: Xml, env: Xml2NodesEnv): Result<Span> {
     if (node.type === 'text') {
         return success(node.text);
@@ -57,86 +57,107 @@ function singleSpanImpl(node: Xml, env: Xml2NodesEnv): Result<Span> {
         return failure();
     }
 
-    const inside = expectSpanContent(node.children, env);
-    const insideSpan = compoundSpan(inside.value);
-    const insideDiag = inside.diagnostic;
-
     switch (node.name) {
-        case 'span':
-            return insideDiag === undefined
-                ? success(inside.value)
-                : failure();
+        case 'span': case 'tt': case 'font':
+            {
+                const inside = spanContent(node.children, env);
+                return inside.success
+                    ? success(inside.value, inside.diagnostic)
+                    : inside;
+            }
         case 'i': case 'em':
-            return success({ italic: insideSpan }, insideDiag);
+            return parseAttributeSpan(node, 'italic', env);
         case 'b': case 'strong':
-            return success({ bold: insideSpan }, insideDiag);
+            return parseAttributeSpan(node, 'bold', env);
         case 'small':
-            return success({ small: insideSpan }, insideDiag);
+            return parseAttributeSpan(node, 'small', env);
         case 'big':
-            return success({ big: insideSpan }, insideDiag);
+            return parseAttributeSpan(node, 'big', env);
         case 'sup':
-            return success({ sup: insideSpan }, insideDiag);
+            return parseAttributeSpan(node, 'sup', env);
         case 'sub':
-            return success({ sub: insideSpan }, insideDiag);
-        case 'q': case 'quote': case 'blockquote': case 'cite':
-            return insideDiag === undefined
-                ? success({
-                    span: insideSpan,
-                    semantics: [{
-                        semantic: 'quote',
-                    }],
-                }, insideDiag)
-                : failure();
+            return parseAttributeSpan(node, 'sub', env);
+        case 'q': case 'quote':
+            return parseAttributeSpan(node, 'quote', env);
+        case 'blockquote': case 'cite': // Note: for some reason pg use it as a container sometimes
+            {
+                const content = spanContent(node.children, env);
+                if (content.success) {
+                    const span: Span = {
+                        span: 'plain',
+                        flags: ['quote'],
+                        content: content.value,
+                    };
+                    return success(span, content.diagnostic);
+                } else {
+                    return content;
+                }
+            }
         case 'code': case 'samp': case 'var':
-            return success(flagSpan(insideSpan, 'code'), insideDiag);
+            return parseFlagSpan(node, 'code', env);
         case 'dfn':
-            return success(flagSpan(insideSpan, 'definition'), insideDiag);
+            return parseFlagSpan(node, 'definition', env);
         case 'address':
-            return success(flagSpan(insideSpan, 'address'), insideDiag);
+            return parseFlagSpan(node, 'address', env);
         case 'bdo':
-            return success(flagSpan(insideSpan, 'right-to-left'), insideDiag);
+            return parseFlagSpan(node, 'right-to-left', env);
         case 'ins': case 'del':
-            return success({
-                span: insideSpan,
-                semantics: [{
-                    semantic: 'correction',
-                    note: node.attributes.title,
-                }],
-            }, insideDiag);
+            return parseFlagSpan(node, 'correction', env);
         case 'ruby':
-            return rubySpan(node, env);
+            return parseRubySpan(node, env);
         case 'br':
             return success(
                 '\n',
-                compoundDiagnostic([expectEmptyContent(node.children), insideDiag]),
+                compoundDiagnostic([expectEmptyContent(node.children)]),
             );
         case 'img':
             return imgSpan(node, env);
-        case 'font':
-        case 'tt':
-        case 'abbr': // TODO: handle
-            return inside;
+        case 'abbr':
+            return parseFlagSpan(node, 'abbreviation', env);
         case 'a':
             return aSpan(node, env);
+        case 'hr': // Ignore separators within the span
+            return success([]);
         default:
             return failure();
     }
 }
 
-function flagSpan(inside: Span, flag: FlagSemanticKey): Span {
-    return {
-        span: inside,
-        semantics: [flagSemantic(flag)],
+function parseAttributeSpan(node: XmlElement, attr: AttributeName, env: Xml2NodesEnv): Success<Span> {
+    const content = expectSpanContent(node.children, env);
+    const span: Span = {
+        span: attr,
+        content: content.value,
     };
+
+    return success(
+        span,
+        content.diagnostic,
+    );
+}
+
+function parseFlagSpan(node: XmlElement, flag: NodeFlag, env: Xml2NodesEnv): Success<Span> {
+    const content = expectSpanContent(node.children, env);
+    const span: Span = {
+        span: 'plain',
+        content: content.value,
+        flags: [flag],
+    };
+    return success(
+        span,
+        content.diagnostic,
+    );
 }
 
 function aSpan(node: XmlElement, env: Xml2NodesEnv): Result<Span> {
     if (node.attributes.href !== undefined) {
-        const inside = expectSpanContent(node.children, env);
-        return success({
-            ref: inside.value,
+        const content = expectSpanContent(node.children, env);
+        const span: Span = {
+            span: 'ref',
             refToId: node.attributes.href,
-        }, inside.diagnostic);
+            content: content.value,
+        };
+        return success(span, content.diagnostic);
     } else {
         const inside = spanContent(node.children, env);
         return inside;
@@ -144,44 +165,18 @@ function aSpan(node: XmlElement, env: Xml2NodesEnv): Result<Span> {
 }
 
 function imgSpan(node: XmlElement, env: Xml2NodesEnv): Success<Span> {
-    const src = node.attributes.src;
-    if (src !== undefined) {
-        if (!src.endsWith('.png') && !src.endsWith('.jpg') && !src.endsWith('jpeg')) {
-            return success([], {
-                diag: 'unsupported image format',
-                severity: 'info',
-                src,
-            });
-        } else if (src.match(/^www\.[^\.]+\.com/)) {
-            return success([], {
-                diag: 'external src',
-                severity: 'info',
-                src,
-            });
-        }
+    const image = imgData(node, env);
+    if (image.value !== undefined) {
         return success(
-            {
-                image: {
-                    image: 'ref',
-                    imageId: src,
-                    title: node.attributes.title || node.attributes.alt,
-                },
-            },
-            expectEmptyContent(node.children),
+            { span: 'image', image: image.value },
+            image.diagnostic,
         );
     } else {
-        return success([], compoundDiagnostic([
-            {
-                diag: 'img: src not set',
-                severity: 'info',
-                xml: xml2string(node),
-            },
-            expectEmptyContent(node.children),
-        ]));
+        return success([], image.diagnostic);
     }
 }
 
-function rubySpan(node: XmlElement, env: Xml2NodesEnv): Success<Span> {
+function parseRubySpan(node: XmlElement, env: Xml2NodesEnv): Success<Span> {
     const spans: Span[] = [];
     const diags: Diagnostic[] = [];
     let explanation: string = '';
@@ -196,15 +191,9 @@ function rubySpan(node: XmlElement, env: Xml2NodesEnv): Success<Span> {
                 break;
             case 'rt':
                 {
-                    const [head, ...rest] = sub.children;
-                    if (head !== undefined && head.type === 'text' && rest.length === 0) {
-                        explanation += head.text;
-                    } else {
-                        diags.push({
-                            diag: 'unexpected rt content',
-                            xml: sub.children.map(xml2string),
-                        });
-                    }
+                    const inside = expectSpanContent(sub.children, env);
+                    diags.push(inside.diagnostic);
+                    explanation += extractSpanText(inside.value);
                 }
                 break;
             case 'rp':
@@ -226,9 +215,10 @@ function rubySpan(node: XmlElement, env: Xml2NodesEnv): Success<Span> {
         }
     }
 
-    const resultSpan = semanticSpan(compoundSpan(spans), [{
-        semantic: 'ruby',
-        ruby: explanation,
-    }]);
+    const resultSpan: Span = {
+        span: 'ruby',
+        explanation,
+        content: spans,
+    };
     return success(resultSpan, compoundDiagnostic(diags));
 }

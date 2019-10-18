@@ -9,7 +9,7 @@ export function preprocess(args: PreprocessorArgs) {
         references,
         normalize,
         images,
-        consistency,
+        // consistency,
     ];
 
     return preprocessWithProcessors(args, preprocessors);

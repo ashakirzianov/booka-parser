@@ -81,6 +81,11 @@ function buildMeta(tags: KnownTag[]) {
             case 'license':
                 meta.license = tag.value;
                 continue;
+            case 'pg-index':
+                meta.license = meta.license === 'unknown'
+                    ? 'pg-unknown'
+                    : meta.license;
+                continue;
         }
     }
 

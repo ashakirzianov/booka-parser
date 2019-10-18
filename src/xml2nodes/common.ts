@@ -1,13 +1,13 @@
 import {
     Diagnostic, Success, success,
-    compoundDiagnostic, Semantic, FlagSemanticKey,
+    compoundDiagnostic, NodeFlag, Image,
 } from 'booka-common';
-import { Xml, xml2string } from '../xml';
+import { Xml, xml2string, XmlElement } from '../xml';
 import { isWhitespaces } from '../utils';
+import { extname } from 'path';
 
 export type AttributesHookResult = {
-    flag?: FlagSemanticKey,
-    semantics?: Semantic[],
+    flag?: NodeFlag,
     diag?: Diagnostic,
 };
 export type AttributesHook = (element: string, attr: string, value: string) => AttributesHookResult;
@@ -40,48 +40,59 @@ export function unexpectedNode(node: Xml, context?: any): Diagnostic {
     };
 }
 
-export function shouldIgnore(node: Xml): boolean {
-    switch (node.type) {
-        case 'text':
-            return node.text.startsWith('\n') && isWhitespaces(node.text);
-        case 'element':
-            switch (node.name) {
-                case 'input':
-                case 'map':
-                case 'object':
-                case 'meta':
-                case 'basefont':
-                case 'kbd':
-                case 'tt':
-                case 'svg':
-                case 'br':
-                    return true;
-                default:
-                    return false;
-            }
-        default:
-            return false;
+export function imgData(node: XmlElement, env: Xml2NodesEnv): Success<Image | undefined> {
+    const src = node.attributes.src;
+    if (src !== undefined) {
+        if (src.match(/^www\.[^\.]+\.com/)) {
+            return success(undefined, {
+                diag: 'external src',
+                severity: 'info',
+                src,
+            });
+        }
+        const ext = extname(src).toLowerCase();
+        switch (ext) {
+            case '.png':
+            case '.jpg':
+            case '.jpeg':
+            case '.gif':
+                {
+                    const title = node.attributes.title || node.attributes.alt;
+                    const height = node.attributes.height
+                        ? parseInt(node.attributes.height, 10) ?? undefined
+                        : undefined;
+                    const width = node.attributes.width
+                        ? parseInt(node.attributes.width, 10) ?? undefined
+                        : undefined;
+                    return success(
+                        {
+                            image: 'ref',
+                            imageId: src,
+                            title,
+                            height, width,
+                        },
+                        expectEmptyContent(node.children),
+                    );
+                }
+            default:
+                return success(undefined, {
+                    diag: 'unsupported image format',
+                    severity: 'info',
+                    src,
+                });
+        }
+    } else {
+        return success(undefined, compoundDiagnostic([
+            {
+                diag: 'img: src not set',
+                severity: 'info',
+                xml: xml2string(node),
+            },
+            expectEmptyContent(node.children),
+        ]));
     }
 }
 
-type ProcessNodeResult<T> = {
-    values?: T[],
-    diag?: Diagnostic,
-};
-type NodeProcessor<T> = (node: Xml, env: Xml2NodesEnv) => ProcessNodeResult<T>;
-export function processNodes<T>(nodes: Xml[], env: Xml2NodesEnv, proc: NodeProcessor<T>): Success<T[]> {
-    const diags: Diagnostic[] = [];
-    const results: T[] = [];
-    for (const node of nodes) {
-        if (shouldIgnore(node)) {
-            continue;
-        }
-        const result = proc(node, env);
-        diags.push(result.diag);
-        if (result.values !== undefined) {
-            results.push(...result.values);
-        }
-    }
-
-    return success(results, compoundDiagnostic(diags));
+export function isTrailingWhitespace(node: Xml): boolean {
+    return node.type === 'text' && isWhitespaces(node.text);
 }

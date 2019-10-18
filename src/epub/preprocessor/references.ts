@@ -1,7 +1,6 @@
 import {
-    BookNode, processNodes, refSpan, isRefSpan, isAnchorSpan,
-    visitNodes, filterUndefined,
-    Success, success, Diagnostic, compoundDiagnostic,
+    BookNode, processNodes, iterateNodeSpans,
+    Success, success, Diagnostic, compoundDiagnostic, iterateNodeRefIds, Span, iterateNodes, processNodeSpans,
 } from 'booka-common';
 import { PreprocessorArgs } from './preprocessor';
 
@@ -16,90 +15,108 @@ export async function references({ book }: PreprocessorArgs) {
 
 function checkNodesReferences(nodes: BookNode[]): Success<BookNode[]> {
     const diags: Diagnostic[] = [];
+    const refData = collectRefData(nodes);
+    diags.push(refData.diagnostic);
+
+    const processed = checkAndResolveRefs(nodes, refData.value);
+    diags.push(processed.diagnostic);
+
+    return success(processed.value, compoundDiagnostic(diags));
+}
+
+type RefData = {
+    refs: string[],
+    ids: string[],
+};
+function collectRefData(nodes: BookNode[]): Success<RefData> {
+    const diags: Diagnostic[] = [];
     const ids: string[] = [];
     const refs: string[] = [];
-    visitNodes(nodes, {
-        span: s => {
-            if (isRefSpan(s)) {
-                refs.push(s.refToId);
-            } else if (isAnchorSpan(s)) {
-                if (ids.some(id => id === s.refId)) {
+    for (const [node] of iterateNodes(nodes)) {
+        for (const [span] of iterateNodeSpans(node)) {
+            if (span.refId) {
+                if (ids.some(id => id === span.refId)) {
                     diags.push({
                         diag: 'duplicate id',
-                        id: s.refId,
-                        span: s,
+                        id: span.refId,
+                        span: span,
                     });
                 } else {
-                    ids.push(s.refId);
+                    ids.push(span.refId);
                 }
             }
-            return undefined;
-        },
-        node: n => {
-            if (n.refId !== undefined) {
-                if (ids.some(id => id === n.refId)) {
-                    diags.push({
-                        diag: 'duplicate id',
-                        id: n.refId,
-                        node: n,
-                    });
-                } else {
-                    ids.push(n.refId);
-                }
+            if (span.span === 'ref') {
+                refs.push(span.refToId);
             }
-            return undefined;
-        },
-    });
+        }
+        for (const nodeRefId of iterateNodeRefIds(node)) {
+            if (ids.some(id => id === nodeRefId)) {
+                diags.push({
+                    diag: 'duplicate id',
+                    id: nodeRefId,
+                    node: node,
+                });
+            } else {
+                ids.push(nodeRefId);
+            }
+        }
+    }
+
+    return success({ refs, ids }, compoundDiagnostic(diags));
+}
+
+function checkAndResolveRefs(nodes: BookNode[], { refs, ids }: RefData): Success<BookNode[]> {
+    const diags: Diagnostic[] = [];
+
     type RefMap = { [k: string]: string | undefined };
     const refMap = refs.reduce((map, ref, idx) => {
         map[ref] = `ref-${idx}`;
         return map;
     }, {} as RefMap);
-    const processed = processNodes(nodes, {
-        span: span => {
-            if (isRefSpan(span)) {
-                if (ids.some(id => id === span.refToId)) {
-                    const resolved = refMap[span.refToId];
+
+    const processed = processNodes(nodes, node => {
+        if (node.refId !== undefined) {
+            const resolved = refMap[node.refId];
+            node = resolved !== undefined
+                ? { ...node, refId: resolved }
+                : { ...node, refId: undefined };
+        }
+        node = processNodeSpans(node, span => {
+            if (span.span === undefined) {
+                return span;
+            }
+            let result: Span = { ...span };
+            if (result.refId) {
+                const resolvedId = refMap[result.refId];
+                result = resolvedId !== undefined
+                    ? { ...result, refId: resolvedId }
+                    : { ...result, refId: undefined };
+            }
+            if (result.span === 'ref') {
+                const refToId = result.refToId;
+                if (ids.some(id => id === refToId)) {
+                    const resolved = refMap[result.refToId];
                     if (resolved === undefined) {
                         diags.push({
                             diag: 'unexpected ref',
-                            span,
+                            result,
                         });
-                        return span;
                     } else {
-                        return refSpan(span.ref, resolved);
+                        result = { ...result, refToId: resolved };
                     }
                 } else {
                     diags.push({
                         diag: 'missing ref',
                         severity: 'warning',
-                        refToId: span.refToId,
+                        refToId: result.refToId,
                     });
-                    return span.ref;
+                    result = result.content;
                 }
-            } else if (isAnchorSpan(span)) {
-                const resolved = refMap[span.refId];
-                if (resolved !== undefined) {
-                    return { ...span, refId: resolved };
-                } else {
-                    return span.a;
-                }
-            } else {
-                return span;
             }
-        },
-        node: node => {
-            if (node.refId !== undefined) {
-                const resolved = refMap[node.refId];
-                if (resolved !== undefined) {
-                    return { ...node, refId: resolved };
-                } else {
-                    return { ...node, refId: undefined };
-                }
-            } else {
-                return node;
-            }
-        },
+            return result;
+        });
+
+        return node;
     });
 
     return success(processed, compoundDiagnostic(diags));

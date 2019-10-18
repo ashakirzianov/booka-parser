@@ -97,6 +97,10 @@ const gutenbergHooks: Hooks = {
 
 function attributesHook(element: string, attr: string, value: string): AttributesHookResult {
     switch (attr) {
+        case 'xml:space':
+            return value === 'preserve'
+                ? { flag: 'preserve' }
+                : {};
         case 'class':
             switch (value) {
                 case 'charname':
@@ -111,17 +115,14 @@ function attributesHook(element: string, attr: string, value: string): Attribute
                 case 'poem': case 'poem1':
                 case 'poem2': case 'poem3':
                 case 'verse': case 'poetry':
-                case 'stanza':
+                case 'stanza': case 'rhyme':
                     return { flag: 'poem' };
                 case 'letter_greeting':
                 case 'letter': case 'letter1': case 'letter2':
                     return { flag: 'letter' };
                 case 'mynote':
                     return {
-                        semantics: [{
-                            semantic: 'tech-note',
-                            source: 'project-gutenberg',
-                        }],
+                        flag: 'tech-note',
                     };
                 case 'QUOTE':
                 case 'blockquote':
@@ -130,9 +131,7 @@ function attributesHook(element: string, attr: string, value: string): Attribute
                 case 'quotation':
                 case 'quote':
                     return {
-                        semantics: [{
-                            semantic: 'quote',
-                        }],
+                        flag: 'quote',
                     };
                 case 'extracts':
                     return { flag: 'extracts' };
@@ -141,18 +140,10 @@ function attributesHook(element: string, attr: string, value: string): Attribute
                 case 'illus':
                     return { flag: 'illustrations' };
                 case 'pgmonospaced':
-                    return { flag: 'formated' };
-                case 'foot': case 'footnote':
+                    return { flag: 'preserve' };
+                case 'foots': case 'foot': case 'footnote':
                     return {
-                        semantics: [{
-                            semantic: 'footnote',
-                        }],
-                    };
-                case 'foots':
-                    return {
-                        semantics: [{
-                            semantic: 'footnote-group',
-                        }],
+                        flag: 'footnote',
                     };
                 case 'toc':
                     return { flag: 'table-of-contents' };
