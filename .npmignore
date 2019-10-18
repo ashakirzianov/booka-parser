@@ -67,5 +67,4 @@ server.key
 server.crt
 
 # epub examples
-epub/*
-sample/*
+examples/*
