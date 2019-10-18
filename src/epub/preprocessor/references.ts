@@ -1,6 +1,6 @@
 import {
-    BookNode, processNodes, visitNodes,
-    Success, success, Diagnostic, compoundDiagnostic, iterateBookNodeRefIds, Span,
+    BookNode, processNodes, iterateNodeSpans,
+    Success, success, Diagnostic, compoundDiagnostic, iterateNodeRefIds, Span, iterateNodes, processNodeSpans,
 } from 'booka-common';
 import { PreprocessorArgs } from './preprocessor';
 
@@ -15,50 +15,73 @@ export async function references({ book }: PreprocessorArgs) {
 
 function checkNodesReferences(nodes: BookNode[]): Success<BookNode[]> {
     const diags: Diagnostic[] = [];
+    const refData = collectRefData(nodes);
+    diags.push(refData.diagnostic);
+
+    const processed = checkAndResolveRefs(nodes, refData.value);
+    diags.push(processed.diagnostic);
+
+    return success(processed.value, compoundDiagnostic(diags));
+}
+
+type RefData = {
+    refs: string[],
+    ids: string[],
+};
+function collectRefData(nodes: BookNode[]): Success<RefData> {
+    const diags: Diagnostic[] = [];
     const ids: string[] = [];
     const refs: string[] = [];
-    visitNodes(nodes, {
-        span: s => {
-            if (s.refId) {
-                if (ids.some(id => id === s.refId)) {
+    for (const [node] of iterateNodes(nodes)) {
+        for (const [span] of iterateNodeSpans(node)) {
+            if (span.refId) {
+                if (ids.some(id => id === span.refId)) {
                     diags.push({
                         diag: 'duplicate id',
-                        id: s.refId,
-                        span: s,
+                        id: span.refId,
+                        span: span,
                     });
                 } else {
-                    ids.push(s.refId);
+                    ids.push(span.refId);
                 }
             }
-            if (s.node === 'ref') {
-                refs.push(s.refToId);
+            if (span.node === 'ref') {
+                refs.push(span.refToId);
             }
-
-            return undefined;
-        },
-        node: nn => {
-            for (const nodeRefId of iterateBookNodeRefIds(nn)) {
-                if (ids.some(id => id === nodeRefId)) {
-                    diags.push({
-                        diag: 'duplicate id',
-                        id: nodeRefId,
-                        node: nn,
-                    });
-                } else {
-                    ids.push(nodeRefId);
-                }
+        }
+        for (const nodeRefId of iterateNodeRefIds(node)) {
+            if (ids.some(id => id === nodeRefId)) {
+                diags.push({
+                    diag: 'duplicate id',
+                    id: nodeRefId,
+                    node: node,
+                });
+            } else {
+                ids.push(nodeRefId);
             }
+        }
+    }
 
-            return undefined;
-        },
-    });
+    return success({ refs, ids }, compoundDiagnostic(diags));
+}
+
+function checkAndResolveRefs(nodes: BookNode[], { refs, ids }: RefData): Success<BookNode[]> {
+    const diags: Diagnostic[] = [];
+
     type RefMap = { [k: string]: string | undefined };
     const refMap = refs.reduce((map, ref, idx) => {
         map[ref] = `ref-${idx}`;
         return map;
     }, {} as RefMap);
-    const processed = processNodes(nodes, {
-        span: span => {
+
+    const processed = processNodes(nodes, node => {
+        if (node.refId !== undefined) {
+            const resolved = refMap[node.refId];
+            node = resolved !== undefined
+                ? { ...node, refId: resolved }
+                : { ...node, refId: undefined };
+        }
+        node = processNodeSpans(node, span => {
             if (span.node === undefined) {
                 return span;
             }
@@ -81,7 +104,7 @@ function checkNodesReferences(nodes: BookNode[]): Success<BookNode[]> {
                     } else {
                         result = { ...result, refToId: resolved };
                     }
-                } else if (refToId) {
+                } else {
                     diags.push({
                         diag: 'missing ref',
                         severity: 'warning',
@@ -91,19 +114,9 @@ function checkNodesReferences(nodes: BookNode[]): Success<BookNode[]> {
                 }
             }
             return result;
-        },
-        node: node => {
-            if (node.refId !== undefined) {
-                const resolved = refMap[node.refId];
-                if (resolved !== undefined) {
-                    return { ...node, refId: resolved };
-                } else {
-                    return { ...node, refId: undefined };
-                }
-            } else {
-                return node;
-            }
-        },
+        });
+
+        return node;
     });
 
     return success(processed, compoundDiagnostic(diags));

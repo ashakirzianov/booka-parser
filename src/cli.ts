@@ -102,7 +102,7 @@ async function saveString(path: string, content: string) {
 }
 
 async function saveBook(path: string, book: Book) {
-    const str = JSON.stringify({ book });
+    const str = JSON.stringify({ book }, null, undefined);
     return saveString(path, str);
 }
 
