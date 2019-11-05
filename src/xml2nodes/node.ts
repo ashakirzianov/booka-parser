@@ -1,6 +1,5 @@
 import {
-    Span, BookNode, flagNode,
-    makePph, compoundSpan,
+    Span, BookNode, flagNode, compoundSpan,
     Diagnostic, Result, Success,
     failure, success, compoundDiagnostic, NodeFlag,
 } from 'booka-common';
@@ -49,7 +48,10 @@ export function topLevelNodes(nodes: Xml[], env: Xml2NodesEnv): Success<BookNode
         }
 
         if (spans.length > 0) {
-            const pph: BookNode = makePph(compoundSpan(spans));
+            const pph: BookNode = {
+                node: 'pph',
+                span: compoundSpan(spans),
+            };
             results.push(pph);
             idx--;
         } else {
@@ -164,7 +166,10 @@ function titleNode(node: XmlElement, env: Xml2NodesEnv): Success<BookNode[]> {
 function paragraphNode(node: XmlElement, env: Xml2NodesEnv): Success<BookNode[]> {
     const span = spanContent(node.children, env);
     if (span.success) {
-        const pph: BookNode = makePph(span.value);
+        const pph: BookNode = {
+            node: 'pph',
+            span: span.value,
+        };
         return success([pph], span.diagnostic);
     } else {
         return containerNode(node, env);
